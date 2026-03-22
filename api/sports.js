@@ -5,10 +5,10 @@ const https = require('https');
 
 const API_KEY = '475fee28ee58ec872d310f504542031a';
 const FB_BASE = 'https://v3.football.api-sports.io';
-const BB_BASE = 'https://v3.basketball.api-sports.io';
+const BB_BASE = 'https://v1.basketball.api-sports.io';
 const HEADERS = { 'x-apisports-key': API_KEY };
-const SEASON  = 2024;
-const BB_SEASON = '2024-2025';
+const SEASON  = 2025;
+const BB_SEASON = '2025-2026';
 
 // Top leagues — fetched directly by ID
 const TOP_LEAGUES = [
@@ -380,5 +380,5 @@ function apiGet(url, params = {}) {
       });
     }).on('error', reject);
   });
-  }
-    
+          }
+            
