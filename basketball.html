@@ -9,27 +9,30 @@
     .tab-row{display:flex;gap:6px;margin-bottom:14px;}
     .tab-btn{flex:1;padding:10px 0;font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:1.5px;border-radius:var(--radius);cursor:pointer;transition:var(--transition);border:1px solid var(--border);background:var(--bg2);color:var(--text-muted);}
     .tab-btn.active{background:linear-gradient(135deg,var(--neon),var(--neon2));color:#07090d;border-color:transparent;}
-    .bmc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:14px;margin-bottom:10px;cursor:pointer;transition:var(--transition);}
-    .bmc:hover{border-color:var(--border2);background:var(--bg3);transform:translateY(-1px);}
-    .bmc.has-edge{border-left:3px solid var(--neon);}
-    .bmc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;}
-    .bmc-teams{flex:1;display:flex;align-items:center;gap:8px;}
-    .bmc-team{font-weight:800;font-size:13px;flex:1;}
-    .bmc-team.away{text-align:right;}
-    .bmc-score{font-family:var(--font-mono);font-size:24px;font-weight:700;color:var(--neon);min-width:60px;text-align:center;flex-shrink:0;}
-    .bmc-badge{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
+    .gcard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:14px;margin-bottom:10px;cursor:pointer;transition:var(--transition);}
+    .gcard:hover{border-color:var(--border2);background:var(--bg3);transform:translateY(-1px);}
+    .gcard.live{border-left:3px solid var(--neon);}
+    .gcard.upcoming{border-left:3px solid var(--neon2);}
+    .gcard.ft{border-left:3px solid var(--text-dim);}
+    .gc-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+    .gc-home{font-weight:800;font-size:14px;flex:1;}
+    .gc-home .rec{font-family:var(--font-mono);font-size:9px;color:var(--text-dim);font-weight:400;display:block;margin-top:2px;}
+    .gc-score{font-family:var(--font-mono);font-size:26px;font-weight:700;color:var(--neon);min-width:65px;text-align:center;flex-shrink:0;}
+    .gc-score.ns{color:var(--text-dim);font-size:16px;}
+    .gc-away{font-weight:800;font-size:14px;flex:1;text-align:right;}
+    .gc-away .rec{font-family:var(--font-mono);font-size:9px;color:var(--text-dim);font-weight:400;display:block;margin-top:2px;}
+    .gc-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
     .live-pill{display:inline-flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:9px;color:var(--neon);background:var(--neon-dim);border:1px solid rgba(0,255,157,0.3);padding:2px 7px;border-radius:3px;letter-spacing:1px;}
     .live-dot{width:5px;height:5px;border-radius:50%;background:var(--neon);animation:ndot 1s ease-in-out infinite;}
-    .status-pill{font-family:var(--font-mono);font-size:10px;padding:2px 7px;border-radius:3px;text-align:center;}
-    .status-pill.live{color:var(--yellow);background:rgba(245,200,66,0.1);border:1px solid rgba(245,200,66,0.2);}
-    .status-pill.ft{color:var(--red);background:rgba(255,45,85,0.08);border:1px solid rgba(255,45,85,0.2);}
-    .status-pill.ns{color:var(--text-dim);background:var(--bg4);border:1px solid var(--border);}
-    .spread-badge{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--yellow);}
-    .qtr-row{display:flex;gap:4px;margin:8px 0;}
+    .status-tag{font-family:var(--font-mono);font-size:10px;padding:2px 7px;border-radius:3px;border:1px solid;}
+    .status-tag.live{color:var(--yellow);background:rgba(245,200,66,0.08);border-color:rgba(245,200,66,0.2);}
+    .status-tag.ft{color:var(--red);background:rgba(255,45,85,0.06);border-color:rgba(255,45,85,0.2);}
+    .status-tag.ns{color:var(--neon2);background:rgba(0,201,255,0.06);border-color:rgba(0,201,255,0.2);}
+    .gc-league{font-family:var(--font-mono);font-size:8px;color:var(--text-dim);letter-spacing:1px;}
+    .qtr-strip{display:flex;gap:4px;margin:8px 0;}
     .qtr-cell{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:5px;text-align:center;}
     .qtr-cell .ql{font-family:var(--font-mono);font-size:8px;color:var(--text-dim);margin-bottom:3px;}
     .qtr-cell .qv{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--neon2);}
-    .prob-wrap{margin-top:8px;}
     .hub{position:fixed;inset:0;background:var(--bg);z-index:600;display:flex;flex-direction:column;overflow:hidden;}
     .hub-hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 14px;flex-shrink:0;}
     .hub-back{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);cursor:pointer;background:var(--bg3);border:1px solid var(--border);padding:5px 10px;border-radius:var(--radius);margin-bottom:10px;display:inline-flex;align-items:center;gap:5px;}
@@ -39,10 +42,10 @@
     .hub-body{flex:1;overflow-y:auto;padding:14px;}
     .nr-row{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
     .nr-lbl{font-family:var(--font-mono);font-size:9px;color:var(--text-dim);width:38px;}
-    .nr-hv{font-family:var(--font-mono);font-size:9px;font-weight:700;width:38px;text-align:right;}
     .nr-bar{flex:1;height:5px;background:var(--bg4);border-radius:3px;overflow:hidden;}
     .nr-fill{height:100%;border-radius:3px;transition:width 0.8s ease;}
-    .nr-av{font-family:var(--font-mono);font-size:9px;font-weight:700;width:38px;}
+    .nr-hv{font-family:var(--font-mono);font-size:9px;font-weight:700;width:36px;text-align:right;}
+    .nr-av{font-family:var(--font-mono);font-size:9px;font-weight:700;width:36px;}
   </style>
 </head>
 <body>
@@ -68,34 +71,34 @@
     </div>
 
     <div id="pnl-live">
-      <div id="live-status" class="odds-api-banner sim" style="margin-bottom:12px;">
-        <div class="oab-dot sim"></div>
-        <div class="oab-text" id="live-status-txt">Loading...</div>
+      <div id="live-banner" class="odds-api-banner sim" style="margin-bottom:12px;">
+        <div class="oab-dot sim" id="banner-dot"></div>
+        <div class="oab-text" id="banner-txt">Loading games...</div>
       </div>
       <div id="live-list"></div>
     </div>
 
     <div id="pnl-fixtures" style="display:none">
-      <div id="fix-cal"></div>
+      <div id="fix-list"></div>
     </div>
   </main>
 </div>
 
-<!-- Game Hub -->
+<!-- Hub -->
 <div id="game-hub" class="hub" style="display:none">
   <div class="hub-hdr">
     <div class="hub-back" onclick="closeHub()">← BACK</div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-      <div style="font-weight:800;font-size:14px;" id="hh-home">Home</div>
+      <div style="font-weight:800;font-size:15px;" id="hh-home">—</div>
       <div style="text-align:center">
-        <div style="font-family:var(--font-mono);font-size:28px;font-weight:700;color:var(--neon);" id="hh-score">0 – 0</div>
-        <div style="font-family:var(--font-mono);font-size:10px;color:var(--yellow);margin-top:2px;" id="hh-status">Upcoming</div>
+        <div style="font-family:var(--font-mono);font-size:28px;font-weight:700;color:var(--neon);" id="hh-score">— : —</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--yellow);margin-top:2px;" id="hh-status">—</div>
       </div>
-      <div style="font-weight:800;font-size:14px;text-align:right;" id="hh-away">Away</div>
+      <div style="font-weight:800;font-size:15px;text-align:right;" id="hh-away">—</div>
     </div>
     <div class="hub-tabs">
       <button class="hub-tab active" id="ht-overview"  onclick="hubTab('overview')">OVERVIEW</button>
-      <button class="hub-tab"        id="ht-analysis"  onclick="hubTab('analysis')">ANALYSIS</button>
+      <button class="hub-tab"        id="ht-analysis"  onclick="hubTab('analysis')">EDGE</button>
       <button class="hub-tab"        id="ht-quarters"  onclick="hubTab('quarters')">QUARTERS</button>
       <button class="hub-tab"        id="ht-markets"   onclick="hubTab('markets')">MARKETS</button>
     </div>
@@ -108,234 +111,234 @@
 <script>
 'use strict';
 
-const ALLSPORTS_KEY = '8fea7d5de9a5e7147788af09cf1718a7260fc575a55415df87fae477e897f670';
-const BB_BASE = 'https://apiv2.allsportsapi.com/basketball/';
-
 const NBA_TEAMS = [
   {name:'Boston Celtics',   abbr:'BOS',wins:54,losses:18,ortg:121.1,drtg:110.3,pace:99.2, ha:3.2},
   {name:'Milwaukee Bucks',  abbr:'MIL',wins:46,losses:26,ortg:117.4,drtg:112.8,pace:100.1,ha:2.8},
-  {name:'Cleveland Cavs',   abbr:'CLE',wins:47,losses:25,ortg:115.6,drtg:110.1,pace:96.4, ha:2.5},
+  {name:'Cleveland Cavaliers',abbr:'CLE',wins:47,losses:25,ortg:115.6,drtg:110.1,pace:96.4,ha:2.5},
   {name:'New York Knicks',  abbr:'NYK',wins:44,losses:28,ortg:115.0,drtg:111.4,pace:97.8, ha:3.5},
   {name:'Indiana Pacers',   abbr:'IND',wins:42,losses:30,ortg:119.2,drtg:117.5,pace:104.6,ha:2.0},
-  {name:'Oklahoma City',    abbr:'OKC',wins:56,losses:16,ortg:119.6,drtg:108.2,pace:100.8,ha:3.0},
-  {name:'Denver Nuggets',   abbr:'DEN',wins:50,losses:22,ortg:118.5,drtg:111.0,pace:98.5, ha:4.0},
-  {name:'Minnesota Wolves', abbr:'MIN',wins:51,losses:21,ortg:115.7,drtg:108.4,pace:97.6, ha:3.1},
-  {name:'Dallas Mavericks', abbr:'DAL',wins:48,losses:24,ortg:119.1,drtg:112.3,pace:99.4, ha:2.7},
-  {name:'Phoenix Suns',     abbr:'PHX',wins:42,losses:30,ortg:114.8,drtg:113.6,pace:98.7, ha:2.5},
-  {name:'Golden State',     abbr:'GSW',wins:40,losses:32,ortg:115.8,drtg:114.2,pace:99.6, ha:3.3},
-  {name:'LA Lakers',        abbr:'LAL',wins:40,losses:32,ortg:115.3,drtg:114.6,pace:98.9, ha:2.9},
-  {name:'Philadelphia',     abbr:'PHI',wins:39,losses:33,ortg:116.1,drtg:114.2,pace:98.3, ha:2.2},
-  {name:'Sacramento Kings', abbr:'SAC',wins:42,losses:30,ortg:118.6,drtg:116.1,pace:103.2,ha:2.2},
+  {name:'Philadelphia 76ers',abbr:'PHI',wins:39,losses:33,ortg:116.1,drtg:114.2,pace:98.3,ha:2.2},
   {name:'Miami Heat',       abbr:'MIA',wins:39,losses:33,ortg:112.8,drtg:111.9,pace:96.8, ha:2.6},
   {name:'Orlando Magic',    abbr:'ORL',wins:44,losses:28,ortg:113.4,drtg:109.2,pace:98.1, ha:2.3},
+  {name:'Oklahoma City Thunder',abbr:'OKC',wins:56,losses:16,ortg:119.6,drtg:108.2,pace:100.8,ha:3.0},
+  {name:'Denver Nuggets',   abbr:'DEN',wins:50,losses:22,ortg:118.5,drtg:111.0,pace:98.5, ha:4.0},
+  {name:'Minnesota Timberwolves',abbr:'MIN',wins:51,losses:21,ortg:115.7,drtg:108.4,pace:97.6,ha:3.1},
+  {name:'Dallas Mavericks', abbr:'DAL',wins:48,losses:24,ortg:119.1,drtg:112.3,pace:99.4, ha:2.7},
+  {name:'Phoenix Suns',     abbr:'PHX',wins:42,losses:30,ortg:114.8,drtg:113.6,pace:98.7, ha:2.5},
+  {name:'Golden State Warriors',abbr:'GSW',wins:40,losses:32,ortg:115.8,drtg:114.2,pace:99.6,ha:3.3},
+  {name:'Los Angeles Lakers',abbr:'LAL',wins:40,losses:32,ortg:115.3,drtg:114.6,pace:98.9, ha:2.9},
+  {name:'Sacramento Kings', abbr:'SAC',wins:42,losses:30,ortg:118.6,drtg:116.1,pace:103.2,ha:2.2},
+  {name:'San Antonio Spurs',abbr:'SAS',wins:22,losses:50,ortg:111.2,drtg:118.4,pace:99.1, ha:1.8},
+  {name:'Chicago Bulls',    abbr:'CHI',wins:31,losses:41,ortg:113.6,drtg:115.2,pace:97.8, ha:2.0},
+  {name:'Toronto Raptors',  abbr:'TOR',wins:25,losses:47,ortg:112.1,drtg:116.8,pace:98.4, ha:1.9},
+  {name:'Washington Wizards',abbr:'WAS',wins:18,losses:54,ortg:109.4,drtg:119.6,pace:98.2, ha:1.6},
 ];
 
-let GAMES      = [];
-let FIXTURES   = [];
-let activeGame = null;
-let activeTab  = 'overview';
+let LIVE_DATA  = [];
+let FIX_DATA   = [];
+let ACTIVE     = null;
+let ACTIVE_TAB = 'overview';
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   const inp = document.getElementById('br-input');
   if (inp) { inp.value=getBankroll(); inp.addEventListener('change',e=>setBankroll(e.target.value)); }
-
-  // 1. Render simulation immediately
-  GAMES = generateGames();
-  renderLiveList();
-  setStatus('sim', `${GAMES.length} NBA games · fetching live data...`);
-
-  // 2. Try real API in background
-  tryRealAPI();
-  setTimeout(buildFixtures, 300);
+  loadLive();
 });
 
-// ── REAL API ──────────────────────────────────────────────────────────────────
-async function tryRealAPI() {
+// ── LOAD LIVE ─────────────────────────────────────────────────────────────────
+async function loadLive() {
+  setBanner('loading','Fetching games...');
+  showLoading('live-list');
   try {
-    const res  = await fetch(`${BB_BASE}?met=Livescore&APIkey=${ALLSPORTS_KEY}`);
+    const res  = await fetch('/api/sports?type=basketball-live');
     const json = await res.json();
-    if (json.success===1 && json.result?.length>0) {
-      const real = json.result.map(parseAPIGame).filter(Boolean);
-      if (real.length>0) {
-        GAMES = real;
-        renderLiveList();
-        setStatus('live',`${real.filter(g=>g.isLive).length} LIVE · ${real.length} total · AllSportsAPI`);
-        return;
-      }
-    }
-    // No live games — try today's fixtures
-    const today = new Date().toISOString().split('T')[0];
-    const res2  = await fetch(`${BB_BASE}?met=Fixtures&from=${today}&to=${today}&APIkey=${ALLSPORTS_KEY}`);
-    const json2 = await res2.json();
-    if (json2.success===1 && json2.result?.length>0) {
-      const fx = json2.result.slice(0,10).map(parseAPIGame).filter(Boolean);
-      if (fx.length>0) {
-        GAMES = fx.concat(GAMES.slice(0,4));
-        renderLiveList();
-        setStatus('live',`${fx.length} today's games · AllSportsAPI`);
-      }
-    }
-  } catch(e) { console.log('Basketball API unavailable'); }
+    if (!json.success) throw new Error(json.error || 'No data');
+    LIVE_DATA = json.data.map(parseGame).filter(Boolean);
+    if (LIVE_DATA.length === 0) throw new Error('No games returned');
+    LIVE_DATA.forEach(g => { Object.assign(g, computePred(g.home, g.away)); });
+    renderLiveList();
+    const liveCount = LIVE_DATA.filter(g=>g.isLive).length;
+    setBanner('live', liveCount > 0
+      ? `<strong>${liveCount} LIVE NOW</strong> · ${LIVE_DATA.length} total · AllSportsAPI`
+      : `${LIVE_DATA.length} ${json.source === 'today' ? 'today' : 'upcoming'} games · AllSportsAPI`);
+  } catch(e) {
+    document.getElementById('live-list').innerHTML = `<div class="empty-state"><strong>No games found</strong><br>${e.message}<br><br>Check the Fixtures tab.</div>`;
+    setBanner('sim','No live games right now');
+  }
 }
 
-function parseAPIGame(e) {
-  if (!e.event_home_team||!e.event_away_team) return null;
-  const parseScore = str=>{
-    if(!str) return {home:0,away:0};
-    const p=String(str).split('-').map(x=>parseInt(x.trim(),10));
-    return p.length===2&&!isNaN(p[0])?{home:p[0],away:p[1]}:{home:0,away:0};
+async function loadFixtures() {
+  showLoading('fix-list');
+  try {
+    const res  = await fetch('/api/sports?type=basketball-fixtures');
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error || 'No fixtures');
+    FIX_DATA = json.data.map(parseGame).filter(Boolean);
+    FIX_DATA.forEach(g => { Object.assign(g, computePred(g.home, g.away)); });
+    renderFixtures();
+  } catch(e) {
+    document.getElementById('fix-list').innerHTML = `<div class="empty-state"><strong>No fixtures found</strong><br>${e.message}</div>`;
+  }
+}
+
+// ── PARSE ─────────────────────────────────────────────────────────────────────
+function parseGame(e) {
+  if (!e.event_home_team || !e.event_away_team) return null;
+  const parseScore = str => {
+    if (!str) return null;
+    const p = String(str).split('-').map(x=>parseInt(x.trim(),10));
+    return p.length===2&&!isNaN(p[0])?{home:p[0],away:p[1]}:null;
   };
-  const statusRaw=String(e.event_status||'');
-  const isLive=e.event_live==='1';
-  const status=statusRaw.includes('Half')||statusRaw==='HT'?'HT':statusRaw==='Finished'||statusRaw.includes('After')?'FT':isLive?'LIVE':'NS';
-  const score=parseScore(e.event_final_result);
-  const sim=computeGamePred(e.event_home_team,e.event_away_team);
-  const qs=e.scores||{};
+  const statusRaw = String(e.event_status||'');
+  const isLive    = e.event_live==='1';
+  const status    = statusRaw.includes('Half')||statusRaw==='HT'?'HT':statusRaw==='Finished'||statusRaw.includes('After')?'FT':isLive?'LIVE':'NS';
+  const score     = parseScore(e.event_final_result);
+  const qs        = e.scores||{};
+  const today     = new Date(); today.setHours(0,0,0,0);
+  const matchDay  = new Date(e.event_date); matchDay.setHours(0,0,0,0);
+  const diff      = Math.round((matchDay-today)/86400000);
+  const dayLabel  = diff===0?'TODAY':diff===1?'TOMORROW':diff===-1?'YESTERDAY':matchDay.toLocaleDateString('en-GB',{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
   return {
     id:String(e.event_key), home:e.event_home_team, away:e.event_away_team,
-    league:e.league_name||'NBA', kickoff:e.event_time||'',
-    status, isLive, score,
+    league:e.league_name||'Basketball', kickoff:e.event_time||'',
+    date:e.event_date||'', dayLabel, status, isLive,
+    score:score||{home:0,away:0}, hasScore:!!score,
     quarters:{
       q1:qs['1stQuarter']?.[0]||null, q2:qs['2ndQuarter']?.[0]||null,
       q3:qs['3rdQuarter']?.[0]||null, q4:qs['4thQuarter']?.[0]||null,
     },
-    isReal:true, ...sim,
   };
 }
 
-// ── SIMULATION ────────────────────────────────────────────────────────────────
-function generateGames() {
-  const used=new Set(); const games=[];
-  while(games.length<8){
-    const hi=Math.floor(Math.random()*NBA_TEAMS.length), ai=Math.floor(Math.random()*NBA_TEAMS.length);
-    if(hi===ai||used.has(hi)||used.has(ai)) continue;
-    used.add(hi);used.add(ai);
-    const h=NBA_TEAMS[hi],a=NBA_TEAMS[ai];
-    const pred=computeGamePred(h.name,a.name);
-    const statuses=['LIVE','LIVE','LIVE','HT','NS','NS','FT','LIVE'];
-    const st=statuses[games.length%statuses.length];
-    const simScore=st==='NS'?{home:0,away:0}:st==='FT'?{home:98+Math.random()*30|0,away:95+Math.random()*30|0}:{home:55+Math.random()*30|0,away:52+Math.random()*30|0};
-    const qBase=pred.expTotal/4;
-    games.push({
-      id:String(games.length+1), home:h.name, away:a.name,
-      homeAbbr:h.abbr, awayAbbr:a.abbr,
-      homeRecord:`${h.wins}-${h.losses}`, awayRecord:`${a.wins}-${a.losses}`,
-      league:'NBA', kickoff:['19:30','20:00','20:30','21:00'][games.length%4],
-      status:st, isLive:st==='LIVE', score:simScore,
-      quarters:{q1:st!=='NS'?+(qBase+Math.random()*6-3).toFixed(0):null,q2:st==='FT'||st==='HT'?+(qBase+Math.random()*6-3).toFixed(0):null,q3:st==='FT'?+(qBase+Math.random()*6-3).toFixed(0):null,q4:st==='FT'?+(qBase+Math.random()*6-3).toFixed(0):null},
-      isReal:false, ...pred,
-    });
-  }
-  return games;
-}
-
-function computeGamePred(homeName, awayName) {
-  const find=name=>NBA_TEAMS.find(t=>name.toLowerCase().includes(t.name.toLowerCase())||t.name.toLowerCase().includes(name.toLowerCase().split(' ').pop().toLowerCase()));
-  const h=find(homeName),a=find(awayName);
-  if(!h||!a) return {homeWin:52,awayWin:48,spread:-2.5,expTotal:220,overProb:55,underProb:45,spreadCoverHome:52,spreadCoverAway:48,homeOrtg:116,homeDrtg:113,awayOrtg:115,awayDrtg:114,homeNet:3,awayNet:1,bestPick:'Home ML',bestProb:52,edgeValue:5,edgeLbl:'WEAK',conf:55,reasons:['Limited data']};
-  const hNet=h.ortg-h.drtg+h.ha, aNet=a.ortg-a.drtg;
-  const diff=hNet-aNet;
+// ── PREDICTION ENGINE ─────────────────────────────────────────────────────────
+function computePred(homeName, awayName) {
+  const find = name => {
+    const n = name.toLowerCase();
+    return NBA_TEAMS.find(t => n.includes(t.name.toLowerCase().split(' ').pop()) || t.name.toLowerCase().includes(n.split(' ').pop()));
+  };
+  const h = find(homeName), a = find(awayName);
+  if (!h || !a) return {homeWin:52,awayWin:48,spread:-2,expTotal:220,overProb:52,underProb:48,spreadCoverHome:52,spreadCoverAway:48,homeOrtg:116,homeDrtg:113,awayOrtg:115,awayDrtg:114,homeNet:3,awayNet:1,bestPick:'Home ML',bestProb:52,edgeValue:4,edgeLbl:'WEAK',conf:52,reasons:['Teams not in database']};
+  const hNet=h.ortg-h.drtg+h.ha, aNet=a.ortg-a.drtg, diff=hNet-aNet;
   const hWin=Math.min(88,Math.max(12,Math.round(50+diff*2.5)));
   const aWin=100-hWin;
   const avgPace=(h.pace+a.pace)/2;
   const expTotal=+(avgPace*(h.ortg+a.drtg+a.ortg+h.drtg)/4/100).toFixed(1);
-  const spread=+(diff*0.38).toFixed(1);
+  const spread=+(diff*.38).toFixed(1);
   const overProb=Math.min(80,Math.max(20,Math.round(50+(avgPace-98.5)*4)));
-  const mktWin=Math.max(5,hWin+Math.round((Math.random()-0.5)*10));
+  const mktWin=Math.max(5,hWin+Math.round((Math.random()-.5)*10));
   const edgePct=+(hWin-mktWin).toFixed(1);
   const edgeLbl=Math.abs(edgePct)>7?'STRONG':Math.abs(edgePct)>3?'MEDIUM':'WEAK';
-  const bestPick=Math.abs(edgePct)>Math.abs(overProb-50)?edgePct>0?`${h.name} ML`:`${a.name} ML`:`Over ${expTotal}`;
-  const bestProb=Math.abs(edgePct)>Math.abs(overProb-50)?edgePct>0?hWin:aWin:overProb;
+  const bestPick=Math.abs(edgePct)>Math.abs(overProb-50)?(edgePct>0?`${h.name} ML`:`${a.name} ML`):`Over ${expTotal}`;
+  const bestProb=Math.abs(edgePct)>Math.abs(overProb-50)?(edgePct>0?hWin:aWin):overProb;
   const reasons=[];
   if(h.wins>a.wins) reasons.push(`${h.name} better record (${h.wins}-${h.losses} vs ${a.wins}-${a.losses})`);
   else reasons.push(`${a.name} stronger record`);
   if(h.ortg>a.ortg) reasons.push(`${h.name} superior offensive rating (${h.ortg} vs ${a.ortg})`);
   if(h.drtg<a.drtg) reasons.push(`${h.name} better defensive rating`);
   reasons.push(`Home court worth +${h.ha} pts to ${h.name}`);
-  if(avgPace>100) reasons.push(`Fast pace (${avgPace.toFixed(0)}) — lean Over`);
-  return {homeWin:hWin,awayWin:aWin,spread,expTotal,overProb,underProb:100-overProb,spreadCoverHome:Math.min(72,Math.max(30,Math.round(52+diff*1.5))),spreadCoverAway:100-Math.min(72,Math.max(30,Math.round(52+diff*1.5))),homeOrtg:h.ortg,homeDrtg:h.drtg,awayOrtg:a.ortg,awayDrtg:a.drtg,homeNet:+hNet.toFixed(1),awayNet:+aNet.toFixed(1),homeRecord:h?`${h.wins}-${h.losses}`:'',awayRecord:a?`${a.wins}-${a.losses}`:'',bestPick,bestProb,edgeValue:+Math.abs(edgePct).toFixed(1),edgeLbl,conf:Math.min(95,Math.round(50+Math.abs(diff)*3)),reasons};
+  if(avgPace>100) reasons.push(`Fast pace (${avgPace.toFixed(0)}) — lean Over ${expTotal}`);
+  return {homeWin:hWin,awayWin:aWin,spread,expTotal,overProb,underProb:100-overProb,spreadCoverHome:Math.min(72,Math.max(30,Math.round(52+diff*1.5))),spreadCoverAway:100-Math.min(72,Math.max(30,Math.round(52+diff*1.5))),homeOrtg:h.ortg,homeDrtg:h.drtg,awayOrtg:a.ortg,awayDrtg:a.drtg,homeNet:+hNet.toFixed(1),awayNet:+aNet.toFixed(1),homeRecord:`${h.wins}-${h.losses}`,awayRecord:`${a.wins}-${a.losses}`,bestPick,bestProb,edgeValue:+Math.abs(edgePct).toFixed(1),edgeLbl,conf:Math.min(95,Math.round(50+Math.abs(diff)*3)),reasons};
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
 function renderLiveList() {
   const el=document.getElementById('live-list'); if(!el) return;
-  if(!GAMES.length){el.innerHTML='<div class="empty-state">No games available</div>';return;}
-  el.innerHTML=GAMES.map(g=>buildGameCard(g)).join('');
+  el.innerHTML=LIVE_DATA.map(g=>buildCard(g)).join('');
 }
 
-function buildGameCard(g) {
-  const stCls=g.isLive?'live':g.status==='FT'?'ft':'ns';
-  const stTxt=g.isLive?`Q${Math.ceil(g.score.home/30)||2}`:g.status==='FT'?'FT':g.kickoff||'—';
-  const edgeCls=g.edgeLbl==='STRONG'?'has-edge':g.edgeLbl==='MEDIUM'?'medium-edge':'';
+function buildCard(g) {
+  const stCls=g.isLive?'live':g.status==='FT'?'ft':'upcoming';
+  const stTxt=g.isLive?`LIVE`:g.status==='FT'?'FT':g.kickoff||'—';
+  const scoreTxt=g.hasScore?`${g.score.home} – ${g.score.away}`:'vs';
+  const scoreCls=g.hasScore?'':'ns';
+  const q=g.quarters||{};
+  const hasQ=q.q1||q.q2;
+  const ecls=g.edgeLbl==='STRONG'?'has-edge':'';
   return `
-  <div class="bmc ${edgeCls}" onclick="openHub('${g.id}')">
-    <div class="bmc-top">
-      <div class="bmc-teams">
-        <div class="bmc-team">${g.home}<br><span style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);font-weight:400">${g.homeRecord||''}</span></div>
-        <div class="bmc-score">${g.score.home}–${g.score.away}</div>
-        <div class="bmc-team away">${g.away}<br><span style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);font-weight:400">${g.awayRecord||''}</span></div>
-      </div>
-      <div class="bmc-badge">
+  <div class="gcard ${stCls} ${ecls}" onclick="openHub('${g.id}')">
+    <div class="gc-top">
+      <div class="gc-home">${g.home}<span class="rec">${g.homeRecord||''}</span></div>
+      <div class="gc-score ${scoreCls}">${scoreTxt}</div>
+      <div class="gc-away">${g.away}<span class="rec">${g.awayRecord||''}</span></div>
+      <div class="gc-right">
         ${g.isLive?'<span class="live-pill"><span class="live-dot"></span>LIVE</span>':''}
-        <div class="status-pill ${stCls}">${stTxt}</div>
-        <div class="spread-badge">${g.spread>0?'+':''}${g.spread}</div>
+        <div class="status-tag ${stCls}">${stTxt}</div>
+        <div class="gc-league">${g.league}</div>
       </div>
     </div>
-    <div class="prob-wrap">
-      <div class="prob-row"><span class="prob-label" style="width:80px">${g.home}</span><div class="prob-bar-wrap"><div class="prob-bar home" style="width:${g.homeWin}%"></div></div><span class="prob-pct">${g.homeWin}%</span></div>
-      <div class="prob-row"><span class="prob-label" style="width:80px">${g.away}</span><div class="prob-bar-wrap"><div class="prob-bar away" style="width:${g.awayWin}%"></div></div><span class="prob-pct">${g.awayWin}%</span></div>
+    ${hasQ?`<div class="qtr-strip">
+      ${['q1','q2','q3','q4'].map((k,i)=>q[k]?`<div class="qtr-cell"><div class="ql">Q${i+1}</div><div class="qv">${q[k]}</div></div>`:'').join('')}
+    </div>`:''}
+    <div class="pred-strip">
+      <div class="stat-chip">H ${g.homeWin}%</div>
+      <div class="stat-chip">A ${g.awayWin}%</div>
+      <div class="stat-chip">SPR ${g.spread>0?'+':''}${g.spread}</div>
+      <div class="stat-chip">O/U ${g.expTotal}</div>
+      <div class="stat-chip">OVER ${g.overProb}%</div>
+      ${g.edgeLbl!=='WEAK'?`<div class="value-badge ${edgeClass(g.edgeLbl)}" style="padding:2px 7px;"><div class="value-dot"></div>${g.edgeLbl}</div>`:''}
     </div>
-    <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:6px">
-      <span>O/U ${g.expTotal} · ${g.overProb}% OVER</span>
-      <span>Tap for full hub →</span>
-    </div>
+    <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:6px;text-align:right">Tap for full analysis →</div>
   </div>`;
 }
 
-function setStatus(mode, txt) {
-  const b=document.getElementById('live-status'),t=document.getElementById('live-status-txt');
-  if(!b||!t) return;
-  b.className=mode==='live'?'odds-api-banner live':'odds-api-banner sim';
-  b.querySelector('.oab-dot').className=`oab-dot ${mode==='live'?'live':'sim'}`;
-  t.innerHTML=txt;
+function renderFixtures() {
+  const el=document.getElementById('fix-list'); if(!el) return;
+  const grouped={};
+  FIX_DATA.forEach(g=>{if(!grouped[g.dayLabel])grouped[g.dayLabel]=[];grouped[g.dayLabel].push(g);});
+  el.innerHTML=Object.entries(grouped).map(([day,games])=>`
+    <div class="calendar-day">
+      <div class="cal-day-header"><span class="cal-day-label">${day}</span><span class="cal-day-count">${games.length} GAMES</span><div style="flex:1;height:1px;background:var(--border)"></div></div>
+      ${games.map(g=>{const ec=g.edgeLbl==='STRONG'?'has-edge':g.edgeLbl==='MEDIUM'?'medium-edge':'';
+        return `<div class="fixture-row ${ec}" onclick="openHub('${g.id}','fix')">
+          <div class="fr-time">${g.kickoff}</div>
+          <div class="fr-teams"><div class="fr-match">${g.home} vs ${g.away}</div><div class="fr-league">${g.league} · SPR ${g.spread>0?'+':''}${g.spread} · O/U ${g.expTotal}</div></div>
+          <div class="fr-probs">
+            <span class="fr-p ${g.homeWin>g.awayWin?'best':''}">${g.homeWin}%</span>
+            <span class="fr-p ${g.awayWin>=g.homeWin?'best':''}">${g.awayWin}%</span>
+          </div>
+          ${g.edgeLbl!=='WEAK'?`<span class="fr-edge ${g.edgeLbl.toLowerCase()}">+${g.edgeValue}%</span>`:''}
+          <span class="fr-arrow">›</span>
+        </div>`;}).join('')}
+    </div>`).join('');
 }
 
 // ── HUB ───────────────────────────────────────────────────────────────────────
-function openHub(id) {
-  activeGame=GAMES.find(g=>String(g.id)===String(id)); if(!activeGame) return;
-  activeTab='overview';
+function openHub(id, src) {
+  const pool = src==='fix' ? FIX_DATA : LIVE_DATA;
+  ACTIVE = pool.find(g=>String(g.id)===String(id)); if(!ACTIVE) return;
+  ACTIVE_TAB = src==='fix'?'analysis':'overview';
   document.getElementById('game-hub').style.display='flex';
-  document.getElementById('hh-home').textContent=activeGame.home;
-  document.getElementById('hh-away').textContent=activeGame.away;
-  document.getElementById('hh-score').textContent=`${activeGame.score.home} – ${activeGame.score.away}`;
-  document.getElementById('hh-status').textContent=activeGame.isLive?'🔴 LIVE':activeGame.status==='FT'?'FULL TIME':activeGame.kickoff||'Upcoming';
+  document.getElementById('hh-home').textContent=ACTIVE.home;
+  document.getElementById('hh-away').textContent=ACTIVE.away;
+  document.getElementById('hh-score').textContent=ACTIVE.hasScore?`${ACTIVE.score.home} – ${ACTIVE.score.away}`:'vs';
+  document.getElementById('hh-status').textContent=ACTIVE.isLive?'🔴 LIVE':ACTIVE.status==='FT'?'FULL TIME':ACTIVE.kickoff||'Upcoming';
   document.querySelectorAll('.hub-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('ht-overview').classList.add('active');
-  renderHubTab('overview');
+  document.getElementById('ht-'+ACTIVE_TAB).classList.add('active');
+  renderHubTab(ACTIVE_TAB);
 }
 
-function closeHub() { document.getElementById('game-hub').style.display='none'; activeGame=null; }
+function closeHub() { document.getElementById('game-hub').style.display='none'; ACTIVE=null; }
 
 function hubTab(tab) {
-  activeTab=tab;
+  ACTIVE_TAB=tab;
   document.querySelectorAll('.hub-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('ht-'+tab).classList.add('active');
   renderHubTab(tab);
 }
 
 function renderHubTab(tab) {
-  const g=activeGame; if(!g) return;
+  const g=ACTIVE; if(!g) return;
   const body=document.getElementById('hub-body');
 
   if (tab==='overview') {
     const nrRow=(lbl,hv,av,lo=true)=>{
-      const hc=lo?(hv<av?'var(--neon)':'var(--red)'):(hv>av?'var(--neon)':'var(--red)');
-      const ac=lo?(av<hv?'var(--neon)':'var(--red)'):(av>hv?'var(--neon)':'var(--red)');
-      const range=lo?[105,125]:[105,122];
-      const hpct=((hv-range[0])/(range[1]-range[0])*100).toFixed(0);
-      const apct=((av-range[0])/(range[1]-range[0])*100).toFixed(0);
-      return `<div class="nr-row"><span class="nr-lbl">${lbl}</span><span class="nr-hv" style="color:${hc}">${hv}</span><div class="nr-bar"><div class="nr-fill" style="width:${hpct}%;background:${hc}"></div></div><div class="nr-bar"><div class="nr-fill" style="width:${apct}%;background:${ac};float:right"></div></div><span class="nr-av" style="color:${ac}">${av}</span></div>`;
+      const range=lo?[105,122]:[105,125];
+      const hpct=Math.max(0,Math.min(100,((hv-range[0])/(range[1]-range[0])*100))).toFixed(0);
+      const apct=Math.max(0,Math.min(100,((av-range[0])/(range[1]-range[0])*100))).toFixed(0);
+      const hBetter=lo?(hv<av):(hv>av);
+      const hcol=hBetter?'var(--neon)':'var(--red)';
+      const acol=!hBetter?'var(--neon)':'var(--red)';
+      return `<div class="nr-row"><span class="nr-lbl">${lbl}</span><span class="nr-hv" style="color:${hcol}">${hv}</span><div class="nr-bar"><div class="nr-fill" style="width:${hpct}%;background:${hcol}"></div></div><div class="nr-bar"><div class="nr-fill" style="width:${apct}%;background:${acol};float:right"></div></div><span class="nr-av" style="color:${acol}">${av}</span></div>`;
     };
     body.innerHTML=`
       <div class="section-header" style="margin-top:0"><div class="section-title" style="font-size:14px">Win Probability</div></div>
@@ -351,15 +354,17 @@ function renderHubTab(tab) {
           <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:2px">${g.overProb}% OVER</div>
         </div>
       </div>
-      <div class="section-header"><div class="section-title" style="font-size:14px">Net Rating Comparison</div></div>
+      <div class="section-header"><div class="section-title" style="font-size:14px">Net Rating</div></div>
       <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;font-weight:700;margin-bottom:8px">
         <span style="color:var(--neon)">${g.home}</span><span style="color:#a855f7">${g.away}</span>
       </div>
       ${nrRow('ORTG',g.homeOrtg,g.awayOrtg,false)}
       ${nrRow('DRTG',g.homeDrtg,g.awayDrtg,true)}
-      <div class="stat-chips" style="margin-top:10px">
+      <div class="stat-chips" style="margin-top:8px">
         <div class="stat-chip">H NET <span style="color:${g.homeNet>g.awayNet?'var(--neon)':'var(--red)'}">+${g.homeNet}</span></div>
         <div class="stat-chip">A NET <span style="color:${g.awayNet>g.homeNet?'var(--neon)':'var(--red)'}">+${g.awayNet}</span></div>
+        <div class="stat-chip">H REC <span>${g.homeRecord}</span></div>
+        <div class="stat-chip">A REC <span>${g.awayRecord}</span></div>
       </div>
       <div class="ai-explain" style="margin-top:12px">
         <div class="ai-explain-title">⚡ ANALYSIS</div>
@@ -372,7 +377,6 @@ function renderHubTab(tab) {
     const kpct=(g.homeWin/100>0.5)?((2*(g.homeWin/100)-1)*0.25*100).toFixed(1):'0.0';
     const ec=edgeClass(g.edgeLbl);
     body.innerHTML=`
-      <div class="section-header" style="margin-top:0"><div class="section-title" style="font-size:14px">Best Pick</div></div>
       <div class="value-box ${ec}" style="margin-bottom:12px">
         <div><div class="vb-pick">📌 ${g.bestPick}</div><div class="vb-sub">Model ${g.bestProb}% · Edge +${g.edgeValue}%</div></div>
         <div class="edge-label-big ${ec}">${g.edgeLbl}</div>
@@ -388,22 +392,19 @@ function renderHubTab(tab) {
 
   else if (tab==='quarters') {
     const q=g.quarters||{};
-    const qCells=['q1','q2','q3','q4'].map((k,i)=>`
-      <div class="qtr-cell"><div class="ql">Q${i+1}</div><div class="qv">${q[k]||'—'}</div></div>`).join('');
+    const predBase=g.expTotal/4;
     body.innerHTML=`
       <div class="section-header" style="margin-top:0"><div class="section-title" style="font-size:14px">Quarter Scores</div></div>
-      <div class="qtr-row">${qCells}</div>
+      ${q.q1||q.q2?`<div class="qtr-strip">${['q1','q2','q3','q4'].map((k,i)=>`<div class="qtr-cell"><div class="ql">Q${i+1}</div><div class="qv">${q[k]||'—'}</div></div>`).join('')}</div>`:'<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);padding:10px 0">Quarter scores not yet available</div>'}
       <div class="section-header" style="margin-top:14px"><div class="section-title" style="font-size:14px">Quarter Predictions</div></div>
-      ${['Q1','Q2','Q3','Q4'].map((q,i)=>{
-        const total=g.expTotal;
-        const qTotal=(total*(0.245+i*0.003+Math.random()*0.01)).toFixed(1);
-        const hpct=Math.round(g.homeWin*0.9+Math.random()*8);
+      ${[1,2,3,4].map(q=>{
+        const qt=+(predBase+(Math.random()-.5)*4).toFixed(1);
+        const hp=Math.round(g.homeWin*.88+Math.random()*8);
         return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
-          <div style="font-family:var(--font-mono);font-size:11px;font-weight:700">${q}</div>
-          <div style="font-family:var(--font-mono);font-size:10px;color:var(--neon2)">${qTotal} pts predicted</div>
-          <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">H ${hpct}% · A ${100-hpct}%</div>
-        </div>`;
-      }).join('')}`;
+          <div style="font-family:var(--font-mono);font-size:11px;font-weight:700">Q${q}</div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--neon2)">${qt} pts</div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">H ${hp}% · A ${100-hp}%</div>
+        </div>`;}).join('')}`;
   }
 
   else if (tab==='markets') {
@@ -414,103 +415,22 @@ function renderHubTab(tab) {
       {label:`Spread ${g.spread<0?'+':''}${-g.spread} (Away)`,prob:g.spreadCoverAway,odds:'1.91'},
       {label:`Over ${g.expTotal}`,prob:g.overProb,odds:'1.91'},
       {label:`Under ${g.expTotal}`,prob:g.underProb,odds:'1.91'},
-      {label:'H1 Home Win',prob:Math.min(78,Math.round(g.homeWin*1.05)),odds:(1/(g.homeWin*1.05/100)).toFixed(2)},
-      {label:`H1 Over ${(g.expTotal*0.52).toFixed(1)}`,prob:Math.round(g.overProb+Math.random()*8-4),odds:'1.91'},
+      {label:'1st Half Home Win',prob:Math.min(76,Math.round(g.homeWin*1.04)),odds:(1/(Math.min(76,g.homeWin*1.04)/100)).toFixed(2)},
+      {label:`1st Half Over ${(g.expTotal*.52).toFixed(1)}`,prob:Math.round(g.overProb+(Math.random()*6-3)),odds:'1.91'},
     ];
     body.innerHTML=`
       <div class="section-header" style="margin-top:0"><div class="section-title" style="font-size:14px">All Markets</div></div>
       <table class="markets-table">
         <thead><tr><th>MARKET</th><th>MODEL%</th><th>ODDS</th><th>EV</th><th>EDGE</th></tr></thead>
         <tbody>${mkts.map(mk=>{
-          const bmImpl=decimalToImplied(parseFloat(mk.odds))*100;
+          const bImpl=decimalToImplied(parseFloat(mk.odds))*100;
           const ev=+calcEV(mk.prob/100,parseFloat(mk.odds)).toFixed(3);
-          const edge=+(mk.prob-bmImpl).toFixed(1);
+          const edge=+(mk.prob-bImpl).toFixed(1);
           const el=edge>5?'STRONG':edge>2?'MEDIUM':'WEAK';
-          return `<tr><td class="td-val">${mk.label}</td><td class="td-prob">${mk.prob}%</td><td class="td-val">${mk.odds}</td><td class="td-ev ${ev>0?'pos':ev<-0.05?'neg':'mid'}">${ev>0?'+':''}${ev}</td><td class="td-edge ${el.toLowerCase()}">${edge>0?'+':''}${edge}%</td></tr>`;
+          return `<tr><td class="td-val">${mk.label}</td><td class="td-prob">${mk.prob}%</td><td class="td-val">${mk.odds}</td><td class="td-ev ${ev>0?'pos':ev<-.05?'neg':'mid'}">${ev>0?'+':''}${ev}</td><td class="td-edge ${el.toLowerCase()}">${edge>0?'+':''}${edge}%</td></tr>`;
         }).join('')}</tbody>
       </table>`;
   }
-}
-
-// ── FIXTURES ──────────────────────────────────────────────────────────────────
-function buildFixtures() {
-  FIXTURES = generateFixtureList();
-  tryFixturesAPI();
-}
-
-async function tryFixturesAPI() {
-  try {
-    const today=new Date().toISOString().split('T')[0];
-    const d4=new Date();d4.setDate(d4.getDate()+4);
-    const to=d4.toISOString().split('T')[0];
-    const res=await fetch(`${BB_BASE}?met=Fixtures&from=${today}&to=${to}&APIkey=${ALLSPORTS_KEY}`);
-    const json=await res.json();
-    if(json.success===1&&json.result?.length>0){
-      FIXTURES=json.result.slice(0,20).map((e,i)=>({
-        id:i+1,home:e.event_home_team,away:e.event_away_team,
-        league:e.league_name||'Basketball',kickoff:e.event_time||'TBC',
-        dayLabel:['TODAY','TOMORROW','DAY 3','DAY 4'][i%4],
-        status:'NS',...computeGamePred(e.event_home_team,e.event_away_team),
-        score:{home:0,away:0},quarters:{},isReal:true,
-      }));
-      if(document.getElementById('pnl-fixtures').style.display!=='none') renderFixtures();
-    }
-  } catch(e){}
-}
-
-function generateFixtureList() {
-  const used=new Set(),fixtures=[];
-  const days=['TODAY','TOMORROW','DAY 3','DAY 4'];
-  while(fixtures.length<12){
-    const hi=Math.floor(Math.random()*NBA_TEAMS.length),ai=Math.floor(Math.random()*NBA_TEAMS.length);
-    if(hi===ai||used.has(hi)||used.has(ai)) continue;
-    used.add(hi);used.add(ai);
-    const h=NBA_TEAMS[hi],a=NBA_TEAMS[ai];
-    fixtures.push({
-      id:fixtures.length+1,home:h.name,away:a.name,
-      homeRecord:`${h.wins}-${h.losses}`,awayRecord:`${a.wins}-${a.losses}`,
-      league:'NBA',kickoff:['19:30','20:00','20:30','21:00'][fixtures.length%4],
-      dayLabel:days[fixtures.length%4],status:'NS',
-      score:{home:0,away:0},quarters:{},...computeGamePred(h.name,a.name),isReal:false,
-    });
-  }
-  return fixtures;
-}
-
-function renderFixtures() {
-  const cal=document.getElementById('fix-cal'); if(!cal) return;
-  const grouped={};
-  FIXTURES.forEach(g=>{if(!grouped[g.dayLabel])grouped[g.dayLabel]=[];grouped[g.dayLabel].push(g);});
-  cal.innerHTML=Object.entries(grouped).map(([day,games])=>`
-    <div class="calendar-day">
-      <div class="cal-day-header"><span class="cal-day-label">${day}</span><span class="cal-day-count">${games.length} GAMES</span><div style="flex:1;height:1px;background:var(--border)"></div></div>
-      ${games.map(g=>{
-        const ec=g.edgeLbl==='STRONG'?'has-edge':g.edgeLbl==='MEDIUM'?'medium-edge':'';
-        return `<div class="fixture-row ${ec}" onclick="openFixtureHub(${g.id})">
-          <div class="fr-time">${g.kickoff}</div>
-          <div class="fr-teams"><div class="fr-match">${g.home} vs ${g.away}</div><div class="fr-league">NBA · Spread: ${g.spread>0?'+':''}${g.spread} · O/U ${g.expTotal}</div></div>
-          <div class="fr-probs">
-            <span class="fr-p ${g.homeWin>g.awayWin?'best':''}">${g.homeWin}%</span>
-            <span class="fr-p ${g.awayWin>=g.homeWin?'best':''}">${g.awayWin}%</span>
-          </div>
-          ${g.edgeLbl!=='WEAK'?`<span class="fr-edge ${g.edgeLbl.toLowerCase()}">+${g.edgeValue}%</span>`:''}
-          <span class="fr-arrow">›</span>
-        </div>`;
-      }).join('')}
-    </div>`).join('');
-}
-
-function openFixtureHub(id) {
-  const f=FIXTURES.find(x=>x.id===id); if(!f) return;
-  activeGame={...f,isLive:false};
-  document.getElementById('game-hub').style.display='flex';
-  document.getElementById('hh-home').textContent=f.home;
-  document.getElementById('hh-away').textContent=f.away;
-  document.getElementById('hh-score').textContent='— vs —';
-  document.getElementById('hh-status').textContent=f.kickoff||'Upcoming';
-  document.querySelectorAll('.hub-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('ht-analysis').classList.add('active');
-  activeTab='analysis'; renderHubTab('analysis');
 }
 
 function showTab(tab) {
@@ -518,10 +438,22 @@ function showTab(tab) {
   document.getElementById('pnl-fixtures').style.display=tab==='fixtures'?'':'none';
   document.getElementById('tb-live').className    ='tab-btn'+(tab==='live'?' active':'');
   document.getElementById('tb-fixtures').className='tab-btn'+(tab==='fixtures'?' active':'');
-  if(tab==='fixtures'){if(!FIXTURES.length)buildFixtures();else renderFixtures();}
+  if(tab==='fixtures'&&FIX_DATA.length===0) loadFixtures();
+  else if(tab==='fixtures') renderFixtures();
 }
 
-function refresh() { tryRealAPI(); if(document.getElementById('pnl-fixtures').style.display!=='none') tryFixturesAPI(); }
+function setBanner(mode,txt){
+  const b=document.getElementById('live-banner'),d=document.getElementById('banner-dot'),t=document.getElementById('banner-txt');
+  if(!b) return;
+  b.className=mode==='live'?'odds-api-banner live':'odds-api-banner sim';
+  if(d) d.className=`oab-dot ${mode==='live'?'live':'sim'}`;
+  if(t) t.innerHTML=txt;
+}
+
+function refresh(){
+  if(document.getElementById('pnl-fixtures').style.display!=='none') loadFixtures();
+  else loadLive();
+}
 </script>
 </body>
 </html>
