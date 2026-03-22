@@ -212,6 +212,19 @@ module.exports = async (req, res) => {
         return res.json({ success: false, error: 'No fixtures found' });
       }
 
+      case 'football-predictions': {
+        if (!id) return res.json({ success: false, error: 'Missing id' });
+        const data = await get(FB_BASE + '/predictions', { fixture: id });
+        if (data.response?.length > 0) return res.json({ success: true, data: data.response[0] });
+        return res.json({ success: false, error: 'No predictions available' });
+      }
+
+      case 'football-players': {
+        if (!id) return res.json({ success: false, error: 'Missing id' });
+        const data = await get(FB_BASE + '/fixtures/players', { fixture: id });
+        return res.json({ success: true, data: data.response || [] });
+      }
+
       default:
         return res.status(400).json({ success: false, error: `Unknown type: ${type}` });
     }
@@ -336,5 +349,5 @@ function get(url, params={}) {
       });
     }).on('error',reject);
   });
-                        }
+            }
           
