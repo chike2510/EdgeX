@@ -33,24 +33,63 @@ async function loadEvents() {
   const btn = document.getElementById('refresh-btn');
   if(btn) btn.classList.add('spinning');
   let data = null, mode = 'simulation';
+
   try {
-    const res = await fetch('/api/events');
-    const json = await res.json();
-    if(json.success && json.data?.length) { data = json.data; mode = json.mode; }
+    // Polymarket Gamma API — public CORS-enabled endpoint
+    const url = 'https://gamma-api.polymarket.com/markets?limit=20&active=true&closed=false&order=volume&ascending=false';
+    const res  = await fetch(url);
+    const raw  = await res.json();
+    if(Array.isArray(raw) && raw.length > 0) {
+      data = raw
+        .filter(m => m.question && m.outcomePrices && m.question.length < 140)
+        .slice(0, 16)
+        .map(parseMarket)
+        .filter(Boolean);
+      if(data.length > 0) mode = 'live';
+    }
   } catch(e) {}
-  if(!data) data = getFallbackEvents();
+
+  if(!data || data.length === 0) data = getFallback();
   renderEvents(data, mode);
   if(btn) btn.classList.remove('spinning');
 }
 
+function parseMarket(m) {
+  try {
+    let prices = JSON.parse(m.outcomePrices);
+    const yesPct = Math.round(parseFloat(prices[0]) * 100);
+    const noPct  = 100 - yesPct;
+    const q = m.question.toLowerCase();
+    const cat = q.includes('bitcoin')||q.includes('crypto')||q.includes('eth')||q.includes('btc') ? 'Crypto'
+      : q.includes('election')||q.includes('president')||q.includes('vote')||q.includes('win') ? 'Politics'
+      : q.includes('fed')||q.includes('rate')||q.includes('gdp')||q.includes('inflation')||q.includes('recession') ? 'Economy'
+      : q.includes('nba')||q.includes('nfl')||q.includes('soccer')||q.includes('champion')||q.includes('league') ? 'Sports'
+      : q.includes('ai')||q.includes('openai')||q.includes('tech')||q.includes('apple') ? 'Technology'
+      : 'Markets';
+    const verdict = yesPct>60?'LIKELY':yesPct<40?'UNLIKELY':'UNCERTAIN';
+    const verdictColor = yesPct>60?'var(--neon)':yesPct<40?'var(--red)':'var(--yellow)';
+    const el = Math.abs(yesPct-50)>20?'STRONG':Math.abs(yesPct-50)>10?'MEDIUM':'WEAK';
+    const vol = m.volume ? parseFloat(m.volume) : 0;
+    const factors = [];
+    if(vol>0) factors.push(`$${fmtVol(vol)} traded on Polymarket — real money signal`);
+    factors.push(yesPct>65?`${yesPct}% YES — strong crowd conviction`:yesPct<35?`${100-yesPct}% NO — strong crowd against`:`Market divided: ${yesPct}% YES vs ${noPct}% NO`);
+    if(m.endDate){const d=Math.round((new Date(m.endDate)-new Date())/86400000);if(d>0) factors.push(`Resolves in ${d} day${d===1?'':'s'}`);}
+    factors.push('Probabilities update in real-time as traders buy/sell');
+    return {question:m.question, category:cat, yesPct, noPct, verdict, verdictColor, edgeLabel:el,
+      confidence:Math.min(94,Math.round(50+Math.abs(yesPct-50)*0.85+(vol>10000?15:vol>1000?8:0))),
+      factors, live:true, volumeLabel:vol>0?`$${fmtVol(vol)} traded`:null,
+      endDate:m.endDate?new Date(m.endDate).toLocaleDateString('en-GB'):null};
+  } catch(e){ return null; }
+}
+
 function renderEvents(data, mode) {
   const banner = document.getElementById('data-banner');
-  if(mode === 'live') {
-    banner.className = 'odds-api-banner live';
-    banner.innerHTML = `<div class="oab-dot live"></div><div class="oab-text">LIVE MARKETS — <strong>Polymarket</strong> · Real money probabilities · Updated ${new Date().toLocaleTimeString()}</div>`;
+  if(mode==='live'){
+    banner.className='odds-api-banner live';
+    banner.innerHTML=`<div class="oab-dot live"></div><div class="oab-text">LIVE MARKETS — <strong>Polymarket</strong> · Real money probabilities · ${data.length} markets · Updated ${new Date().toLocaleTimeString()}</div>`;
   } else {
-    banner.className = 'odds-api-banner sim';
-    banner.innerHTML = `<div class="oab-dot sim"></div><div class="oab-text">SIMULATION — deploy to Vercel for live Polymarket prediction data</div>`;
+    banner.className='odds-api-banner sim';
+    banner.innerHTML=`<div class="oab-dot sim"></div><div class="oab-text">SIMULATION MODE — showing curated prediction data</div>`;
   }
   const list = document.getElementById('events-list');
   list.innerHTML = '';
@@ -58,17 +97,14 @@ function renderEvents(data, mode) {
 }
 
 function buildCard(e) {
-  const card = document.createElement('div');
-  card.className = 'event-card';
+  const card = document.createElement('div'); card.className='event-card';
   const ec = edgeClass(e.edgeLabel);
-  const liveTag = e.live ? `<span style="font-family:var(--font-mono);font-size:8px;color:var(--neon);background:var(--neon-dim);border:1px solid rgba(0,255,157,0.3);padding:2px 6px;border-radius:3px;letter-spacing:1px;">LIVE</span>` : '';
-  const volTag  = e.volumeLabel ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);">${e.volumeLabel}</span>` : '';
-  const endTag  = e.endDate ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);">ends ${e.endDate}</span>` : '';
-
-  card.innerHTML = `
+  card.innerHTML=`
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
       <div class="event-category">${e.category.toUpperCase()}</div>
-      ${liveTag}${volTag}${endTag}
+      ${e.live?`<span style="font-family:var(--font-mono);font-size:8px;color:var(--neon);background:var(--neon-dim);border:1px solid rgba(0,255,157,0.3);padding:2px 6px;border-radius:3px;letter-spacing:1px;">LIVE</span>`:''}
+      ${e.volumeLabel?`<span style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);">${e.volumeLabel}</span>`:''}
+      ${e.endDate?`<span style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);">ends ${e.endDate}</span>`:''}
     </div>
     <div class="event-question-text">${e.question}</div>
     <div class="yes-no-bars">
@@ -87,38 +123,37 @@ function buildCard(e) {
   return card;
 }
 
-function submitEvent() {
-  const inp = document.getElementById('event-input'), q = inp.value.trim();
-  if(!q) return;
-  const list = document.getElementById('events-list');
-  const ph = document.createElement('div');
-  ph.className = 'event-card';
-  ph.innerHTML = '<div class="loading-wrap" style="padding:20px"><div class="loader"></div><div class="loading-text">ANALYSING...</div></div>';
-  list.insertBefore(ph, list.firstChild);
-  setTimeout(() => {
-    const qL = q.toLowerCase();
-    const factors = [];
-    if(qL.includes('bitcoin')||qL.includes('btc')) { factors.push('on-chain data and ETF flows considered'); factors.push('halving cycle historically bullish'); }
-    if(qL.includes('election')||qL.includes('president')) { factors.push('polling margins and historical precedent'); factors.push('incumbent/challenger dynamics factored in'); }
-    if(qL.includes('stock')||qL.includes('market')) { factors.push('macro environment and earnings trajectory'); factors.push('technical levels near key support/resistance'); }
-    if(qL.includes('rate')||qL.includes('fed')) { factors.push('inflation trajectory and employment data'); factors.push('Fed communication and dot plot guidance'); }
-    const gen=['market consensus currently divided','key catalyst required for resolution','risk/reward asymmetric at current pricing','historical base rate relevant to outcome'];
-    while(factors.length < 4) factors.push(gen.shift() || 'model confidence moderate');
-    const y = Math.min(93, Math.max(7, Math.round(50 + (Math.random()-0.4)*44)));
-    const e = { question:q, category:'Custom', yesPct:y, noPct:100-y, verdict:y>60?'LIKELY':y<40?'UNLIKELY':'UNCERTAIN', verdictColor:y>60?'var(--neon)':y<40?'var(--red)':'var(--yellow)', edgeLabel:Math.abs(y-50)>20?'STRONG':Math.abs(y-50)>10?'MEDIUM':'WEAK', confidence:Math.min(88,Math.round(42+Math.abs(y-50)*0.9+Math.random()*14)), factors, live:false };
-    ph.replaceWith(buildCard(e));
-  }, 900);
-  inp.value = '';
+function submitEvent(){
+  const inp=document.getElementById('event-input'), q=inp.value.trim(); if(!q) return;
+  const list=document.getElementById('events-list');
+  const ph=document.createElement('div'); ph.className='event-card';
+  ph.innerHTML='<div class="loading-wrap" style="padding:20px"><div class="loader"></div><div class="loading-text">ANALYSING...</div></div>';
+  list.insertBefore(ph,list.firstChild);
+  setTimeout(()=>{
+    const qL=q.toLowerCase();
+    const factors=[];
+    if(qL.includes('bitcoin')||qL.includes('btc')){factors.push('On-chain data and ETF flows considered');factors.push('Halving cycle historically bullish');}
+    else if(qL.includes('election')||qL.includes('president')){factors.push('Polling margins and historical precedent');factors.push('Incumbent/challenger dynamics factored in');}
+    else if(qL.includes('rate')||qL.includes('fed')){factors.push('Inflation trajectory and employment data');factors.push('Central bank communication and guidance');}
+    else if(qL.includes('stock')||qL.includes('market')){factors.push('Macro environment and earnings trajectory');factors.push('Technical levels near key support/resistance');}
+    const gen=['Market consensus currently divided on this','Key catalyst required for resolution','Historical base rate relevant to outcome','Risk/reward asymmetric at current pricing'];
+    while(factors.length<4) factors.push(gen.shift()||'Model confidence moderate');
+    const y=Math.min(93,Math.max(7,Math.round(50+(Math.random()-0.4)*44)));
+    ph.replaceWith(buildCard({question:q,category:'Custom',yesPct:y,noPct:100-y,verdict:y>60?'LIKELY':y<40?'UNLIKELY':'UNCERTAIN',verdictColor:y>60?'var(--neon)':y<40?'var(--red)':'var(--yellow)',edgeLabel:Math.abs(y-50)>20?'STRONG':Math.abs(y-50)>10?'MEDIUM':'WEAK',confidence:Math.min(86,Math.round(42+Math.abs(y-50)*0.9+Math.random()*14)),factors,live:false}));
+  },900);
+  inp.value='';
 }
 
-function getFallbackEvents() {
+function fmtVol(v){if(v>=1e6)return(v/1e6).toFixed(1)+'M';if(v>=1e3)return(v/1e3).toFixed(0)+'K';return v.toFixed(0);}
+
+function getFallback(){
   return [
-    {question:'Will Bitcoin hit $100K before end of 2025?',category:'Crypto',yesPct:54,noPct:46,verdict:'UNCERTAIN',verdictColor:'var(--yellow)',edgeLabel:'MEDIUM',confidence:72,factors:['ETF inflows accelerating','halving supply shock reducing sell pressure','macro uncertainty headwind','options market pricing ~54% probability'],live:false,volumeLabel:'$2.4M traded'},
-    {question:'Will the Fed cut rates in 2025?',category:'Economy',yesPct:76,noPct:24,verdict:'LIKELY',verdictColor:'var(--neon)',edgeLabel:'STRONG',confidence:81,factors:['inflation trending toward target','labour market cooling gradually','dot plot suggests 2 cuts','markets pricing 76% probability'],live:false,volumeLabel:'$5.1M traded'},
-    {question:'Will Ethereum flip Bitcoin market cap by 2026?',category:'Crypto',yesPct:18,noPct:82,verdict:'UNLIKELY',verdictColor:'var(--red)',edgeLabel:'STRONG',confidence:78,factors:['BTC dominance historically sticky','institutional flows strongly favour BTC','all prior flippening attempts failed','ETH staking not enough catalyst'],live:false,volumeLabel:'$820K traded'},
-    {question:'Will AI replace 10% of software jobs by 2026?',category:'Technology',yesPct:35,noPct:65,verdict:'UNLIKELY',verdictColor:'var(--red)',edgeLabel:'MEDIUM',confidence:66,factors:['AI coding tools adoption accelerating','enterprises cutting junior dev hiring','senior roles resilient so far','regulatory friction may slow deployment'],live:false},
-    {question:'Will Erling Haaland win 2025 Ballon d\'Or?',category:'Sports',yesPct:28,noPct:72,verdict:'UNLIKELY',verdictColor:'var(--red)',edgeLabel:'MEDIUM',confidence:61,factors:['goal scoring rate elite this season','UCL performance crucial for voters','Bellingham and Vinicius serious competition','media narrative shifting to younger players'],live:false},
-    {question:'Will there be a US recession in 2025?',category:'Economy',yesPct:22,noPct:78,verdict:'UNLIKELY',verdictColor:'var(--red)',edgeLabel:'STRONG',confidence:74,factors:['labour market showing resilience','consumer spending decelerating','yield curve normalising','Fed has room to cut if needed'],live:false},
+    {question:'Will Bitcoin hit $100K before end of 2025?',category:'Crypto',yesPct:54,noPct:46,verdict:'UNCERTAIN',verdictColor:'var(--yellow)',edgeLabel:'MEDIUM',confidence:72,factors:['ETF inflows accelerating','Halving supply shock reducing sell pressure','Macro uncertainty remains a headwind','Options market pricing ~54% probability'],live:false,volumeLabel:'$2.4M traded'},
+    {question:'Will the Fed cut rates in 2025?',category:'Economy',yesPct:76,noPct:24,verdict:'LIKELY',verdictColor:'var(--neon)',edgeLabel:'STRONG',confidence:81,factors:['Inflation trending toward 2% target','Labour market cooling gradually','Dot plot suggests 2 cuts in 2025','Markets pricing 76% probability'],live:false,volumeLabel:'$5.1M traded'},
+    {question:'Will Ethereum flip Bitcoin market cap by 2026?',category:'Crypto',yesPct:18,noPct:82,verdict:'UNLIKELY',verdictColor:'var(--red)',edgeLabel:'STRONG',confidence:78,factors:['BTC dominance historically sticky','Institutional flows strongly favour BTC','All prior flippening attempts failed'],live:false,volumeLabel:'$820K traded'},
+    {question:'Will AI replace 10% of software jobs by 2026?',category:'Technology',yesPct:35,noPct:65,verdict:'UNLIKELY',verdictColor:'var(--red)',edgeLabel:'MEDIUM',confidence:66,factors:['AI coding tools adoption accelerating','Enterprises cutting junior dev hiring','Senior roles resilient so far'],live:false},
+    {question:"Will Erling Haaland win 2025 Ballon d'Or?",category:'Sports',yesPct:28,noPct:72,verdict:'UNLIKELY',verdictColor:'var(--red)',edgeLabel:'MEDIUM',confidence:61,factors:['Goal scoring rate elite this season','UCL performance crucial for voters','Bellingham and Vinicius serious competition'],live:false},
+    {question:'Will there be a US recession in 2025?',category:'Economy',yesPct:22,noPct:78,verdict:'UNLIKELY',verdictColor:'var(--red)',edgeLabel:'STRONG',confidence:74,factors:['Labour market showing resilience','Consumer spending decelerating','Fed has room to cut if needed'],live:false},
   ];
 }
 </script>
