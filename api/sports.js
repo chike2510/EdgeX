@@ -1,6 +1,5 @@
-// api/sports.js — API-Football (api-sports.io) proxy
-// 100 req/day free — football + basketball
-// Docs: https://www.api-football.com/documentation-v3
+// api/sports.js — API-Football (api-sports.io)
+// Fetches each major league directly — no date+filter guesswork
 
 const https = require('https');
 
@@ -8,41 +7,50 @@ const API_KEY = '475fee28ee58ec872d310f504542031a';
 const FB_BASE = 'https://v3.football.api-sports.io';
 const BB_BASE = 'https://v3.basketball.api-sports.io';
 const HEADERS = { 'x-apisports-key': API_KEY };
+const SEASON  = 2024;
+const BB_SEASON = '2024-2025';
 
-// ── Exact league IDs — zero guesswork ─────────────────────────────────────────
-const FOOTBALL_LEAGUES = [
-  39,   // English Premier League
-  2,    // UEFA Champions League
-  140,  // La Liga
-  78,   // Bundesliga
-  135,  // Serie A
-  61,   // Ligue 1
-  3,    // UEFA Europa League
-  848,  // UEFA Conference League
-  45,   // FA Cup
-  48,   // Carabao Cup
-  143,  // Copa del Rey
-  137,  // Coppa Italia
-  88,   // Eredivisie
-  94,   // Primeira Liga
-  207,  // Scottish Premiership
-  203,  // Super Lig
-  144,  // Jupiler Pro League
-  1,    // World Cup
-  4,    // Euro Championship
-  5,    // UEFA Nations League
-  6,    // Africa Cup of Nations
-  531,  // UEFA Super Cup
+// Top leagues — fetched directly by ID
+const TOP_LEAGUES = [
+  { id: 39,  name: 'EPL' },
+  { id: 140, name: 'La Liga' },
+  { id: 78,  name: 'Bundesliga' },
+  { id: 135, name: 'Serie A' },
+  { id: 61,  name: 'Ligue 1' },
+  { id: 2,   name: 'UCL' },
+  { id: 3,   name: 'Europa League' },
+  { id: 848, name: 'Conference League' },
 ];
 
-const BASKETBALL_LEAGUES = [
-  12,   // NBA
-  120,  // EuroLeague
-  121,  // EuroCup
-  119,  // ACB Spain
-  117,  // BBL Germany
-  116,  // Betclic Elite France
-  114,  // LBA Italy
+// International / cup competitions
+const INTL_LEAGUES = [
+  { id: 5,   name: 'Nations League' },
+  { id: 4,   name: 'Euros' },
+  { id: 1,   name: 'World Cup' },
+  { id: 6,   name: 'AFCON' },
+  { id: 32,  name: 'WC Qual. Europe' },
+  { id: 30,  name: 'WC Qual. S.America' },
+  { id: 33,  name: 'WC Qual. Africa' },
+  { id: 34,  name: 'WC Qual. CONCACAF' },
+  { id: 31,  name: 'WC Qual. Asia' },
+  { id: 960, name: 'Euro Qual.' },
+  { id: 45,  name: 'FA Cup' },
+  { id: 48,  name: 'Carabao Cup' },
+  { id: 143, name: 'Copa del Rey' },
+  { id: 137, name: 'Coppa Italia' },
+  { id: 81,  name: 'DFB Pokal' },
+  { id: 66,  name: 'Coupe de France' },
+];
+
+const ALL_FB_LEAGUES = [...TOP_LEAGUES, ...INTL_LEAGUES];
+
+const BB_LEAGUES = [
+  { id: 12,  name: 'NBA' },
+  { id: 120, name: 'EuroLeague' },
+  { id: 121, name: 'EuroCup' },
+  { id: 119, name: 'ACB' },
+  { id: 116, name: 'Betclic Elite' },
+  { id: 114, name: 'LBA Italy' },
 ];
 
 function todayStr(offset = 0) {
@@ -51,54 +59,99 @@ function todayStr(offset = 0) {
   return d.toISOString().split('T')[0];
 }
 
-// ── Main handler ──────────────────────────────────────────────────────────────
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'application/json');
-
   const { type, id } = req.query;
 
   try {
     switch (type) {
 
+      // ── DEBUG ─────────────────────────────────────────────────────────────
+      case 'test': {
+        const status = await apiGet(FB_BASE + '/status', {});
+        // Test direct league fetch — EPL today
+        const epl = await fbGet('/fixtures', { league: 39, season: SEASON, date: todayStr(0) });
+        const ucl = await fbGet('/fixtures', { league: 2,  season: SEASON, date: todayStr(0) });
+        const lag = await fbGet('/fixtures', { league: 140,season: SEASON, date: todayStr(0) });
+        return res.json({
+          active:   status.response?.subscription?.active,
+          requests: status.response?.requests,
+          eplToday: (epl.response||[]).length,
+          uclToday: (ucl.response||[]).length,
+          lagToday: (lag.response||[]).length,
+          eplSample: (epl.response||[]).slice(0,2).map(f=>({ home: f.teams?.home?.name, away: f.teams?.away?.name, status: f.fixture?.status?.short })),
+        });
+      }
+
+      // ── FOOTBALL LIVE ─────────────────────────────────────────────────────
       case 'football-live': {
-        // Fetch all live matches globally, filter to major leagues
-        const live = await fbGet('/fixtures', { live: 'all' });
-        const liveMatches = (live.response || []).filter(f => FOOTBALL_LEAGUES.includes(f.league?.id));
+        // Fetch each top league directly for today — parallel requests
+        const today = todayStr(0);
+        const results = await Promise.allSettled(
+          ALL_FB_LEAGUES.map(l => fbGet('/fixtures', { league: l.id, season: SEASON, date: today }))
+        );
 
-        if (liveMatches.length > 0) {
-          return res.json({ success: true, source: 'live', data: liveMatches.map(transformFixture) });
+        let matches = [];
+        results.forEach(r => {
+          if (r.status === 'fulfilled') matches.push(...(r.value.response || []));
+        });
+
+        // Sort: live first, then by league tier
+        const topIds = TOP_LEAGUES.map(l => l.id);
+        matches.sort((a, b) => {
+          const aLive = ['1H','2H','ET','HT'].includes(a.fixture?.status?.short) ? 0 : 1;
+          const bLive = ['1H','2H','ET','HT'].includes(b.fixture?.status?.short) ? 0 : 1;
+          if (aLive !== bLive) return aLive - bLive;
+          const aTier = topIds.includes(a.league?.id) ? 0 : 1;
+          const bTier = topIds.includes(b.league?.id) ? 0 : 1;
+          return aTier - bTier;
+        });
+
+        if (matches.length > 0) {
+          const liveCount = matches.filter(f => ['1H','2H','ET'].includes(f.fixture?.status?.short)).length;
+          return res.json({
+            success: true,
+            source:  liveCount > 0 ? 'live' : 'today',
+            count:   matches.length,
+            data:    matches.map(transformFixture),
+          });
         }
 
-        // No live games — fetch today by date
-        const today = await fbGet('/fixtures', { date: todayStr(0), timezone: 'UTC' });
-        const todayFiltered = (today.response || []).filter(f => FOOTBALL_LEAGUES.includes(f.league?.id));
-        if (todayFiltered.length > 0) {
-          return res.json({ success: true, source: 'today', data: todayFiltered.map(transformFixture) });
-        }
-
-        // Look ahead up to 4 days
+        // Nothing today — look ahead day by day
         for (let i = 1; i <= 4; i++) {
-          const upcoming = await fbGet('/fixtures', { date: todayStr(i), timezone: 'UTC' });
-          const filtered  = (upcoming.response || []).filter(f => FOOTBALL_LEAGUES.includes(f.league?.id));
-          if (filtered.length > 0) {
-            return res.json({ success: true, source: 'upcoming', data: filtered.map(transformFixture) });
+          const nextDay = todayStr(i);
+          const nextResults = await Promise.allSettled(
+            TOP_LEAGUES.map(l => fbGet('/fixtures', { league: l.id, season: SEASON, date: nextDay }))
+          );
+          let nextMatches = [];
+          nextResults.forEach(r => {
+            if (r.status === 'fulfilled') nextMatches.push(...(r.value.response || []));
+          });
+          if (nextMatches.length > 0) {
+            return res.json({ success: true, source: 'upcoming', data: nextMatches.map(transformFixture) });
           }
         }
 
-        return res.json({ success: false, error: 'No major league matches found' });
+        return res.json({ success: false, error: 'No matches found in next 4 days' });
       }
 
+      // ── FOOTBALL FIXTURES ─────────────────────────────────────────────────
       case 'football-fixtures': {
         const all = [];
-        for (let i = 0; i <= 6; i++) {
+        // Fetch top leagues for next 7 days
+        for (let i = 0; i <= 7; i++) {
           try {
-            const day      = await fbGet('/fixtures', { date: todayStr(i), timezone: 'UTC' });
-            const filtered = (day.response || []).filter(f => FOOTBALL_LEAGUES.includes(f.league?.id));
-            all.push(...filtered.map(transformFixture));
+            const d = todayStr(i);
+            const dayResults = await Promise.allSettled(
+              TOP_LEAGUES.map(l => fbGet('/fixtures', { league: l.id, season: SEASON, date: d }))
+            );
+            dayResults.forEach(r => {
+              if (r.status === 'fulfilled') all.push(...(r.value.response || []));
+            });
           } catch {}
         }
-        if (all.length > 0) return res.json({ success: true, data: all.slice(0, 60) });
+        if (all.length > 0) return res.json({ success: true, data: all.slice(0, 80).map(transformFixture) });
         return res.json({ success: false, error: 'No fixtures found' });
       }
 
@@ -126,28 +179,35 @@ module.exports = async (req, res) => {
         return res.json({ success: true, data: data.response || [] });
       }
 
+      // ── BASKETBALL LIVE ───────────────────────────────────────────────────
       case 'basketball-live': {
-        const live     = await bbGet('/games', { live: 'all' });
-        const liveGames = (live.response || []).filter(g => BASKETBALL_LEAGUES.includes(g.league?.id));
+        const today = todayStr(0);
+        const results = await Promise.allSettled(
+          BB_LEAGUES.map(l => bbGet('/games', { league: l.id, season: BB_SEASON, date: today }))
+        );
+        let games = [];
+        results.forEach(r => {
+          if (r.status === 'fulfilled') games.push(...(r.value.response || []));
+        });
 
-        if (liveGames.length > 0) {
-          return res.json({ success: true, source: 'live', data: liveGames.map(transformGame) });
+        if (games.length > 0) {
+          const liveCount = games.filter(g => ['Q1','Q2','Q3','Q4','OT'].includes(g.status?.short)).length;
+          return res.json({ success: true, source: liveCount > 0 ? 'live' : 'today', data: games.map(transformGame) });
         }
 
-        const today     = await bbGet('/games', { date: todayStr(0), timezone: 'UTC' });
-        const todayGames = (today.response || []).filter(g => BASKETBALL_LEAGUES.includes(g.league?.id));
-        if (todayGames.length > 0) {
-          return res.json({ success: true, source: 'today', data: todayGames.map(transformGame) });
-        }
-
+        // Look ahead
         for (let i = 1; i <= 3; i++) {
-          const upcoming = await bbGet('/games', { date: todayStr(i), timezone: 'UTC' });
-          const filtered  = (upcoming.response || []).filter(g => BASKETBALL_LEAGUES.includes(g.league?.id));
-          if (filtered.length > 0) {
-            return res.json({ success: true, source: 'upcoming', data: filtered.map(transformGame) });
+          const nextResults = await Promise.allSettled(
+            BB_LEAGUES.map(l => bbGet('/games', { league: l.id, season: BB_SEASON, date: todayStr(i) }))
+          );
+          let nextGames = [];
+          nextResults.forEach(r => {
+            if (r.status === 'fulfilled') nextGames.push(...(r.value.response || []));
+          });
+          if (nextGames.length > 0) {
+            return res.json({ success: true, source: 'upcoming', data: nextGames.map(transformGame) });
           }
         }
-
         return res.json({ success: false, error: 'No major basketball games found' });
       }
 
@@ -155,32 +215,17 @@ module.exports = async (req, res) => {
         const all = [];
         for (let i = 0; i <= 5; i++) {
           try {
-            const day      = await bbGet('/games', { date: todayStr(i), timezone: 'UTC' });
-            const filtered = (day.response || []).filter(g => BASKETBALL_LEAGUES.includes(g.league?.id));
-            all.push(...filtered.map(transformGame));
+            const d = todayStr(i);
+            const results = await Promise.allSettled(
+              BB_LEAGUES.map(l => bbGet('/games', { league: l.id, season: BB_SEASON, date: d }))
+            );
+            results.forEach(r => {
+              if (r.status === 'fulfilled') all.push(...(r.value.response || []));
+            });
           } catch {}
         }
-        if (all.length > 0) return res.json({ success: true, data: all.slice(0, 40) });
+        if (all.length > 0) return res.json({ success: true, data: all.slice(0, 40).map(transformGame) });
         return res.json({ success: false, error: 'No fixtures found' });
-      }
-
-      case 'test': {
-        // Debug — check API key status and raw response
-        const status = await apiGet(FB_BASE + '/status', {});
-        const todayRaw = await fbGet('/fixtures', { date: todayStr(0), timezone: 'UTC' });
-        return res.json({
-          apiStatus: status,
-          todayTotal: todayRaw.results || 0,
-          todaySample: (todayRaw.response || []).slice(0,3).map(f => ({
-            id: f.fixture?.id,
-            league: f.league?.name,
-            leagueId: f.league?.id,
-            home: f.teams?.home?.name,
-            away: f.teams?.away?.name,
-            date: f.fixture?.date,
-          })),
-          errors: todayRaw.errors,
-        });
       }
 
       default:
@@ -196,7 +241,6 @@ module.exports = async (req, res) => {
 function transformFixture(f) {
   const fix    = f.fixture;
   const status = fix?.status?.short;
-
   const edgeStatus =
     ['1H','2H','ET','P'].includes(status) ? 'LIVE' :
     status === 'HT'                        ? 'HT'   :
@@ -212,14 +256,17 @@ function transformFixture(f) {
 
   const goals    = f.goals || {};
   const hasScore = goals.home !== null && goals.home !== undefined;
-  const scoreHT  = f.score?.halftime;
 
   const events = (f.events || []).map(e => ({
-    type:   e.type === 'Goal' ? 'GOAL' : e.type === 'Card' ? (e.detail?.includes('Red') ? 'RED' : 'YELLOW') : e.type === 'subst' ? 'SUB' : 'EVENT',
+    type:   e.type === 'Goal'  ? 'GOAL'   :
+            e.type === 'Card'  ? (e.detail?.includes('Red') ? 'RED' : 'YELLOW') :
+            e.type === 'subst' ? 'SUB'    : 'EVENT',
     minute: e.time?.elapsed || 0,
-    player: e.player?.name || '',
+    player: e.player?.name  || '',
     team:   e.team?.id === f.teams?.home?.id ? 'home' : 'away',
-    detail: e.type === 'Goal' ? `${e.player?.name} scores! (${e.detail})` : `${e.player?.name || ''} — ${e.detail || e.type}`,
+    detail: e.type === 'Goal'
+      ? `${e.player?.name} scores! (${e.detail})`
+      : `${e.player?.name || ''} — ${e.detail || e.type}`,
   })).sort((a, b) => b.minute - a.minute);
 
   return {
@@ -235,8 +282,10 @@ function transformFixture(f) {
     round:      f.league?.round      || '',
     venue:      fix?.venue?.name     || '',
     referee:    fix?.referee         || '',
-    kickoff:    fix?.date ? new Date(fix.date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) : '',
-    date:       fix?.date            || '',
+    kickoff:    fix?.date ? new Date(fix.date).toLocaleTimeString('en-GB', {
+      hour: '2-digit', minute: '2-digit', timeZone: 'UTC'
+    }) : '',
+    date:       fix?.date || '',
     dayLabel,
     dayOffset:  diff,
     status:     edgeStatus,
@@ -244,13 +293,14 @@ function transformFixture(f) {
     isLive:     edgeStatus === 'LIVE',
     score:      { home: goals.home ?? 0, away: goals.away ?? 0 },
     hasScore,
-    ht:         scoreHT ? { home: scoreHT.home, away: scoreHT.away } : null,
+    ht:         f.score?.halftime
+      ? { home: f.score.halftime.home, away: f.score.halftime.away }
+      : null,
     events,
-    odds:       null,
+    odds: null,
   };
 }
 
-// ── Transform lineup ──────────────────────────────────────────────────────────
 function transformLineup(l) {
   return {
     team:      l.team?.name || '',
@@ -268,7 +318,6 @@ function transformLineup(l) {
   };
 }
 
-// ── Transform basketball game ─────────────────────────────────────────────────
 function transformGame(g) {
   const status = g.status?.short;
   const edgeStatus =
@@ -280,9 +329,10 @@ function transformGame(g) {
   const matchDay = new Date(g.date); matchDay.setHours(0,0,0,0);
   const diff     = Math.round((matchDay - today) / 86400000);
   const dayLabel = diff === 0 ? 'TODAY'
-    : diff === 1  ? 'TOMORROW'
-    : diff === -1 ? 'YESTERDAY'
-    : matchDay.toLocaleDateString('en-GB', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase();
+    : diff === 1 ? 'TOMORROW'
+    : matchDay.toLocaleDateString('en-GB', {
+        weekday: 'short', month: 'short', day: 'numeric'
+      }).toUpperCase();
 
   const sc       = g.scores || {};
   const hasScore = sc.home?.total !== null && sc.home?.total !== undefined;
@@ -295,16 +345,15 @@ function transformGame(g) {
     awayLogo: g.teams?.away?.logo || '',
     league:   g.league?.name      || '',
     leagueId: g.league?.id,
-    kickoff:  g.date ? new Date(g.date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) : '',
-    date:     g.date  || '',
+    kickoff:  g.date ? new Date(g.date).toLocaleTimeString('en-GB', {
+      hour: '2-digit', minute: '2-digit', timeZone: 'UTC'
+    }) : '',
+    date:      g.date || '',
     dayLabel,
     dayOffset: diff,
-    status:   edgeStatus,
-    isLive:   edgeStatus === 'LIVE',
-    score: {
-      home: sc.home?.total ?? 0,
-      away: sc.away?.total ?? 0,
-    },
+    status:    edgeStatus,
+    isLive:    edgeStatus === 'LIVE',
+    score:     { home: sc.home?.total ?? 0, away: sc.away?.total ?? 0 },
     hasScore,
     quarters: {
       q1: sc.home?.quarter_1 != null ? `${sc.home.quarter_1}-${sc.away.quarter_1}` : null,
@@ -315,7 +364,6 @@ function transformGame(g) {
   };
 }
 
-// ── HTTP helpers ──────────────────────────────────────────────────────────────
 function fbGet(path, params = {}) { return apiGet(FB_BASE + path, params); }
 function bbGet(path, params = {}) { return apiGet(BB_BASE + path, params); }
 
@@ -328,12 +376,9 @@ function apiGet(url, params = {}) {
       r.on('data', c => { body += c; });
       r.on('end', () => {
         try { resolve(JSON.parse(body)); }
-        catch { reject(new Error('Invalid JSON from API-Football')); }
+        catch { reject(new Error('Invalid JSON')); }
       });
     }).on('error', reject);
   });
-}
-
-// Temporary debug export — visit /api/sports?type=test to check API status
-// Remove after confirming API works
-        
+  }
+    
