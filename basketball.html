@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Basketball — EdgeX</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2300ff9d'/><text x='50%25' y='58%25' dominant-baseline='middle' text-anchor='middle' font-family='monospace' font-weight='bold' font-size='16' fill='%2307090d'>EX</text></svg>" />
+</head>
+<body>
+
+<nav id="side-nav"></nav>
+
+<div id="page-wrap">
+  <header id="page-header">
+    <div class="page-title">
+      <span class="page-title-icon">🏀</span>
+      BASKETBALL
+      <span class="page-subtitle">NBA · NET RATING ENGINE</span>
+    </div>
+    <div class="bankroll-wrap">
+      <span class="br-currency">$</span>
+      <input class="br-input" id="br-input" type="number" min="1" step="100" value="1000" />
+    </div>
+    <button id="refresh-btn" onclick="location.reload()">⟳ REFRESH</button>
+  </header>
+
+  <main id="page-main">
+    <div id="odds-banner" class="odds-api-banner sim">
+      <div class="oab-dot sim"></div>
+      <div class="oab-text">Loading odds data...</div>
+    </div>
+
+    <!-- Explainer strip -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;scrollbar-width:none;">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;flex-shrink:0;min-width:110px;">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:3px;">ORTG</div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--neon);">Offensive Rtg</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;flex-shrink:0;min-width:110px;">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:3px;">DRTG</div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--neon2);">Defensive Rtg</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;flex-shrink:0;min-width:110px;">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:3px;">NET RTG</div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--yellow);">ORTG − DRTG</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;flex-shrink:0;min-width:110px;">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:3px;">PACE</div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--purple);">Possessions/48</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;flex-shrink:0;min-width:120px;">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:3px;">SPREAD</div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--orange);">Predicted margin</div>
+      </div>
+    </div>
+
+    <!-- Game Calendar -->
+    <div id="bball-calendar">
+      <div class="loading-wrap"><div class="loader"></div><div class="loading-text">LOADING NBA GAMES...</div></div>
+    </div>
+  </main>
+</div>
+
+<div id="ticker-bar"></div>
+
+<script src="common.js"></script>
+<script src="basketball-page.js"></script>
+</body>
+</html>
