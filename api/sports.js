@@ -164,6 +164,25 @@ module.exports = async (req, res) => {
         return res.json({ success: false, error: 'No fixtures found' });
       }
 
+      case 'test': {
+        // Debug — check API key status and raw response
+        const status = await apiGet(FB_BASE + '/status', {});
+        const todayRaw = await fbGet('/fixtures', { date: todayStr(0), timezone: 'UTC' });
+        return res.json({
+          apiStatus: status,
+          todayTotal: todayRaw.results || 0,
+          todaySample: (todayRaw.response || []).slice(0,3).map(f => ({
+            id: f.fixture?.id,
+            league: f.league?.name,
+            leagueId: f.league?.id,
+            home: f.teams?.home?.name,
+            away: f.teams?.away?.name,
+            date: f.fixture?.date,
+          })),
+          errors: todayRaw.errors,
+        });
+      }
+
       default:
         return res.status(400).json({ success: false, error: `Unknown type: ${type}` });
     }
@@ -313,5 +332,8 @@ function apiGet(url, params = {}) {
       });
     }).on('error', reject);
   });
-          }
-                         
+}
+
+// Temporary debug export — visit /api/sports?type=test to check API status
+// Remove after confirming API works
+        
