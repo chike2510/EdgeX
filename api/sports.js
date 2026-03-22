@@ -1,79 +1,49 @@
-// api/sports.js — Server-side proxy for AllSportsAPI
-// Filters to major leagues only + smart fallback chain
+// api/sports.js — API-Football (api-sports.io) proxy
+// 100 req/day free — football + basketball
+// Docs: https://www.api-football.com/documentation-v3
 
 const https = require('https');
 
-const API_KEY = '8fea7d5de9a5e7147788af09cf1718a7260fc575a55415df87fae477e897f670';
-const FB_BASE  = 'https://apiv2.allsportsapi.com/football/';
-const BB_BASE  = 'https://apiv2.allsportsapi.com/basketball/';
+const API_KEY = '475fee28ee58ec872d310f504542031a';
+const FB_BASE = 'https://v3.football.api-sports.io';
+const BB_BASE = 'https://v3.basketball.api-sports.io';
+const HEADERS = { 'x-apisports-key': API_KEY };
 
-// ── Major football league IDs on AllSportsAPI ─────────────────────────────────
-// These are the only leagues we want to show
-const MAJOR_LEAGUE_IDS = [
-  148,  // English Premier League
-  175,  // UEFA Champions League
-  302,  // La Liga
-  175,  // Bundesliga (check below)
-  207,  // Serie A
-  168,  // Ligue 1
-  176,  // UEFA Europa League
-  244,  // FA Cup
-  247,  // Carabao Cup
-  373,  // La Liga 2
-  196,  // Bundesliga 2
-  // Adding more to be safe
+// ── Exact league IDs — zero guesswork ─────────────────────────────────────────
+const FOOTBALL_LEAGUES = [
+  39,   // English Premier League
+  2,    // UEFA Champions League
+  140,  // La Liga
+  78,   // Bundesliga
+  135,  // Serie A
+  61,   // Ligue 1
+  3,    // UEFA Europa League
+  848,  // UEFA Conference League
+  45,   // FA Cup
+  48,   // Carabao Cup
+  143,  // Copa del Rey
+  137,  // Coppa Italia
+  88,   // Eredivisie
+  94,   // Primeira Liga
+  207,  // Scottish Premiership
+  203,  // Super Lig
+  144,  // Jupiler Pro League
+  1,    // World Cup
+  4,    // Euro Championship
+  5,    // UEFA Nations League
+  6,    // Africa Cup of Nations
+  531,  // UEFA Super Cup
 ];
 
-// League name keywords — filter by name as backup
-const MAJOR_LEAGUE_KEYWORDS = [
-  'premier league',
-  'champions league',
-  'la liga',
-  'bundesliga',
-  'serie a',
-  'ligue 1',
-  'europa league',
-  'fa cup',
-  'carabao',
-  'eredivisie',
-  'primeira liga',
-  'scottish premiership',
-  'super lig',
-  'russian premier',
-  'saudi pro',
-  'mls',
-  'brasileirao',
-  'copa',
-  'world cup',
-  'euros',
-  'nations league',
-  'afcon',
-  'conference league',
+const BASKETBALL_LEAGUES = [
+  12,   // NBA
+  120,  // EuroLeague
+  121,  // EuroCup
+  119,  // ACB Spain
+  117,  // BBL Germany
+  116,  // Betclic Elite France
+  114,  // LBA Italy
 ];
-
-// Basketball league keywords
-const MAJOR_BB_KEYWORDS = [
-  'nba',
-  'euroleague',
-  'eurocup',
-  'acb',
-  'bbl',
-  'lnb',
-  'aba',
-  'basketball champions',
-];
-
-function isMajorFootballLeague(leagueName) {
-  if (!leagueName) return false;
-  const n = leagueName.toLowerCase();
-  return MAJOR_LEAGUE_KEYWORDS.some(kw => n.includes(kw));
-}
-
-function isMajorBasketballLeague(leagueName) {
-  if (!leagueName) return false;
-  const n = leagueName.toLowerCase();
-  return MAJOR_BB_KEYWORDS.some(kw => n.includes(kw));
-}
 
 function todayStr(offset = 0) {
   const d = new Date();
@@ -81,50 +51,38 @@ function todayStr(offset = 0) {
   return d.toISOString().split('T')[0];
 }
 
+// ── Main handler ──────────────────────────────────────────────────────────────
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'application/json');
 
-  const { type } = req.query;
+  const { type, id } = req.query;
 
   try {
     switch (type) {
 
       case 'football-live': {
-        // Try live scores
-        const live = await apiGet(FB_BASE, { met: 'Livescore' });
-        if (live.success === 1 && live.result?.length > 0) {
-          const filtered = live.result.filter(m => isMajorFootballLeague(m.league_name));
-          if (filtered.length > 0) {
-            return res.json({ success: true, source: 'live', data: filtered });
-          }
+        // Fetch all live matches globally, filter to major leagues
+        const live = await fbGet('/fixtures', { live: 'all' });
+        const liveMatches = (live.response || []).filter(f => FOOTBALL_LEAGUES.includes(f.league?.id));
+
+        if (liveMatches.length > 0) {
+          return res.json({ success: true, source: 'live', data: liveMatches.map(transformFixture) });
         }
 
-        // No major league live games — try today
-        const today = await apiGet(FB_BASE, {
-          met:  'Fixtures',
-          from: todayStr(0),
-          to:   todayStr(0),
-        });
-        if (today.success === 1 && today.result?.length > 0) {
-          const filtered = today.result.filter(m => isMajorFootballLeague(m.league_name));
-          if (filtered.length > 0) {
-            return res.json({ success: true, source: 'today', data: filtered });
-          }
+        // No live games — fetch today by date
+        const today = await fbGet('/fixtures', { date: todayStr(0), timezone: 'UTC' });
+        const todayFiltered = (today.response || []).filter(f => FOOTBALL_LEAGUES.includes(f.league?.id));
+        if (todayFiltered.length > 0) {
+          return res.json({ success: true, source: 'today', data: todayFiltered.map(transformFixture) });
         }
 
-        // Try next 4 days
+        // Look ahead up to 4 days
         for (let i = 1; i <= 4; i++) {
-          const upcoming = await apiGet(FB_BASE, {
-            met:  'Fixtures',
-            from: todayStr(i),
-            to:   todayStr(i),
-          });
-          if (upcoming.success === 1 && upcoming.result?.length > 0) {
-            const filtered = upcoming.result.filter(m => isMajorFootballLeague(m.league_name));
-            if (filtered.length > 0) {
-              return res.json({ success: true, source: 'upcoming', data: filtered });
-            }
+          const upcoming = await fbGet('/fixtures', { date: todayStr(i), timezone: 'UTC' });
+          const filtered  = (upcoming.response || []).filter(f => FOOTBALL_LEAGUES.includes(f.league?.id));
+          if (filtered.length > 0) {
+            return res.json({ success: true, source: 'upcoming', data: filtered.map(transformFixture) });
           }
         }
 
@@ -132,89 +90,61 @@ module.exports = async (req, res) => {
       }
 
       case 'football-fixtures': {
-        // Fetch next 7 days, filter to major leagues
         const all = [];
         for (let i = 0; i <= 6; i++) {
           try {
-            const day = await apiGet(FB_BASE, {
-              met:  'Fixtures',
-              from: todayStr(i),
-              to:   todayStr(i),
-            });
-            if (day.success === 1 && day.result?.length > 0) {
-              const filtered = day.result.filter(m => isMajorFootballLeague(m.league_name));
-              all.push(...filtered);
-            }
+            const day      = await fbGet('/fixtures', { date: todayStr(i), timezone: 'UTC' });
+            const filtered = (day.response || []).filter(f => FOOTBALL_LEAGUES.includes(f.league?.id));
+            all.push(...filtered.map(transformFixture));
           } catch {}
         }
-        if (all.length > 0) {
-          return res.json({ success: true, data: all.slice(0, 50) });
-        }
+        if (all.length > 0) return res.json({ success: true, data: all.slice(0, 60) });
         return res.json({ success: false, error: 'No fixtures found' });
       }
 
-      case 'football-odds': {
-        const data = await apiGet(FB_BASE, { met: 'OddsLive' });
-        if (data.success === 1 && data.result?.length > 0) {
-          return res.json({ success: true, data: data.result });
-        }
-        return res.json({ success: false, error: 'No odds' });
-      }
-
       case 'football-lineups': {
-        const { id } = req.query;
         if (!id) return res.json({ success: false, error: 'Missing id' });
-        const data = await apiGet(FB_BASE, { met: 'Lineups', matchId: id });
-        return res.json({ success: data.success === 1, data: data.result || [] });
+        const data = await fbGet('/fixtures/lineups', { fixture: id });
+        return res.json({ success: true, data: (data.response || []).map(transformLineup) });
       }
 
       case 'football-events': {
-        const { id } = req.query;
         if (!id) return res.json({ success: false, error: 'Missing id' });
-        const data = await apiGet(FB_BASE, { met: 'Events', matchId: id });
-        return res.json({ success: data.success === 1, data: data.result || [] });
+        const data = await fbGet('/fixtures/events', { fixture: id });
+        return res.json({ success: true, data: data.response || [] });
       }
 
       case 'football-stats': {
-        const { id } = req.query;
         if (!id) return res.json({ success: false, error: 'Missing id' });
-        const data = await apiGet(FB_BASE, { met: 'Statistics', matchId: id });
-        return res.json({ success: data.success === 1, data: data.result || [] });
+        const data = await fbGet('/fixtures/statistics', { fixture: id });
+        return res.json({ success: true, data: data.response || [] });
+      }
+
+      case 'football-odds': {
+        if (!id) return res.json({ success: false, error: 'Missing id' });
+        const data = await fbGet('/odds', { fixture: id, bookmaker: 6 });
+        return res.json({ success: true, data: data.response || [] });
       }
 
       case 'basketball-live': {
-        const live = await apiGet(BB_BASE, { met: 'Livescore' });
-        if (live.success === 1 && live.result?.length > 0) {
-          const filtered = live.result.filter(g => isMajorBasketballLeague(g.league_name));
-          if (filtered.length > 0) {
-            return res.json({ success: true, source: 'live', data: filtered });
-          }
+        const live     = await bbGet('/games', { live: 'all' });
+        const liveGames = (live.response || []).filter(g => BASKETBALL_LEAGUES.includes(g.league?.id));
+
+        if (liveGames.length > 0) {
+          return res.json({ success: true, source: 'live', data: liveGames.map(transformGame) });
         }
 
-        const today = await apiGet(BB_BASE, {
-          met:  'Fixtures',
-          from: todayStr(0),
-          to:   todayStr(0),
-        });
-        if (today.success === 1 && today.result?.length > 0) {
-          const filtered = today.result.filter(g => isMajorBasketballLeague(g.league_name));
-          if (filtered.length > 0) {
-            return res.json({ success: true, source: 'today', data: filtered });
-          }
+        const today     = await bbGet('/games', { date: todayStr(0), timezone: 'UTC' });
+        const todayGames = (today.response || []).filter(g => BASKETBALL_LEAGUES.includes(g.league?.id));
+        if (todayGames.length > 0) {
+          return res.json({ success: true, source: 'today', data: todayGames.map(transformGame) });
         }
 
-        // Try next 3 days
         for (let i = 1; i <= 3; i++) {
-          const upcoming = await apiGet(BB_BASE, {
-            met:  'Fixtures',
-            from: todayStr(i),
-            to:   todayStr(i),
-          });
-          if (upcoming.success === 1 && upcoming.result?.length > 0) {
-            const filtered = upcoming.result.filter(g => isMajorBasketballLeague(g.league_name));
-            if (filtered.length > 0) {
-              return res.json({ success: true, source: 'upcoming', data: filtered });
-            }
+          const upcoming = await bbGet('/games', { date: todayStr(i), timezone: 'UTC' });
+          const filtered  = (upcoming.response || []).filter(g => BASKETBALL_LEAGUES.includes(g.league?.id));
+          if (filtered.length > 0) {
+            return res.json({ success: true, source: 'upcoming', data: filtered.map(transformGame) });
           }
         }
 
@@ -225,18 +155,12 @@ module.exports = async (req, res) => {
         const all = [];
         for (let i = 0; i <= 5; i++) {
           try {
-            const day = await apiGet(BB_BASE, {
-              met:  'Fixtures',
-              from: todayStr(i),
-              to:   todayStr(i),
-            });
-            if (day.success === 1 && day.result?.length > 0) {
-              const filtered = day.result.filter(g => isMajorBasketballLeague(g.league_name));
-              all.push(...filtered);
-            }
+            const day      = await bbGet('/games', { date: todayStr(i), timezone: 'UTC' });
+            const filtered = (day.response || []).filter(g => BASKETBALL_LEAGUES.includes(g.league?.id));
+            all.push(...filtered.map(transformGame));
           } catch {}
         }
-        if (all.length > 0) return res.json({ success: true, data: all.slice(0, 30) });
+        if (all.length > 0) return res.json({ success: true, data: all.slice(0, 40) });
         return res.json({ success: false, error: 'No fixtures found' });
       }
 
@@ -244,22 +168,150 @@ module.exports = async (req, res) => {
         return res.status(400).json({ success: false, error: `Unknown type: ${type}` });
     }
   } catch (err) {
+    console.error('sports.js error:', err.message);
     return res.status(500).json({ success: false, error: err.message });
   }
 };
 
-function apiGet(base, params = {}) {
+// ── Transform football fixture ────────────────────────────────────────────────
+function transformFixture(f) {
+  const fix    = f.fixture;
+  const status = fix?.status?.short;
+
+  const edgeStatus =
+    ['1H','2H','ET','P'].includes(status) ? 'LIVE' :
+    status === 'HT'                        ? 'HT'   :
+    ['FT','AET','PEN'].includes(status)    ? 'FT'   : 'NS';
+
+  const today    = new Date(); today.setHours(0,0,0,0);
+  const matchDay = new Date(fix?.date); matchDay.setHours(0,0,0,0);
+  const diff     = Math.round((matchDay - today) / 86400000);
+  const dayLabel = diff === 0 ? 'TODAY'
+    : diff === 1  ? 'TOMORROW'
+    : diff === -1 ? 'YESTERDAY'
+    : matchDay.toLocaleDateString('en-GB', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase();
+
+  const goals    = f.goals || {};
+  const hasScore = goals.home !== null && goals.home !== undefined;
+  const scoreHT  = f.score?.halftime;
+
+  const events = (f.events || []).map(e => ({
+    type:   e.type === 'Goal' ? 'GOAL' : e.type === 'Card' ? (e.detail?.includes('Red') ? 'RED' : 'YELLOW') : e.type === 'subst' ? 'SUB' : 'EVENT',
+    minute: e.time?.elapsed || 0,
+    player: e.player?.name || '',
+    team:   e.team?.id === f.teams?.home?.id ? 'home' : 'away',
+    detail: e.type === 'Goal' ? `${e.player?.name} scores! (${e.detail})` : `${e.player?.name || ''} — ${e.detail || e.type}`,
+  })).sort((a, b) => b.minute - a.minute);
+
+  return {
+    id:         String(fix?.id),
+    home:       f.teams?.home?.name  || '',
+    away:       f.teams?.away?.name  || '',
+    homeLogo:   f.teams?.home?.logo  || '',
+    awayLogo:   f.teams?.away?.logo  || '',
+    league:     f.league?.name       || '',
+    leagueId:   f.league?.id,
+    leagueLogo: f.league?.logo       || '',
+    country:    f.league?.country    || '',
+    round:      f.league?.round      || '',
+    venue:      fix?.venue?.name     || '',
+    referee:    fix?.referee         || '',
+    kickoff:    fix?.date ? new Date(fix.date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) : '',
+    date:       fix?.date            || '',
+    dayLabel,
+    dayOffset:  diff,
+    status:     edgeStatus,
+    minute:     fix?.status?.elapsed || 0,
+    isLive:     edgeStatus === 'LIVE',
+    score:      { home: goals.home ?? 0, away: goals.away ?? 0 },
+    hasScore,
+    ht:         scoreHT ? { home: scoreHT.home, away: scoreHT.away } : null,
+    events,
+    odds:       null,
+  };
+}
+
+// ── Transform lineup ──────────────────────────────────────────────────────────
+function transformLineup(l) {
+  return {
+    team:      l.team?.name || '',
+    formation: l.formation  || '',
+    players:   (l.startXI  || []).map(p => ({
+      name:   p.player?.name   || '',
+      number: p.player?.number || '',
+      pos:    p.player?.pos    || '',
+      grid:   p.player?.grid   || '',
+    })),
+    subs: (l.substitutes || []).map(p => ({
+      name:   p.player?.name   || '',
+      number: p.player?.number || '',
+    })),
+  };
+}
+
+// ── Transform basketball game ─────────────────────────────────────────────────
+function transformGame(g) {
+  const status = g.status?.short;
+  const edgeStatus =
+    ['Q1','Q2','Q3','Q4','OT'].includes(status) ? 'LIVE' :
+    status === 'HT'                              ? 'HT'   :
+    ['FT','AOT'].includes(status)                ? 'FT'   : 'NS';
+
+  const today    = new Date(); today.setHours(0,0,0,0);
+  const matchDay = new Date(g.date); matchDay.setHours(0,0,0,0);
+  const diff     = Math.round((matchDay - today) / 86400000);
+  const dayLabel = diff === 0 ? 'TODAY'
+    : diff === 1  ? 'TOMORROW'
+    : diff === -1 ? 'YESTERDAY'
+    : matchDay.toLocaleDateString('en-GB', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase();
+
+  const sc       = g.scores || {};
+  const hasScore = sc.home?.total !== null && sc.home?.total !== undefined;
+
+  return {
+    id:       String(g.id),
+    home:     g.teams?.home?.name || '',
+    away:     g.teams?.away?.name || '',
+    homeLogo: g.teams?.home?.logo || '',
+    awayLogo: g.teams?.away?.logo || '',
+    league:   g.league?.name      || '',
+    leagueId: g.league?.id,
+    kickoff:  g.date ? new Date(g.date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) : '',
+    date:     g.date  || '',
+    dayLabel,
+    dayOffset: diff,
+    status:   edgeStatus,
+    isLive:   edgeStatus === 'LIVE',
+    score: {
+      home: sc.home?.total ?? 0,
+      away: sc.away?.total ?? 0,
+    },
+    hasScore,
+    quarters: {
+      q1: sc.home?.quarter_1 != null ? `${sc.home.quarter_1}-${sc.away.quarter_1}` : null,
+      q2: sc.home?.quarter_2 != null ? `${sc.home.quarter_2}-${sc.away.quarter_2}` : null,
+      q3: sc.home?.quarter_3 != null ? `${sc.home.quarter_3}-${sc.away.quarter_3}` : null,
+      q4: sc.home?.quarter_4 != null ? `${sc.home.quarter_4}-${sc.away.quarter_4}` : null,
+    },
+  };
+}
+
+// ── HTTP helpers ──────────────────────────────────────────────────────────────
+function fbGet(path, params = {}) { return apiGet(FB_BASE + path, params); }
+function bbGet(path, params = {}) { return apiGet(BB_BASE + path, params); }
+
+function apiGet(url, params = {}) {
   return new Promise((resolve, reject) => {
-    const url = new URL(base);
-    url.searchParams.set('APIkey', API_KEY);
-    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-    https.get(url.toString(), { headers: { Accept: 'application/json' } }, r => {
+    const u = new URL(url);
+    Object.entries(params).forEach(([k, v]) => u.searchParams.set(k, String(v)));
+    https.get(u.toString(), { headers: HEADERS }, r => {
       let body = '';
       r.on('data', c => { body += c; });
       r.on('end', () => {
         try { resolve(JSON.parse(body)); }
-        catch { reject(new Error('Invalid JSON')); }
+        catch { reject(new Error('Invalid JSON from API-Football')); }
       });
     }).on('error', reject);
   });
-}
+          }
+                         
