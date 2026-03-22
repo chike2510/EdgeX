@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/*.js", "use": "@vercel/node" },
+    { "src": "*.html", "use": "@vercel/static" },
+    { "src": "*.css",  "use": "@vercel/static" },
+    { "src": "*.js",   "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1.js" },
+    { "src": "/",         "dest": "/index.html" },
+    { "src": "/football", "dest": "/football.html" },
+    { "src": "/basketball","dest": "/basketball.html" },
+    { "src": "/crypto",   "dest": "/crypto.html" },
+    { "src": "/forex",    "dest": "/forex.html" },
+    { "src": "/events",   "dest": "/events.html" },
+    { "src": "/journal",  "dest": "/journal.html" },
+    { "src": "/(.*\\.(css|js|ico|png|svg|woff2?))", "dest": "/$1" }
+  ]
+}

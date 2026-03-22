@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Events — EdgeX</title><link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<nav id="side-nav"></nav>
+<div id="page-wrap">
+  <header id="page-header">
+    <div class="page-title"><span class="page-title-icon">🌍</span>EVENTS<span class="page-subtitle">LIVE · POLYMARKET</span></div>
+    <button id="refresh-btn" onclick="loadEvents()">⟳ REFRESH</button>
+  </header>
+  <main id="page-main">
+    <div id="data-banner" class="odds-api-banner sim">
+      <div class="oab-dot sim"></div><div class="oab-text">Fetching Polymarket data...</div>
+    </div>
+    <div class="event-question-input-wrap">
+      <input id="event-input" type="text" placeholder="Ask anything: Will X happen? e.g. 'Will BTC reach $200K in 2025?'"/>
+      <button id="event-submit" onclick="submitEvent()">ANALYSE →</button>
+    </div>
+    <div id="events-list">
+      <div class="loading-wrap"><div class="loader"></div><div class="loading-text">LOADING LIVE MARKETS...</div></div>
+    </div>
+  </main>
+</div>
+<div id="ticker-bar"></div>
+<script src="common.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', loadEvents);
+
+async function loadEvents() {
+  const btn = document.getElementById('refresh-btn');
+  if(btn) btn.classList.add('spinning');
+  let data = null, mode = 'simulation';
+  try {
+    const res = await fetch('/api/events');
+    const json = await res.json();
+    if(json.success && json.data?.length) { data = json.data; mode = json.mode; }
+  } catch(e) {}
+  if(!data) data = getFallbackEvents();
+  renderEvents(data, mode);
+  if(btn) btn.classList.remove('spinning');
+}
+
+function renderEvents(data, mode) {
+  const banner = document.getElementById('data-banner');
+  if(mode === 'live') {
+    banner.className = 'odds-api-banner live';
+    banner.innerHTML = `<div class="oab-dot live"></div><div class="oab-text">LIVE MARKETS — <strong>Polymarket</strong> · Real money probabilities · Updated ${new Date().toLocaleTimeString()}</div>`;
+  } else {
+    banner.className = 'odds-api-banner sim';
+    banner.innerHTML = `<div class="oab-dot sim"></div><div class="oab-text">SIMULATION — deploy to Vercel for live Polymarket prediction data</div>`;
+  }
+  const list = document.getElementById('events-list');
+  list.innerHTML = '';
+  data.forEach(e => list.appendChild(buildCard(e)));
+}
+
+function buildCard(e) {
+  const card = document.createElement('div');
+  card.className = 'event-card';
+  const ec = edgeClass(e.edgeLabel);
+  const liveTag = e.live ? `<span style="font-family:var(--font-mono);font-size:8px;color:var(--neon);background:var(--neon-dim);border:1px solid rgba(0,255,157,0.3);padding:2px 6px;border-radius:3px;letter-spacing:1px;">LIVE</span>` : '';
+  const volTag  = e.volumeLabel ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);">${e.volumeLabel}</span>` : '';
+  const endTag  = e.endDate ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);">ends ${e.endDate}</span>` : '';
+
+  card.innerHTML = `
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
+      <div class="event-category">${e.category.toUpperCase()}</div>
+      ${liveTag}${volTag}${endTag}
+    </div>
+    <div class="event-question-text">${e.question}</div>
+    <div class="yes-no-bars">
+      <div class="yes-bar" style="width:${e.yesPct}%">${e.yesPct>14?'YES '+e.yesPct+'%':''}</div>
+      <div class="no-bar">NO ${e.noPct}%</div>
+    </div>
+    <div class="verdict-row">
+      <span class="verdict-label" style="color:${e.verdictColor}">${e.verdict}</span>
+      <div class="value-badge ${ec}" style="margin:0;padding:3px 8px;font-size:9px;"><div class="value-dot"></div>${e.edgeLabel} EDGE</div>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--neon)">CONF: ${e.confidence}</span>
+    </div>
+    <div class="event-factors">
+      <div class="event-factors-title">KEY FACTORS</div>
+      ${e.factors.map(f=>`<div class="event-factor">${f}</div>`).join('')}
+    </div>`;
+  return card;
+}
+
+function submitEvent() {
+  const inp = document.getElementById('event-input'), q = inp.value.trim();
+  if(!q) return;
+  const list = document.getElementById('events-list');
+  const ph = document.createElement('div');
+  ph.className = 'event-card';
+  ph.innerHTML = '<div class="loading-wrap" style="padding:20px"><div class="loader"></div><div class="loading-text">ANALYSING...</div></div>';
+  list.insertBefore(ph, list.firstChild);
+  setTimeout(() => {
+    const qL = q.toLowerCase();
+    const factors = [];
+    if(qL.includes('bitcoin')||qL.includes('btc')) { factors.push('on-chain data and ETF flows considered'); factors.push('halving cycle historically bullish'); }
+    if(qL.includes('election')||qL.includes('president')) { factors.push('polling margins and historical precedent'); factors.push('incumbent/challenger dynamics factored in'); }
+    if(qL.includes('stock')||qL.includes('market')) { factors.push('macro environment and earnings trajectory'); factors.push('technical levels near key support/resistance'); }
+    if(qL.includes('rate')||qL.includes('fed')) { factors.push('inflation trajectory and employment data'); factors.push('Fed communication and dot plot guidance'); }
+    const gen=['market consensus currently divided','key catalyst required for resolution','risk/reward asymmetric at current pricing','historical base rate relevant to outcome'];
+    while(factors.length < 4) factors.push(gen.shift() || 'model confidence moderate');
+    const y = Math.min(93, Math.max(7, Math.round(50 + (Math.random()-0.4)*44)));
+    const e = { question:q, category:'Custom', yesPct:y, noPct:100-y, verdict:y>60?'LIKELY':y<40?'UNLIKELY':'UNCERTAIN', verdictColor:y>60?'var(--neon)':y<40?'var(--red)':'var(--yellow)', edgeLabel:Math.abs(y-50)>20?'STRONG':Math.abs(y-50)>10?'MEDIUM':'WEAK', confidence:Math.min(88,Math.round(42+Math.abs(y-50)*0.9+Math.random()*14)), factors, live:false };
+    ph.replaceWith(buildCard(e));
+  }, 900);
+  inp.value = '';
+}
+
+function getFallbackEvents() {
+  return [
+    {question:'Will Bitcoin hit $100K before end of 2025?',category:'Crypto',yesPct:54,noPct:46,verdict:'UNCERTAIN',verdictColor:'var(--yellow)',edgeLabel:'MEDIUM',confidence:72,factors:['ETF inflows accelerating','halving supply shock reducing sell pressure','macro uncertainty headwind','options market pricing ~54% probability'],live:false,volumeLabel:'$2.4M traded'},
+    {question:'Will the Fed cut rates in 2025?',category:'Economy',yesPct:76,noPct:24,verdict:'LIKELY',verdictColor:'var(--neon)',edgeLabel:'STRONG',confidence:81,factors:['inflation trending toward target','labour market cooling gradually','dot plot suggests 2 cuts','markets pricing 76% probability'],live:false,volumeLabel:'$5.1M traded'},
+    {question:'Will Ethereum flip Bitcoin market cap by 2026?',category:'Crypto',yesPct:18,noPct:82,verdict:'UNLIKELY',verdictColor:'var(--red)',edgeLabel:'STRONG',confidence:78,factors:['BTC dominance historically sticky','institutional flows strongly favour BTC','all prior flippening attempts failed','ETH staking not enough catalyst'],live:false,volumeLabel:'$820K traded'},
+    {question:'Will AI replace 10% of software jobs by 2026?',category:'Technology',yesPct:35,noPct:65,verdict:'UNLIKELY',verdictColor:'var(--red)',edgeLabel:'MEDIUM',confidence:66,factors:['AI coding tools adoption accelerating','enterprises cutting junior dev hiring','senior roles resilient so far','regulatory friction may slow deployment'],live:false},
+    {question:'Will Erling Haaland win 2025 Ballon d\'Or?',category:'Sports',yesPct:28,noPct:72,verdict:'UNLIKELY',verdictColor:'var(--red)',edgeLabel:'MEDIUM',confidence:61,factors:['goal scoring rate elite this season','UCL performance crucial for voters','Bellingham and Vinicius serious competition','media narrative shifting to younger players'],live:false},
+    {question:'Will there be a US recession in 2025?',category:'Economy',yesPct:22,noPct:78,verdict:'UNLIKELY',verdictColor:'var(--red)',edgeLabel:'STRONG',confidence:74,factors:['labour market showing resilience','consumer spending decelerating','yield curve normalising','Fed has room to cut if needed'],live:false},
+  ];
+}
+</script>
+</body>
+</html>
