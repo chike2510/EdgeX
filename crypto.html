@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Crypto — EdgeX</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .search-bar{display:flex;gap:8px;margin-bottom:12px;}
+    .search-input{flex:1;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:var(--font-mono);font-size:12px;padding:9px 14px;outline:none;transition:var(--transition);}
+    .search-input:focus{border-color:rgba(0,255,157,0.4);box-shadow:0 0 0 3px rgba(0,255,157,0.06);}
+    .search-input::placeholder{color:var(--text-dim);}
+    .search-btn{background:var(--neon-dim);border:1px solid rgba(0,255,157,0.3);color:var(--neon);font-family:var(--font-mono);font-size:11px;font-weight:700;padding:9px 16px;border-radius:var(--radius);cursor:pointer;flex-shrink:0;transition:var(--transition);}
+    .search-btn:hover{background:rgba(0,255,157,0.18);}
+    .cat-row{display:flex;gap:5px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
+    .load-more-btn{width:100%;margin-top:14px;padding:12px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--neon2);font-family:var(--font-mono);font-size:11px;font-weight:700;cursor:pointer;transition:var(--transition);letter-spacing:1px;}
+    .load-more-btn:hover{background:var(--bg3);border-color:rgba(0,201,255,0.3);}
+    .sort-row{display:flex;gap:5px;margin-bottom:12px;align-items:center;}
+    .sort-label{font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;flex-shrink:0;}
+  </style>
+</head>
+<body>
+<nav id="side-nav"></nav>
+<div id="page-wrap">
+  <header id="page-header">
+    <div class="page-title"><span class="page-title-icon">💰</span>CRYPTO<span class="page-subtitle">LIVE · COINGECKO</span></div>
+    <button id="refresh-btn" onclick="loadCrypto(true)">⟳ REFRESH</button>
+  </header>
+  <main id="page-main">
+    <div id="data-banner" class="odds-api-banner sim">
+      <div class="oab-dot sim"></div><div class="oab-text">Fetching live prices...</div>
+    </div>
+
+    <div class="search-bar">
+      <input id="crypto-search" class="search-input" type="text" placeholder="Search any coin — BTC, Pepe, Sui, Render..."/>
+      <button class="search-btn" onclick="searchCoin()">SEARCH</button>
+    </div>
+
+    <div class="cat-row" id="cat-row">
+      <button class="filter-btn active" onclick="setCategory('all',this)">ALL</button>
+      <button class="filter-btn" onclick="setCategory('layer-1',this)">LAYER 1</button>
+      <button class="filter-btn" onclick="setCategory('decentralized-finance-defi',this)">DeFi</button>
+      <button class="filter-btn" onclick="setCategory('layer-2',this)">LAYER 2</button>
+      <button class="filter-btn" onclick="setCategory('meme-token',this)">MEME</button>
+      <button class="filter-btn" onclick="setCategory('artificial-intelligence',this)">AI</button>
+      <button class="filter-btn" onclick="setCategory('gaming',this)">GAMING</button>
+      <button class="filter-btn" onclick="setCategory('exchange-based-tokens',this)">EXCHANGE</button>
+    </div>
+
+    <div class="sort-row">
+      <span class="sort-label">SORT:</span>
+      <button class="filter-btn active" onclick="setSort('market_cap',this)">MKT CAP</button>
+      <button class="filter-btn" onclick="setSort('percent_change_24h',this)">24H %</button>
+      <button class="filter-btn" onclick="setSort('volume_24h',this)">VOLUME</button>
+    </div>
+
+    <div id="crypto-content">
+      <div class="loading-wrap"><div class="loader"></div><div class="loading-text">LOADING LIVE DATA...</div></div>
+    </div>
+    <button class="load-more-btn" id="load-more-btn" style="display:none" onclick="loadMore()">▼ LOAD MORE COINS</button>
+  </main>
+</div>
+<div id="ticker-bar"></div>
+<script src="common.js"></script>
+<script>
+let currentPage   = 1;
+let currentCat    = 'all';
+let currentSort   = 'market_cap';
+let allLoaded     = [];
+let isSearchMode  = false;
+
+const PER_PAGE = 20;
+
+document.addEventListener('DOMContentLoaded', () => loadCrypto(true));
+
+async function loadCrypto(reset=false) {
+  if(reset){ currentPage=1; allLoaded=[]; isSearchMode=false; document.getElementById('crypto-search').value=''; }
+  const btn = document.getElementById('refresh-btn');
+  if(btn) btn.classList.add('spinning');
+  if(reset) showLoading('crypto-content');
+
+  const catParam = currentCat!=='all' ? `&category=${currentCat}` : '';
+  const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=${currentSort}_desc&per_page=${PER_PAGE}&page=${currentPage}&sparkline=true&price_change_percentage=1h,24h,7d${catParam}`;
+
+  try {
+    const res  = await fetch(url);
+    const raw  = await res.json();
+    if(!Array.isArray(raw)||raw.length===0) throw new Error('empty');
+    const enriched = raw.map(enrichCoin);
+    if(reset) { allLoaded=enriched; }
+    else       { allLoaded=[...allLoaded,...enriched]; }
+    renderGrid(allLoaded, 'live');
+    document.getElementById('load-more-btn').style.display = raw.length===PER_PAGE?'block':'none';
+    updateBanner('live');
+  } catch(e) {
+    if(reset) { allLoaded=getFallback(); renderGrid(allLoaded,'simulation'); updateBanner('simulation'); }
+    document.getElementById('load-more-btn').style.display='none';
+  }
+  if(btn) btn.classList.remove('spinning');
+}
+
+async function loadMore() {
+  if(isSearchMode) return;
+  currentPage++;
+  const btn = document.getElementById('load-more-btn');
+  btn.textContent='▼ LOADING...'; btn.disabled=true;
+  await loadCrypto(false);
+  btn.textContent='▼ LOAD MORE COINS'; btn.disabled=false;
+}
+
+async function searchCoin() {
+  const q = document.getElementById('crypto-search').value.trim();
+  if(!q){ loadCrypto(true); return; }
+  isSearchMode=true;
+  showLoading('crypto-content');
+  document.getElementById('load-more-btn').style.display='none';
+  try {
+    // Search CoinGecko
+    const sRes = await fetch(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(q)}`);
+    const sData = await sRes.json();
+    const ids = (sData.coins||[]).slice(0,12).map(c=>c.id).join(',');
+    if(!ids) throw new Error('no results');
+    const mRes = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&order=market_cap_desc&sparkline=true&price_change_percentage=1h,24h,7d`);
+    const mData = await mRes.json();
+    if(!Array.isArray(mData)||mData.length===0) throw new Error('no data');
+    allLoaded = mData.map(enrichCoin);
+    renderGrid(allLoaded,'live');
+    updateBanner('live',`Search: "${q}" — ${allLoaded.length} results`);
+  } catch(e) {
+    document.getElementById('crypto-content').innerHTML=`<div class="empty-state">No results found for <strong>"${q}"</strong><br>Try a coin name or ticker symbol</div>`;
+    updateBanner('simulation');
+  }
+}
+
+function setCategory(cat, btn) {
+  currentCat=cat; currentPage=1;
+  document.querySelectorAll('#cat-row .filter-btn').forEach(b=>b.classList.toggle('active',b===btn));
+  loadCrypto(true);
+}
+
+function setSort(sort, btn) {
+  currentSort=sort; currentPage=1;
+  document.querySelectorAll('.sort-row .filter-btn').forEach(b=>b.classList.toggle('active',b===btn));
+  loadCrypto(true);
+}
+
+function updateBanner(mode, extra='') {
+  const banner=document.getElementById('data-banner');
+  if(mode==='live'){
+    banner.className='odds-api-banner live';
+    banner.innerHTML=`<div class="oab-dot live"></div><div class="oab-text">${extra||`LIVE — <strong>CoinGecko</strong> · ${allLoaded.length} assets · ${new Date().toLocaleTimeString()}`}</div>`;
+  } else {
+    banner.className='odds-api-banner sim';
+    banner.innerHTML=`<div class="oab-dot sim"></div><div class="oab-text">SIMULATION MODE</div>`;
+  }
+}
+
+function renderGrid(data, mode) {
+  const el=document.getElementById('crypto-content');
+  el.innerHTML=`<div class="section-header"><div class="section-title">Crypto Intelligence</div><div class="section-meta">${data.length} ASSETS · ${mode.toUpperCase()}</div></div><div class="cards-grid" id="crypto-grid"></div>`;
+  const grid=document.getElementById('crypto-grid');
+  data.forEach(a=>{
+    const card=document.createElement('div'); card.className='card'; card.innerHTML=buildCCard(a); grid.appendChild(card);
+    setTimeout(()=>{
+      const bb=card.querySelector('.bias-bar-fill'); if(bb) bb.style.width=a.bullish+'%';
+      const nn=card.querySelector('.rsi-needle');    if(nn) nn.style.left=a.rsi+'%';
+      const cf=card.querySelector('.conf-bar');      if(cf) cf.style.width=a.confidence+'%';
+      animateBars(card);
+    },60);
+  });
+}
+
+function enrichCoin(coin) {
+  const spark=coin.sparkline_in_7d?.price||[];
+  const rsi=computeRSI(spark,14);
+  const ma7=spark.length>=7?avg(spark.slice(-7)):coin.current_price;
+  const ma20=spark.length>=20?avg(spark.slice(-20)):coin.current_price;
+  const chg24=coin.price_change_percentage_24h_in_currency||0;
+  const chg7d=coin.price_change_percentage_7d_in_currency||0;
+  const chg1h=coin.price_change_percentage_1h_in_currency||0;
+  const bull=Math.min(97,Math.max(3,Math.round(50+(rsi-50)*0.5+chg24*2.5+(coin.current_price>ma20?8:-8))));
+  const signal=bull>72?{label:'STRONG BUY',color:'#00ff9d'}:bull>58?{label:'BUY',color:'#7affc4'}:bull>45?{label:'NEUTRAL',color:'#f0c040'}:bull>32?{label:'SELL',color:'#ff6b6b'}:{label:'STRONG SELL',color:'#ff2d55'};
+  const zone=rsi>70?{zone:'OVERBOUGHT',action:'Reversal risk — consider exit',risk:'HIGH'}:rsi<30?{zone:'OVERSOLD',action:'Bounce opportunity',risk:'MEDIUM'}:coin.current_price>ma20*1.05?{zone:'BREAKOUT',action:'Momentum play',risk:'MEDIUM'}:coin.current_price<ma20*0.95?{zone:'DISCOUNT',action:'Accumulation zone',risk:'LOW'}:{zone:'NEUTRAL',action:'Wait for clear signal',risk:'LOW'};
+  const el=Math.abs(bull-50)>22?'STRONG':Math.abs(bull-50)>10?'MEDIUM':'WEAK';
+  const conf=Math.min(96,Math.round(50+Math.abs(rsi-50)*0.9+Math.abs(chg24)*1.2));
+  const reasons=[];
+  if(chg24>3) reasons.push(`+${chg24.toFixed(1)}% 24h momentum — bullish pressure`);
+  else if(chg24<-3) reasons.push(`${chg24.toFixed(1)}% 24h sell-off ongoing`);
+  else reasons.push('24h price consolidating');
+  reasons.push(coin.current_price>ma20?'above 20-period MA — bullish structure':'below 20-period MA — bearish structure');
+  if(rsi>68) reasons.push(`RSI ${rsi.toFixed(0)} — overbought, reversal risk`);
+  else if(rsi<32) reasons.push(`RSI ${rsi.toFixed(0)} — oversold, bounce potential`);
+  else reasons.push(`RSI ${rsi.toFixed(0)} — neutral momentum`);
+  reasons.push(`7d: ${chg7d>=0?'+':''}${chg7d.toFixed(1)}% · rank #${coin.market_cap_rank||'—'}`);
+  return{symbol:coin.symbol?.toUpperCase(),name:coin.name,price:coin.current_price,change24:+chg24.toFixed(2),change7d:+chg7d.toFixed(2),change1h:+chg1h.toFixed(2),volume24h:coin.total_volume,rank:coin.market_cap_rank,image:coin.image,rsi:+rsi.toFixed(1),ma7:+ma7.toFixed(coin.current_price>100?2:4),ma20:+ma20.toFixed(coin.current_price>100?2:4),bullish:bull,bearish:100-bull,signal,edgeZone:zone,edgeLabel:el,confidence:conf,reasons,ath:coin.ath,athChange:+(coin.ath_change_percentage||0).toFixed(1)};
+}
+
+function buildCCard(a) {
+  const cc=a.change24>=0?'pos':'neg',cs=a.change24>=0?'+':'';
+  const ec=edgeClass(a.edgeLabel);
+  const vr=Math.min(100,Math.round(50+Math.abs(a.bullish-50)));
+  const vc=vr>70?'linear-gradient(90deg,var(--neon2),var(--neon))':vr>50?'linear-gradient(90deg,var(--yellow),#f0a040)':'linear-gradient(90deg,#666,#555)';
+  const ath=a.athChange?`<div class="stat-chip">ATH <span style="color:var(--red)">${a.athChange}%</span></div>`:'';
+  return `
+    <div class="crypto-header">
+      <div><div style="display:flex;align-items:center;gap:6px;">
+        ${a.image?`<img src="${a.image}" style="width:20px;height:20px;border-radius:50%;" onerror="this.style.display='none'"/>`:''}
+        <div class="crypto-symbol">${a.symbol}</div>
+        ${a.rank?`<span style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);background:var(--bg4);padding:2px 5px;border-radius:3px;">#${a.rank}</span>`:''}
+      </div><div class="crypto-name">${a.name}</div></div>
+      <div><div class="crypto-price">$${fmtPrice(a.price)}</div><div class="crypto-change ${cc}">${cs}${a.change24}%<span style="color:var(--text-dim);font-size:9px"> 24H</span></div></div>
+    </div>
+    <span class="signal-badge" style="background:${a.signal.color}22;color:${a.signal.color};border:1px solid ${a.signal.color}44;">${a.signal.label}</span>
+    <div class="bias-gauge"><div class="bias-labels"><span>BEAR ${a.bearish}%</span><span>BULL ${a.bullish}%</span></div><div class="bias-bar-wrap"><div class="bias-bar-fill" style="width:0%"></div></div></div>
+    <div class="rsi-row"><span class="rsi-label">RSI</span><div class="rsi-track"><div class="rsi-needle" style="left:0%"></div></div><span class="rsi-value">${a.rsi}</span></div>
+    <div class="vm-row"><span class="vm-label">VALUE</span><div class="vm-track"><div class="vm-fill" data-w="${vr}" style="width:0%;background:${vc}"></div></div><span class="vm-value">${vr}/100</span></div>
+    <div class="edge-zone-box"><div class="ez-zone">${a.edgeZone.zone}</div><div class="ez-action">${a.edgeZone.action}</div></div>
+    <div class="stat-chips">
+      <div class="stat-chip">MA7 <span>$${fmtPrice(a.ma7)}</span></div>
+      <div class="stat-chip">MA20 <span>$${fmtPrice(a.ma20)}</span></div>
+      ${a.change1h!==undefined?`<div class="stat-chip">1H <span style="color:${a.change1h>=0?'var(--neon)':'var(--red)'}">${a.change1h>=0?'+':''}${a.change1h}%</span></div>`:''}
+      <div class="stat-chip">7D <span style="color:${a.change7d>=0?'var(--neon)':'var(--red)'}">${a.change7d>=0?'+':''}${a.change7d}%</span></div>
+      ${a.volume24h?`<div class="stat-chip">VOL <span>$${fmtVol(a.volume24h)}</span></div>`:''}
+      ${ath}
+    </div>
+    <div class="value-badge ${ec}" style="margin-top:8px;"><div class="value-dot"></div>${a.edgeLabel} EDGE · RISK: ${a.edgeZone.risk}</div>
+    <div class="conf-row"><span class="conf-label">CONF</span><div class="conf-bar-wrap"><div class="conf-bar" style="width:0%"></div></div><span class="conf-value">${a.confidence}</span></div>
+    <div class="ai-explain" style="margin-top:8px;"><div class="ai-explain-title">⚡ SIGNAL ANALYSIS</div><ul class="ai-explain-list">${a.reasons.map(r=>`<li>${r}</li>`).join('')}</ul></div>`;
+}
+
+function fmtVol(v){if(v>=1e9)return(v/1e9).toFixed(1)+'B';if(v>=1e6)return(v/1e6).toFixed(0)+'M';return(v/1e3).toFixed(0)+'K';}
+function avg(arr){return arr.reduce((a,b)=>a+b,0)/arr.length;}
+function computeRSI(prices,period=14){
+  if(prices.length<period+1) return 50;
+  let g=0,l=0;
+  for(let i=prices.length-period;i<prices.length;i++){const d=prices[i]-prices[i-1];if(d>=0)g+=d;else l-=d;}
+  const rs=(g/period)/((l/period)||0.001);
+  return+(100-100/(1+rs)).toFixed(1);
+}
+
+function getFallback(){
+  return [{symbol:'BTC',name:'Bitcoin',price:83200,change24:0.8,change7d:2.1,change1h:0.1,rsi:55,ma7:82400,ma20:79800,volume24h:38e9,rank:1,image:''},{symbol:'ETH',name:'Ethereum',price:1920,change24:-1.2,change7d:-4.1,change1h:-0.3,rsi:44,ma7:1960,ma20:2080,volume24h:12e9,rank:2,image:''},{symbol:'SOL',name:'Solana',price:87,change24:-3.0,change7d:-8.2,change1h:-0.5,rsi:38,ma7:95,ma20:108,volume24h:4.1e9,rank:5,image:''}].map(a=>{const bull=Math.min(97,Math.max(3,Math.round(50+(a.rsi-50)*0.5+a.change24*2.5+(a.price>a.ma20?8:-8))));const signal=bull>72?{label:'STRONG BUY',color:'#00ff9d'}:bull>58?{label:'BUY',color:'#7affc4'}:bull>45?{label:'NEUTRAL',color:'#f0c040'}:bull>32?{label:'SELL',color:'#ff6b6b'}:{label:'STRONG SELL',color:'#ff2d55'};const zone=a.rsi>70?{zone:'OVERBOUGHT',action:'Reversal risk',risk:'HIGH'}:a.rsi<30?{zone:'OVERSOLD',action:'Bounce potential',risk:'MEDIUM'}:a.price>a.ma20*1.05?{zone:'BREAKOUT',action:'Momentum play',risk:'MEDIUM'}:a.price<a.ma20*0.95?{zone:'DISCOUNT',action:'Accumulation zone',risk:'LOW'}:{zone:'NEUTRAL',action:'Wait for signal',risk:'LOW'};const el=Math.abs(bull-50)>22?'STRONG':Math.abs(bull-50)>10?'MEDIUM':'WEAK';return{...a,bullish:bull,bearish:100-bull,signal,edgeZone:zone,edgeLabel:el,confidence:Math.min(96,Math.round(50+Math.abs(a.rsi-50)*0.9+Math.abs(a.change24)*1.2)),reasons:[`${a.change24>=0?'+':''}${a.change24}% 24h`,a.price>a.ma20?'above MA20':'below MA20',`RSI ${a.rsi}`,`Vol $${fmtVol(a.volume24h)}`]};});
+}
+
+// Enter key triggers search
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&document.activeElement.id==='crypto-search') searchCoin(); });
+</script>
+</body>
+</html>
