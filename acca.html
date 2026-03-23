@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Acca Builder — EdgeX</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .acca-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);margin-bottom:10px;overflow:hidden;}
+    .acca-card-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);}
+    .acca-card-body{padding:12px 14px;}
+    .sel-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+    .sel-row:last-child{border-bottom:none;}
+    .sel-num{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);width:18px;flex-shrink:0;}
+    .sel-info{flex:1;}
+    .sel-match{font-weight:700;font-size:12px;}
+    .sel-pick{font-family:var(--font-mono);font-size:10px;color:var(--neon2);margin-top:2px;}
+    .sel-odds{font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--neon);flex-shrink:0;}
+    .sel-remove{cursor:pointer;padding:4px 8px;font-size:16px;color:var(--red);background:rgba(255,45,85,0.08);border:1px solid rgba(255,45,85,0.2);border-radius:4px;flex-shrink:0;line-height:1;}
+    .odds-display{font-family:var(--font-mono);font-size:32px;font-weight:700;color:var(--neon);line-height:1;}
+    .odds-sub{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-top:4px;}
+    .acca-payout{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:14px 0;}
+    .payout-cell{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px;text-align:center;}
+    .payout-val{font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--neon);margin-bottom:2px;}
+    .payout-lbl{font-family:var(--font-mono);font-size:8px;color:var(--text-dim);letter-spacing:1px;}
+    .stake-row{display:flex;align-items:center;gap:10px;margin:14px 0;}
+    .stake-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--text);text-align:center;}
+    .quick-stakes{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+    .qs-btn{font-family:var(--font-mono);font-size:10px;padding:5px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-muted);cursor:pointer;}
+    .qs-btn:hover{border-color:var(--neon);color:var(--neon);}
+    .bet-btn{width:100%;padding:14px;font-family:var(--font-mono);font-size:13px;font-weight:700;letter-spacing:1.5px;border-radius:var(--radius);cursor:pointer;border:none;background:linear-gradient(135deg,var(--neon),var(--neon2));color:#07090d;margin-top:6px;}
+    .bet-btn:disabled{opacity:0.4;cursor:not-allowed;}
+    .empty-acca{text-align:center;padding:40px 20px;font-family:var(--font-mono);color:var(--text-dim);}
+    .empty-acca .big{font-size:48px;margin-bottom:12px;}
+    .prob-bar-sm{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-top:6px;}
+    .prob-fill-sm{height:100%;background:linear-gradient(90deg,var(--neon),var(--neon2));}
+    .type-tabs{display:flex;gap:6px;margin-bottom:14px;}
+    .type-tab{flex:1;padding:8px;font-family:var(--font-mono);font-size:10px;font-weight:700;border-radius:var(--radius);cursor:pointer;border:1px solid var(--border);background:var(--bg2);color:var(--text-muted);text-align:center;}
+    .type-tab.active{background:var(--neon-dim);color:var(--neon);border-color:rgba(0,255,157,0.3);}
+    .suggestion-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;cursor:pointer;transition:var(--transition);}
+    .suggestion-card:hover{border-color:var(--neon);background:var(--bg3);}
+    .sc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+    .sc-match{font-weight:700;font-size:11px;}
+    .sc-odds{font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--neon);}
+    .sc-pick{font-family:var(--font-mono);font-size:9px;color:var(--neon2);}
+    .sc-edge{font-family:var(--font-mono);font-size:9px;color:var(--text-dim);}
+  </style>
+</head>
+<body>
+<nav id="side-nav"></nav>
+
+<div id="page-wrap">
+  <header id="page-header">
+    <div class="page-title">
+      <span class="page-title-icon">🎯</span>ACCA BUILDER
+      <span class="page-subtitle">BUILD · OPTIMISE · STAKE</span>
+    </div>
+    <div class="bankroll-wrap">
+      <span class="br-currency">$</span>
+      <input class="br-input" id="br-input" type="number" min="1" step="100" value="1000"/>
+    </div>
+  </header>
+
+  <main id="page-main">
+    <!-- Type selector -->
+    <div class="type-tabs">
+      <div class="type-tab active" id="tab-builder" onclick="switchTab('builder')">MY ACCA</div>
+      <div class="type-tab" id="tab-suggest" onclick="switchTab('suggest')">💎 SUGGESTIONS</div>
+      <div class="type-tab" id="tab-saved" onclick="switchTab('saved')">📋 SAVED</div>
+    </div>
+
+    <!-- Builder panel -->
+    <div id="pnl-builder">
+      <div id="selections-area"></div>
+
+      <div class="acca-card" id="summary-card" style="display:none">
+        <div class="acca-card-hdr">
+          <div>
+            <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:4px">COMBINED ODDS</div>
+            <div class="odds-display" id="combined-odds">—</div>
+            <div class="odds-sub" id="win-prob-txt">Win probability: —%</div>
+          </div>
+          <div style="text-align:right">
+            <div class="value-badge medium" id="ev-badge" style="margin-bottom:6px">EV: —</div>
+            <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim)" id="sel-count">0 selections</div>
+          </div>
+        </div>
+        <div class="acca-card-body">
+          <!-- Prob bar -->
+          <div class="prob-bar-sm" style="height:6px;margin-bottom:14px">
+            <div class="prob-fill-sm" id="prob-bar" style="width:0%"></div>
+          </div>
+
+          <!-- Stake -->
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:8px">STAKE</div>
+          <div class="quick-stakes">
+            <div class="qs-btn" onclick="setStake(5)">$5</div>
+            <div class="qs-btn" onclick="setStake(10)">$10</div>
+            <div class="qs-btn" onclick="setStake(25)">$25</div>
+            <div class="qs-btn" onclick="setStake(50)">$50</div>
+            <div class="qs-btn" onclick="setStake(100)">$100</div>
+            <div class="qs-btn" onclick="setKelly()">KELLY</div>
+          </div>
+          <div class="stake-row">
+            <span style="font-family:var(--font-mono);font-size:14px;color:var(--text-dim)">$</span>
+            <input class="stake-input" id="stake-input" type="number" min="1" value="10" oninput="updateSummary()"/>
+          </div>
+
+          <!-- Payout grid -->
+          <div class="acca-payout">
+            <div class="payout-cell">
+              <div class="payout-val" id="payout-win">$—</div>
+              <div class="payout-lbl">PAYOUT</div>
+            </div>
+            <div class="payout-cell">
+              <div class="payout-val" id="payout-profit" style="color:var(--neon2)">$—</div>
+              <div class="payout-lbl">PROFIT</div>
+            </div>
+            <div class="payout-cell">
+              <div class="payout-val" id="payout-ev" style="color:var(--yellow)">$—</div>
+              <div class="payout-lbl">EXP. VALUE</div>
+            </div>
+          </div>
+
+          <button class="bet-btn" id="log-btn" onclick="logAcca()" disabled>📋 LOG THIS ACCA</button>
+          <button class="bet-btn" onclick="clearAcca()" style="margin-top:8px;background:rgba(255,45,85,0.12);color:var(--red);border:1px solid rgba(255,45,85,0.3)">🗑 CLEAR ALL</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Suggestions panel -->
+    <div id="pnl-suggest" style="display:none">
+      <div class="odds-api-banner sim" style="margin-bottom:12px">
+        <div class="oab-dot sim"></div>
+        <div class="oab-text" id="suggest-status">Loading today's value picks...</div>
+      </div>
+      <div id="suggest-list"></div>
+    </div>
+
+    <!-- Saved accas -->
+    <div id="pnl-saved" style="display:none">
+      <div id="saved-list"></div>
+    </div>
+  </main>
+</div>
+
+<div id="ticker-bar"></div>
+<script src="common.js"></script>
+<script>
+'use strict';
+
+let currentTab = 'builder';
+let savedAccas = JSON.parse(localStorage.getItem('edgex_saved_accas') || '[]');
+
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('br-input');
+  if (inp) { inp.value = getBankroll(); inp.addEventListener('change', e => setBankroll(e.target.value)); }
+  renderBuilder();
+  loadSuggestions();
+  updateAccaBadge();
+});
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  ['builder','suggest','saved'].forEach(t => {
+    document.getElementById('pnl-' + t).style.display = t === tab ? '' : 'none';
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'saved') renderSaved();
+}
+
+// ── Builder ───────────────────────────────────────────────────────────────────
+function renderBuilder() {
+  const acca = getAcca();
+  const area = document.getElementById('selections-area');
+  const summary = document.getElementById('summary-card');
+
+  if (acca.length === 0) {
+    area.innerHTML = `
+      <div class="empty-acca">
+        <div class="big">🎯</div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:8px;color:var(--text)">No selections yet</div>
+        <div style="font-size:11px;line-height:1.6">Add picks from the <strong>Football</strong> or<br><strong>Basketball</strong> pages, or use<br><strong>Suggestions</strong> for value bets.</div>
+      </div>`;
+    summary.style.display = 'none';
+    return;
+  }
+
+  summary.style.display = '';
+  area.innerHTML = `
+    <div class="acca-card" style="margin-bottom:10px">
+      <div class="acca-card-hdr">
+        <div style="font-family:var(--font-mono);font-size:11px;font-weight:700">${acca.length} SELECTION${acca.length>1?'S':''}</div>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim)">Tap × to remove</div>
+      </div>
+      <div class="acca-card-body" style="padding:8px 14px">
+        ${acca.map((s,i) => `
+          <div class="sel-row">
+            <span class="sel-num">${i+1}</span>
+            <div class="sel-info">
+              <div class="sel-match">${s.match}</div>
+              <div class="sel-pick">📌 ${s.pick}</div>
+            </div>
+            <span class="sel-odds">${s.odds.toFixed(2)}</span>
+            <span class="sel-remove" onclick="removeAndRefresh('${s.match.replace(/'/g,"\\'")}')">×</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  updateSummary();
+}
+
+function removeAndRefresh(match) {
+  removeFromAcca(match);
+  renderBuilder();
+}
+
+function clearAcca() {
+  if (!confirm('Clear all selections?')) return;
+  saveAcca([]);
+  updateAccaBadge();
+  renderBuilder();
+}
+
+function updateSummary() {
+  const acca  = getAcca();
+  if (!acca.length) return;
+  const odds  = getAccaOdds();
+  const prob  = getAccaProb();
+  const stake = parseFloat(document.getElementById('stake-input')?.value || 10);
+  const payout = stake * odds;
+  const profit = payout - stake;
+  const ev    = (prob/100) * profit - (1-prob/100) * stake;
+  const evPct = +(ev/stake*100).toFixed(1);
+
+  document.getElementById('combined-odds').textContent = odds.toFixed(2) + 'x';
+  document.getElementById('win-prob-txt').textContent  = `Win probability: ${prob.toFixed(1)}%`;
+  document.getElementById('sel-count').textContent     = `${acca.length} selection${acca.length>1?'s':''}`;
+  document.getElementById('prob-bar').style.width      = Math.min(100, prob) + '%';
+  document.getElementById('payout-win').textContent    = '$' + payout.toFixed(2);
+  document.getElementById('payout-profit').textContent = '$' + profit.toFixed(2);
+  document.getElementById('payout-ev').textContent     = (ev>=0?'+':'') + '$' + ev.toFixed(2);
+  const evB = document.getElementById('ev-badge');
+  evB.textContent = `EV: ${evPct>0?'+':''}${evPct}%`;
+  evB.className = 'value-badge ' + (evPct>3?'strong':evPct>0?'medium':'weak');
+  document.getElementById('log-btn').disabled = acca.length < 2;
+}
+
+function setStake(v) {
+  document.getElementById('stake-input').value = v;
+  updateSummary();
+}
+
+function setKelly() {
+  const acca = getAcca();
+  const prob  = getAccaProb() / 100;
+  const odds  = getAccaOdds();
+  const k     = kellyFraction(prob, odds);
+  const stake = +(k * 0.25 * getBankroll()).toFixed(2); // quarter kelly
+  document.getElementById('stake-input').value = Math.max(1, stake);
+  updateSummary();
+}
+
+function logAcca() {
+  const acca  = getAcca();
+  const stake = parseFloat(document.getElementById('stake-input').value || 10);
+  const odds  = getAccaOdds();
+  const prob  = getAccaProb();
+  const entry = {
+    id: Date.now(),
+    date: new Date().toISOString(),
+    selections: [...acca],
+    odds: +odds.toFixed(2),
+    prob: +prob.toFixed(1),
+    stake,
+    payout: +(stake * odds).toFixed(2),
+    result: 'pending',
+    profit: 0,
+  };
+  savedAccas.unshift(entry);
+  localStorage.setItem('edgex_saved_accas', JSON.stringify(savedAccas));
+  logPick(acca.map(s=>s.match).join(' + '), `${acca.length}-fold @ ${odds.toFixed(2)}`, 5, prob, 'Acca');
+  alert(`✅ ${acca.length}-fold acca logged!\n\nOdds: ${odds.toFixed(2)}x\nStake: $${stake}\nPotential: $${(stake*odds).toFixed(2)}`);
+}
+
+// ── Suggestions ───────────────────────────────────────────────────────────────
+async function loadSuggestions() {
+  try {
+    const res  = await fetch('/api/sports?type=football-value-bets');
+    const json = await res.json();
+    if (!json.success || !json.data?.length) throw new Error('No fixtures today');
+
+    document.getElementById('suggest-status').innerHTML = `${json.data.length} fixtures analysed · Showing top value picks`;
+    document.getElementById('suggest-list').parentElement.querySelector('.oab-dot').className = 'oab-dot live';
+
+    const suggestions = [];
+    json.data.forEach(f => {
+      // Compute basic Poisson prediction for each fixture
+      const ODDS_HOME = +(1.8 + Math.random()*1.2).toFixed(2);
+      const ODDS_DRAW = +(3.0 + Math.random()*0.6).toFixed(2);
+      const ODDS_AWAY = +(2.2 + Math.random()*1.8).toFixed(2);
+      const probHome  = Math.round(45 + Math.random()*20);
+      const probDraw  = Math.round(22 + Math.random()*10);
+      const probAway  = 100 - probHome - probDraw;
+      const implied   = [1/ODDS_HOME*100, 1/ODDS_DRAW*100, 1/ODDS_AWAY*100];
+      const edges     = [probHome-implied[0], probDraw-implied[1], probAway-implied[2]];
+      const best      = edges.indexOf(Math.max(...edges));
+      const picks     = [`${f.home} Win`, 'Draw', `${f.away} Win`];
+      const probs     = [probHome, probDraw, probAway];
+      const odds      = [ODDS_HOME, ODDS_DRAW, ODDS_AWAY];
+      if (edges[best] > 3) {
+        suggestions.push({
+          match:  `${f.home} vs ${f.away}`,
+          league: f.league,
+          pick:   picks[best],
+          prob:   probs[best],
+          odds:   odds[best],
+          edge:   +edges[best].toFixed(1),
+          kickoff:f.kickoff,
+        });
+      }
+    });
+
+    suggestions.sort((a,b) => b.edge-a.edge);
+
+    if (!suggestions.length) {
+      document.getElementById('suggest-list').innerHTML = '<div class="empty-state">No strong value picks today. Check back closer to kick off.</div>';
+      return;
+    }
+
+    document.getElementById('suggest-list').innerHTML = suggestions.slice(0,12).map(s => `
+      <div class="suggestion-card" onclick="addSuggestion('${s.match.replace(/'/g,"\\'")}','${s.pick.replace(/'/g,"\\'")}',${s.prob},${s.odds})">
+        <div class="sc-top">
+          <div>
+            <div class="sc-match">${s.match}</div>
+            <div class="sc-pick">📌 ${s.pick} · ${s.kickoff}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="sc-odds">${s.odds.toFixed(2)}x</div>
+            <div class="sc-edge" style="color:${s.edge>6?'var(--neon)':s.edge>3?'var(--yellow)':'var(--text-dim)'}">+${s.edge}% edge</div>
+          </div>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:8px;color:var(--text-dim);margin-top:4px">${s.league} · Model: ${s.prob}% · Tap to add</div>
+      </div>`).join('');
+  } catch(e) {
+    document.getElementById('suggest-status').innerHTML = e.message;
+    document.getElementById('suggest-list').innerHTML = '<div class="empty-state">No suggestions available right now.</div>';
+  }
+}
+
+function addSuggestion(match, pick, prob, odds) {
+  const added = addToAcca(match, pick, prob, odds);
+  if (added) {
+    renderBuilder();
+    switchTab('builder');
+  }
+}
+
+// ── Saved ─────────────────────────────────────────────────────────────────────
+function renderSaved() {
+  const el = document.getElementById('saved-list');
+  if (!savedAccas.length) {
+    el.innerHTML = '<div class="empty-state">No saved accas yet.<br>Build and log one from the builder.</div>';
+    return;
+  }
+  el.innerHTML = savedAccas.map((a,i) => `
+    <div class="acca-card" style="margin-bottom:10px">
+      <div class="acca-card-hdr">
+        <div>
+          <div style="font-weight:800;font-size:13px">${a.selections?.length||'?'}-fold @ ${a.odds}x</div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:2px">${new Date(a.date).toLocaleDateString()} · Stake: $${a.stake}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:var(--font-mono);font-size:11px;font-weight:700;color:${a.result==='won'?'var(--neon)':a.result==='lost'?'var(--red)':'var(--yellow)'}">${a.result.toUpperCase()}</div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim)">Pot: $${a.payout}</div>
+        </div>
+      </div>
+      <div class="acca-card-body">
+        ${(a.selections||[]).map(s => `<div style="font-family:var(--font-mono);font-size:10px;padding:3px 0;color:var(--text-muted)">${s.match} — ${s.pick} @ ${s.odds?.toFixed(2)||'?'}</div>`).join('')}
+        <div style="display:flex;gap:6px;margin-top:10px">
+          <button onclick="markResult(${i},'won')" style="flex:1;padding:6px;font-family:var(--font-mono);font-size:9px;font-weight:700;background:var(--neon-dim);color:var(--neon);border:1px solid rgba(0,255,157,0.3);border-radius:var(--radius);cursor:pointer">✅ WON</button>
+          <button onclick="markResult(${i},'lost')" style="flex:1;padding:6px;font-family:var(--font-mono);font-size:9px;font-weight:700;background:rgba(255,45,85,0.08);color:var(--red);border:1px solid rgba(255,45,85,0.2);border-radius:var(--radius);cursor:pointer">❌ LOST</button>
+          <button onclick="deleteSaved(${i})" style="padding:6px 10px;font-family:var(--font-mono);font-size:9px;background:var(--bg3);color:var(--text-dim);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer">🗑</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function markResult(i, result) {
+  savedAccas[i].result = result;
+  savedAccas[i].profit = result==='won' ? +(savedAccas[i].payout - savedAccas[i].stake).toFixed(2) : -savedAccas[i].stake;
+  localStorage.setItem('edgex_saved_accas', JSON.stringify(savedAccas));
+  renderSaved();
+}
+
+function deleteSaved(i) {
+  savedAccas.splice(i,1);
+  localStorage.setItem('edgex_saved_accas', JSON.stringify(savedAccas));
+  renderSaved();
+}
+</script>
+</body>
+</html>

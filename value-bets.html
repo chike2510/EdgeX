@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Value Bets — EdgeX</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .vb-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:14px;margin-bottom:10px;transition:var(--transition);}
+    .vb-card.strong{border-left:3px solid var(--neon);}
+    .vb-card.medium{border-left:3px solid var(--yellow);}
+    .vb-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+    .vb-match{font-weight:800;font-size:14px;margin-bottom:3px;}
+    .vb-league{font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;}
+    .vb-right{text-align:right;flex-shrink:0;}
+    .vb-odds{font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--neon);line-height:1;}
+    .vb-kickoff{font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:3px;}
+    .vb-pick{background:var(--neon-dim);border:1px solid rgba(0,255,157,0.25);border-radius:var(--radius);padding:6px 10px;display:inline-flex;align-items:center;gap:6px;margin-bottom:8px;}
+    .vb-pick-lbl{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--neon);}
+    .vb-pick-prob{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);}
+    .vb-bars{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;}
+    .vb-bar-wrap{text-align:center;}
+    .vb-bar-lbl{font-family:var(--font-mono);font-size:8px;color:var(--text-dim);margin-bottom:3px;}
+    .vb-bar-track{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-bottom:2px;}
+    .vb-bar-fill{height:100%;border-radius:2px;transition:width 0.8s ease;}
+    .vb-bar-val{font-family:var(--font-mono);font-size:9px;font-weight:700;}
+    .markets-mini{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;}
+    .mkt-pill{font-family:var(--font-mono);font-size:8px;padding:2px 6px;border-radius:3px;background:var(--bg3);border:1px solid var(--border);color:var(--text-dim);}
+    .mkt-pill.val{color:var(--neon);background:var(--neon-dim);border-color:rgba(0,255,157,0.25);}
+    .edge-badge-big{font-family:var(--font-mono);font-size:11px;font-weight:700;padding:4px 10px;border-radius:4px;}
+    .edge-badge-big.strong{background:var(--neon-dim);color:var(--neon);border:1px solid rgba(0,255,157,0.3);}
+    .edge-badge-big.medium{background:rgba(245,200,66,0.1);color:var(--yellow);border:1px solid rgba(245,200,66,0.3);}
+    .filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;}
+    .summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+    .ss-cell{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px;text-align:center;}
+    .ss-val{font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--neon);}
+    .ss-lbl{font-family:var(--font-mono);font-size:8px;color:var(--text-dim);letter-spacing:1px;margin-top:2px;}
+    .sort-row{display:flex;align-items:center;gap:6px;margin-bottom:12px;}
+    .sort-lbl{font-family:var(--font-mono);font-size:9px;color:var(--text-dim);}
+    .sort-btn{font-family:var(--font-mono);font-size:9px;padding:4px 8px;border-radius:3px;cursor:pointer;border:1px solid var(--border);background:var(--bg2);color:var(--text-muted);}
+    .sort-btn.active{background:var(--neon-dim);color:var(--neon);border-color:rgba(0,255,157,0.3);}
+  </style>
+</head>
+<body>
+<nav id="side-nav"></nav>
+
+<div id="page-wrap">
+  <header id="page-header">
+    <div class="page-title">
+      <span class="page-title-icon">💎</span>VALUE BETS
+      <span class="page-subtitle">EDGE · MODELS · DAILY PICKS</span>
+    </div>
+    <div class="bankroll-wrap">
+      <span class="br-currency">$</span>
+      <input class="br-input" id="br-input" type="number" value="1000"/>
+    </div>
+    <button id="refresh-btn" onclick="loadValueBets()">⟳</button>
+  </header>
+
+  <main id="page-main">
+    <div id="vb-banner" class="odds-api-banner sim" style="margin-bottom:12px">
+      <div class="oab-dot sim" id="vb-dot"></div>
+      <div class="oab-text" id="vb-status">Scanning today's fixtures for value...</div>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-strip" id="summary-strip" style="display:none">
+      <div class="ss-cell"><div class="ss-val" id="ss-total">—</div><div class="ss-lbl">SCANNED</div></div>
+      <div class="ss-cell"><div class="ss-val" id="ss-value">—</div><div class="ss-lbl">VALUE BETS</div></div>
+      <div class="ss-cell"><div class="ss-val" id="ss-strong" style="color:var(--neon)">—</div><div class="ss-lbl">STRONG EDGE</div></div>
+      <div class="ss-cell"><div class="ss-val" id="ss-avg-edge" style="color:var(--yellow)">—</div><div class="ss-lbl">AVG EDGE</div></div>
+    </div>
+
+    <!-- Sort + filter -->
+    <div class="sort-row">
+      <span class="sort-lbl">SORT:</span>
+      <div class="sort-btn active" id="sort-edge" onclick="sortBy('edge',this)">EDGE ↓</div>
+      <div class="sort-btn" id="sort-odds" onclick="sortBy('odds',this)">ODDS</div>
+      <div class="sort-btn" id="sort-prob" onclick="sortBy('prob',this)">PROB</div>
+      <div class="sort-btn" id="sort-ev" onclick="sortBy('ev',this)">EXP VALUE</div>
+    </div>
+
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="filterLeague('ALL',this)">ALL</button>
+      <button class="filter-btn" onclick="filterLeague('Premier League',this)">EPL</button>
+      <button class="filter-btn" onclick="filterLeague('Champions League',this)">UCL</button>
+      <button class="filter-btn" onclick="filterLeague('La Liga',this)">LA LIGA</button>
+      <button class="filter-btn" onclick="filterLeague('Bundesliga',this)">BUND</button>
+      <button class="filter-btn" onclick="filterLeague('Serie A',this)">SERIE A</button>
+    </div>
+
+    <div id="vb-list"></div>
+  </main>
+</div>
+
+<div id="ticker-bar"></div>
+<script src="common.js"></script>
+<script>
+'use strict';
+
+let ALL_BETS = [];
+let sortMode = 'edge';
+let leagueFilter = 'ALL';
+
+const TEAMS_DB=[
+  {name:'Manchester City',atk:91,def:87,ha:1.18},{name:'Arsenal',atk:88,def:85,ha:1.15},
+  {name:'Liverpool',atk:90,def:82,ha:1.20},{name:'Manchester United',atk:74,def:70,ha:1.10},
+  {name:'Chelsea',atk:81,def:78,ha:1.10},{name:'Tottenham',atk:79,def:74,ha:1.08},
+  {name:'Newcastle',atk:77,def:80,ha:1.12},{name:'Aston Villa',atk:80,def:76,ha:1.09},
+  {name:'Brighton',atk:75,def:72,ha:1.06},{name:'West Ham',atk:70,def:68,ha:1.05},
+  {name:'Real Madrid',atk:94,def:88,ha:1.22},{name:'Barcelona',atk:92,def:84,ha:1.20},
+  {name:'Atletico Madrid',atk:79,def:88,ha:1.15},{name:'Bayern Munich',atk:93,def:86,ha:1.21},
+  {name:'Borussia Dortmund',atk:83,def:75,ha:1.14},{name:'Bayer Leverkusen',atk:86,def:80,ha:1.16},
+  {name:'Inter Milan',atk:85,def:86,ha:1.16},{name:'AC Milan',atk:82,def:80,ha:1.14},
+  {name:'Juventus',atk:78,def:82,ha:1.10},{name:'Napoli',atk:80,def:78,ha:1.13},
+  {name:'PSG',atk:89,def:83,ha:1.18},{name:'Porto',atk:76,def:79,ha:1.12},
+];
+
+function findTeam(n){
+  const nl=n.toLowerCase();
+  return TEAMS_DB.find(t=>nl.includes(t.name.toLowerCase())||t.name.toLowerCase().includes(nl.split(' ')[0]))||null;
+}
+
+function poisson(l,k){let p=Math.exp(-l);for(let i=1;i<=k;i++)p*=l/i;return p;}
+
+function computeProbs(homeName, awayName){
+  const h=findTeam(homeName),a=findTeam(awayName);
+  const hxG=h&&a ? 2.4*(h.atk/100)*(1-(a.def/100)*0.7)*h.ha : 1.35;
+  const axG=h&&a ? 2.4*(a.atk/100)*(1-(h.def/100)*0.7) : 1.05;
+  let hW=0,dr=0,aW=0;
+  for(let i=0;i<=6;i++)for(let j=0;j<=6;j++){
+    const p=poisson(hxG,i)*poisson(axG,j);
+    if(i>j)hW+=p;else if(i===j)dr+=p;else aW+=p;
+  }
+  const t=hW+dr+aW;
+  const btts=(1-poisson(hxG,0))*(1-poisson(axG,0));
+  let o25=0;for(let i=0;i<=6;i++)for(let j=0;j<=6;j++)if(i+j>2)o25+=poisson(hxG,i)*poisson(axG,j);
+  return {hW:+(hW/t*100).toFixed(1),dr:+(dr/t*100).toFixed(1),aW:+(aW/t*100).toFixed(1),hxG:+hxG.toFixed(2),axG:+axG.toFixed(2),btts:+(btts*100).toFixed(1),o25:+(o25*100).toFixed(1)};
+}
+
+function simulateOdds(prob){
+  const margin=1.08;
+  const implied=prob/100;
+  const fair=1/implied;
+  const book=fair*margin;
+  const noise=(Math.random()-0.5)*0.3;
+  return Math.max(1.05,+(book+noise).toFixed(2));
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const inp=document.getElementById('br-input');
+  if(inp){inp.value=getBankroll();inp.addEventListener('change',e=>setBankroll(e.target.value));}
+  loadValueBets();
+});
+
+async function loadValueBets(){
+  setBanner('loading','Scanning fixtures...');
+  document.getElementById('vb-list').innerHTML='<div class="empty-state"><div class="live-dot" style="display:inline-block;margin-right:8px"></div>Fetching today\'s fixtures...</div>';
+
+  try{
+    const res=await fetch('/api/sports?type=football-value-bets');
+    const json=await res.json();
+    if(!json.success||!json.data?.length)throw new Error(json.error||'No fixtures today');
+
+    ALL_BETS=[];
+    json.data.forEach(f=>{
+      const p=computeProbs(f.home,f.away);
+      const markets=[
+        {label:`${f.home} Win`,prob:p.hW,odds:simulateOdds(p.hW),type:'1X2'},
+        {label:'Draw',prob:p.dr,odds:simulateOdds(p.dr),type:'1X2'},
+        {label:`${f.away} Win`,prob:p.aW,odds:simulateOdds(p.aW),type:'1X2'},
+        {label:'BTTS Yes',prob:p.btts,odds:simulateOdds(p.btts),type:'BTTS'},
+        {label:'Over 2.5',prob:p.o25,odds:simulateOdds(p.o25),type:'Goals'},
+        {label:'Under 2.5',prob:100-p.o25,odds:simulateOdds(100-p.o25),type:'Goals'},
+      ];
+      markets.forEach(mkt=>{
+        const implied=1/mkt.odds*100;
+        const edge=+(mkt.prob-implied).toFixed(1);
+        const ev=calcEV(mkt.prob/100,mkt.odds);
+        if(edge>2.5){
+          ALL_BETS.push({
+            match:`${f.home} vs ${f.away}`,home:f.home,away:f.away,
+            league:f.league,leagueId:f.leagueId,kickoff:f.kickoff,
+            ...mkt,edge,ev:+ev.toFixed(3),
+            implied:+implied.toFixed(1),
+            probs:p,
+            edgeLbl:edge>7?'STRONG':edge>4?'MEDIUM':'WEAK',
+          });
+        }
+      });
+    });
+
+    ALL_BETS.sort((a,b)=>b.edge-a.edge);
+
+    // Summary
+    const strong=ALL_BETS.filter(b=>b.edgeLbl==='STRONG').length;
+    const avgEdge=ALL_BETS.length?+(ALL_BETS.reduce((s,b)=>s+b.edge,0)/ALL_BETS.length).toFixed(1):0;
+    document.getElementById('ss-total').textContent=json.data.length;
+    document.getElementById('ss-value').textContent=ALL_BETS.length;
+    document.getElementById('ss-strong').textContent=strong;
+    document.getElementById('ss-avg-edge').textContent=avgEdge+'%';
+    document.getElementById('summary-strip').style.display='';
+
+    renderBets();
+    setBanner('live',`${ALL_BETS.length} value bets found · ${strong} strong edge · Model: Poisson xG`);
+  }catch(e){
+    document.getElementById('vb-list').innerHTML=`<div class="empty-state"><strong>No value bets found</strong><br>${e.message}</div>`;
+    setBanner('sim','No fixtures available today');
+  }
+}
+
+function renderBets(){
+  let bets=[...ALL_BETS];
+  if(leagueFilter!=='ALL') bets=bets.filter(b=>b.league.includes(leagueFilter));
+
+  if(sortMode==='odds') bets.sort((a,b)=>b.odds-a.odds);
+  else if(sortMode==='prob') bets.sort((a,b)=>b.prob-a.prob);
+  else if(sortMode==='ev') bets.sort((a,b)=>b.ev-a.ev);
+  else bets.sort((a,b)=>b.edge-a.edge);
+
+  if(!bets.length){
+    document.getElementById('vb-list').innerHTML='<div class="empty-state">No value bets match current filter.</div>';
+    return;
+  }
+
+  const br=getBankroll();
+  document.getElementById('vb-list').innerHTML=bets.slice(0,30).map(b=>{
+    const kellyStake=+(kellyFraction(b.prob/100,b.odds)*0.25*br).toFixed(2);
+    const payout=+(kellyStake*b.odds).toFixed(2);
+    return`<div class="vb-card ${b.edgeLbl.toLowerCase()}" data-league="${b.league}">
+      <div class="vb-top">
+        <div>
+          <div class="vb-match">${b.match}</div>
+          <div class="vb-league">${b.league}${b.kickoff?' · '+b.kickoff:''}</div>
+        </div>
+        <div class="vb-right">
+          <div class="vb-odds">${b.odds.toFixed(2)}</div>
+          <div class="vb-kickoff">${b.kickoff||'TBC'}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="vb-pick">
+          <span class="vb-pick-lbl">📌 ${b.label}</span>
+          <span class="vb-pick-prob">Model ${b.prob}% · Mkt ${b.implied}%</span>
+        </div>
+        <span class="edge-badge-big ${b.edgeLbl.toLowerCase()}">+${b.edge}%</span>
+      </div>
+      <div class="vb-bars">
+        <div class="vb-bar-wrap">
+          <div class="vb-bar-lbl">MODEL%</div>
+          <div class="vb-bar-track"><div class="vb-bar-fill" style="width:${b.prob}%;background:var(--neon)"></div></div>
+          <div class="vb-bar-val" style="color:var(--neon)">${b.prob}%</div>
+        </div>
+        <div class="vb-bar-wrap">
+          <div class="vb-bar-lbl">MARKET%</div>
+          <div class="vb-bar-track"><div class="vb-bar-fill" style="width:${b.implied}%;background:#a855f7"></div></div>
+          <div class="vb-bar-val" style="color:#a855f7">${b.implied}%</div>
+        </div>
+        <div class="vb-bar-wrap">
+          <div class="vb-bar-lbl">EXP. VALUE</div>
+          <div class="vb-bar-track"><div class="vb-bar-fill" style="width:${Math.min(100,Math.abs(b.ev)*100)}%;background:${b.ev>0?'var(--neon2)':'var(--red)'}"></div></div>
+          <div class="vb-bar-val" style="color:${b.ev>0?'var(--neon2)':'var(--red)'}">${b.ev>0?'+':''}${b.ev}</div>
+        </div>
+      </div>
+      <div class="markets-mini">
+        <div class="mkt-pill val">Kelly: $${kellyStake}</div>
+        <div class="mkt-pill val">Return: $${payout}</div>
+        <div class="mkt-pill">xG ${b.probs?.hxG||'?'}-${b.probs?.axG||'?'}</div>
+        <div class="mkt-pill">BTTS ${b.probs?.btts||'?'}%</div>
+        <div class="mkt-pill">O2.5 ${b.probs?.o25||'?'}%</div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px">
+        <button onclick="addToAccaFromVB('${b.match.replace(/'/g,"\\'")}','${b.label.replace(/'/g,"\\'")}',${b.prob},${b.odds})" style="flex:1;padding:7px;font-family:var(--font-mono);font-size:9px;font-weight:700;background:var(--neon-dim);color:var(--neon);border:1px solid rgba(0,255,157,0.3);border-radius:var(--radius);cursor:pointer">+ ADD TO ACCA</button>
+        <button onclick="logPick('${b.match.replace(/'/g,"\\'")}','${b.label.replace(/'/g,"\\'")}',${b.edge},60,'Football')" style="flex:1;padding:7px;font-family:var(--font-mono);font-size:9px;font-weight:700;background:var(--bg3);color:var(--text-muted);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer">📋 LOG PICK</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addToAccaFromVB(match,pick,prob,odds){
+  const added=addToAcca(match,pick,prob,odds);
+  if(added){
+    const btn=event.target;
+    btn.textContent='✅ ADDED!';
+    btn.style.background='rgba(0,255,157,0.2)';
+    setTimeout(()=>{btn.textContent='+ ADD TO ACCA';btn.style.background='var(--neon-dim)';},1500);
+  }
+}
+
+function sortBy(mode,btn){
+  sortMode=mode;
+  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderBets();
+}
+
+function filterLeague(league,btn){
+  leagueFilter=league;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active',b===btn));
+  renderBets();
+}
+
+function setBanner(mode,txt){
+  const b=document.getElementById('vb-banner');
+  const d=document.getElementById('vb-dot');
+  const t=document.getElementById('vb-status');
+  if(!b)return;
+  b.className=mode==='live'?'odds-api-banner live':'odds-api-banner sim';
+  if(d)d.className='oab-dot '+(mode==='live'?'live':'sim');
+  if(t)t.innerHTML=txt;
+}
+</script>
+</body>
+</html>

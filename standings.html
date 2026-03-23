@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Standings — EdgeX</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .league-select{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;}
+    .lg-btn{font-family:var(--font-mono);font-size:10px;padding:7px 12px;border-radius:var(--radius);cursor:pointer;border:1px solid var(--border);background:var(--bg2);color:var(--text-muted);white-space:nowrap;transition:var(--transition);}
+    .lg-btn.active{background:linear-gradient(135deg,var(--neon),var(--neon2));color:#07090d;border-color:transparent;}
+    .view-tabs{display:flex;gap:6px;margin-bottom:14px;}
+    .view-tab{flex:1;padding:9px;font-family:var(--font-mono);font-size:10px;font-weight:700;border-radius:var(--radius);cursor:pointer;border:1px solid var(--border);background:var(--bg2);color:var(--text-muted);text-align:center;}
+    .view-tab.active{background:var(--neon-dim);color:var(--neon);border-color:rgba(0,255,157,0.3);}
+    /* Standings table */
+    .standings-table{width:100%;border-collapse:collapse;}
+    .standings-table th{font-family:var(--font-mono);font-size:8px;color:var(--text-dim);letter-spacing:1px;padding:6px 4px;text-align:center;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);}
+    .standings-table th:nth-child(2){text-align:left;}
+    .standings-table td{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);padding:7px 4px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.03);}
+    .standings-table td:nth-child(2){text-align:left;font-weight:700;color:var(--text);font-size:11px;}
+    .standings-table tr:hover td{background:var(--bg3);}
+    .pos-badge{font-family:var(--font-mono);font-size:9px;font-weight:700;width:20px;text-align:center;display:inline-block;}
+    .zone-ucl{color:var(--neon);}
+    .zone-uel{color:var(--neon2);}
+    .zone-rel{color:var(--red);}
+    .form-badges{display:flex;gap:2px;}
+    .form-w{background:#00ff9d;color:#07090d;padding:1px 4px;border-radius:2px;font-size:8px;font-weight:800;}
+    .form-d{background:#f5c842;color:#07090d;padding:1px 4px;border-radius:2px;font-size:8px;font-weight:800;}
+    .form-l{background:#ff2d55;color:#fff;padding:1px 4px;border-radius:2px;font-size:8px;font-weight:800;}
+    /* Top scorers */
+    .scorer-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+    .scorer-rank{font-family:var(--font-mono);font-size:11px;font-weight:700;width:24px;flex-shrink:0;color:var(--text-dim);}
+    .scorer-rank.top{color:var(--neon);}
+    .scorer-photo{width:32px;height:32px;border-radius:50%;object-fit:cover;background:var(--bg4);flex-shrink:0;}
+    .scorer-info{flex:1;}
+    .scorer-name{font-weight:700;font-size:12px;}
+    .scorer-team{font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:2px;}
+    .scorer-stat{font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--neon);flex-shrink:0;}
+    .scorer-sub{font-family:var(--font-mono);font-size:8px;color:var(--text-dim);text-align:right;}
+  </style>
+</head>
+<body>
+<nav id="side-nav"></nav>
+
+<div id="page-wrap">
+  <header id="page-header">
+    <div class="page-title">
+      <span class="page-title-icon">🏆</span>STANDINGS
+      <span class="page-subtitle">TABLES · SCORERS · ASSISTS</span>
+    </div>
+    <button id="refresh-btn" onclick="loadData()">⟳</button>
+  </header>
+
+  <main id="page-main">
+    <!-- League selector -->
+    <div class="league-select">
+      <button class="lg-btn active" onclick="selectLeague(39,'Premier League',this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 EPL</button>
+      <button class="lg-btn" onclick="selectLeague(140,'La Liga',this)">🇪🇸 La Liga</button>
+      <button class="lg-btn" onclick="selectLeague(78,'Bundesliga',this)">🇩🇪 Bundesliga</button>
+      <button class="lg-btn" onclick="selectLeague(135,'Serie A',this)">🇮🇹 Serie A</button>
+      <button class="lg-btn" onclick="selectLeague(61,'Ligue 1',this)">🇫🇷 Ligue 1</button>
+      <button class="lg-btn" onclick="selectLeague(2,'Champions League',this)">⭐ UCL</button>
+      <button class="lg-btn" onclick="selectLeague(88,'Eredivisie',this)">🇳🇱 Eredivisie</button>
+      <button class="lg-btn" onclick="selectLeague(94,'Primeira Liga',this)">🇵🇹 Liga</button>
+    </div>
+
+    <!-- View tabs -->
+    <div class="view-tabs">
+      <div class="view-tab active" id="vt-standings" onclick="switchView('standings')">📊 TABLE</div>
+      <div class="view-tab" id="vt-scorers" onclick="switchView('scorers')">⚽ TOP SCORERS</div>
+      <div class="view-tab" id="vt-assists" onclick="switchView('assists')">🎯 TOP ASSISTS</div>
+    </div>
+
+    <div id="view-status" class="odds-api-banner sim" style="margin-bottom:12px">
+      <div class="oab-dot sim" id="status-dot"></div>
+      <div class="oab-text" id="status-txt">Loading...</div>
+    </div>
+
+    <div id="main-content"></div>
+  </main>
+</div>
+
+<div id="ticker-bar"></div>
+<script src="common.js"></script>
+<script>
+'use strict';
+
+let currentLeague = 39;
+let currentLeagueName = 'Premier League';
+let currentView = 'standings';
+let STANDINGS_DATA = null;
+let SCORERS_DATA = null;
+let ASSISTS_DATA = null;
+
+document.addEventListener('DOMContentLoaded', () => { loadData(); });
+
+function selectLeague(id, name, btn) {
+  currentLeague = id;
+  currentLeagueName = name;
+  STANDINGS_DATA = null; SCORERS_DATA = null; ASSISTS_DATA = null;
+  document.querySelectorAll('.lg-btn').forEach(b => b.classList.toggle('active', b===btn));
+  loadData();
+}
+
+function switchView(view) {
+  currentView = view;
+  document.querySelectorAll('.view-tab').forEach(t => t.classList.toggle('active', t.id==='vt-'+view));
+  loadData();
+}
+
+async function loadData() {
+  setBanner('loading', `Loading ${currentLeagueName}...`);
+  showLoading('main-content');
+  if (currentView === 'standings') await loadStandings();
+  else if (currentView === 'scorers') await loadScorers();
+  else await loadAssists();
+}
+
+async function loadStandings() {
+  if (STANDINGS_DATA) { renderStandings(); return; }
+  try {
+    const res  = await fetch(`/api/sports?type=football-standings&league=${currentLeague}&season=2025`);
+    const json = await res.json();
+    if (!json.success || !json.data?.length) throw new Error('No standings available for this competition yet');
+    STANDINGS_DATA = json.data;
+    renderStandings();
+    setBanner('live', `${currentLeagueName} standings · ${STANDINGS_DATA.length} teams · 2025/26`);
+  } catch(e) {
+    document.getElementById('main-content').innerHTML = `<div class="empty-state">${e.message}</div>`;
+    setBanner('sim', 'Standings unavailable');
+  }
+}
+
+function renderStandings() {
+  if (!STANDINGS_DATA) return;
+  const rows = STANDINGS_DATA.map((t, i) => {
+    const rank = t.rank;
+    const form = (t.form || '').split('').slice(-5);
+    const formHtml = form.map(r =>
+      r==='W' ? `<span class="form-w">W</span>` :
+      r==='D' ? `<span class="form-d">D</span>` :
+      r==='L' ? `<span class="form-l">L</span>` : ''
+    ).join('');
+
+    // Zone detection (EPL: 1-4 UCL, 5 UEL, 18-20 relegation)
+    const zoneClass = rank<=4?'zone-ucl':rank===5?'zone-uel':rank>=18?'zone-rel':'';
+    const desc = t.description || '';
+    const zoneIcon = desc.includes('Champions')?' 🏆':desc.includes('Europa')?' 🔵':desc.includes('Relegat')?' ↓':'';
+
+    return `<tr>
+      <td><span class="pos-badge ${zoneClass}">${rank}</span></td>
+      <td>${t.team?.name||'—'}${zoneIcon}</td>
+      <td style="font-weight:700">${t.points}</td>
+      <td>${t.all?.played||0}</td>
+      <td style="color:var(--neon)">${t.all?.win||0}</td>
+      <td style="color:var(--yellow)">${t.all?.draw||0}</td>
+      <td style="color:var(--red)">${t.all?.lose||0}</td>
+      <td>${t.all?.goals?.for||0}:${t.all?.goals?.against||0}</td>
+      <td style="color:${(t.goalsDiff||0)>0?'var(--neon)':(t.goalsDiff||0)<0?'var(--red)':'var(--text-dim)';}">${(t.goalsDiff||0)>0?'+':''}${t.goalsDiff||0}</td>
+      <td><div class="form-badges">${formHtml}</div></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('main-content').innerHTML = `
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+    <table class="standings-table">
+      <thead><tr>
+        <th>#</th><th>TEAM</th><th>PTS</th><th>P</th>
+        <th>W</th><th>D</th><th>L</th>
+        <th>GLS</th><th>GD</th><th>FORM</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;font-family:var(--font-mono);font-size:9px">
+      <span><span class="zone-ucl">■</span> Champions League</span>
+      <span><span class="zone-uel">■</span> Europa League</span>
+      <span><span class="zone-rel">■</span> Relegation</span>
+    </div>`;
+}
+
+async function loadScorers() {
+  if (SCORERS_DATA) { renderPlayers(SCORERS_DATA, 'goals'); return; }
+  try {
+    const res  = await fetch(`/api/sports?type=football-topscorers&league=${currentLeague}&season=2025`);
+    const json = await res.json();
+    if (!json.success || !json.data?.length) throw new Error('No scorers data available');
+    SCORERS_DATA = json.data;
+    renderPlayers(SCORERS_DATA, 'goals');
+    setBanner('live', `Top scorers · ${currentLeagueName} 2025/26`);
+  } catch(e) {
+    document.getElementById('main-content').innerHTML = `<div class="empty-state">${e.message}</div>`;
+    setBanner('sim', 'Scorers unavailable');
+  }
+}
+
+async function loadAssists() {
+  if (ASSISTS_DATA) { renderPlayers(ASSISTS_DATA, 'assists'); return; }
+  try {
+    const res  = await fetch(`/api/sports?type=football-topassists&league=${currentLeague}&season=2025`);
+    const json = await res.json();
+    if (!json.success || !json.data?.length) throw new Error('No assists data available');
+    ASSISTS_DATA = json.data;
+    renderPlayers(ASSISTS_DATA, 'assists');
+    setBanner('live', `Top assists · ${currentLeagueName} 2025/26`);
+  } catch(e) {
+    document.getElementById('main-content').innerHTML = `<div class="empty-state">${e.message}</div>`;
+    setBanner('sim', 'Assists unavailable');
+  }
+}
+
+function renderPlayers(data, statType) {
+  document.getElementById('main-content').innerHTML = data.map((item, i) => {
+    const p    = item.player;
+    const s    = item.statistics?.[0] || {};
+    const team = s.team?.name || '';
+    const stat = statType==='goals' ? (s.goals?.total||0) : (s.goals?.assists||0);
+    const apps = s.games?.appearences || 0;
+    const mins = s.games?.minutes || 0;
+    const per90 = apps > 0 ? +(stat/(mins/90)).toFixed(2) : 0;
+    const rankColor = i<3 ? 'var(--neon)' : 'var(--text-dim)';
+    return `
+      <div class="scorer-row">
+        <div class="scorer-rank ${i<3?'top':''}">${i+1}</div>
+        <img class="scorer-photo" src="${p?.photo||''}" onerror="this.style.display='none'" alt=""/>
+        <div class="scorer-info">
+          <div class="scorer-name">${p?.name||'—'}</div>
+          <div class="scorer-team">${team} · ${apps} apps · ${mins}min</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div class="scorer-stat" style="color:${rankColor}">${stat}</div>
+          <div class="scorer-sub">${statType==='goals'?'goals':'assists'}<br>${per90}/90</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function setBanner(mode, txt) {
+  const b=document.getElementById('view-status'),d=document.getElementById('status-dot'),t=document.getElementById('status-txt');
+  if(!b)return;
+  b.className=mode==='live'?'odds-api-banner live':'odds-api-banner sim';
+  if(d)d.className='oab-dot '+(mode==='live'?'live':'sim');
+  if(t)t.innerHTML=txt;
+}
+</script>
+</body>
+</html>
