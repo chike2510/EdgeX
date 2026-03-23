@@ -225,6 +225,104 @@ module.exports = async (req, res) => {
         return res.json({ success: true, data: data.response || [] });
       }
 
+
+      // ── STANDINGS ───────────────────────────────────────────────────────────
+      case 'football-standings': {
+        const { league, season } = req.query;
+        if (!league) return res.json({ success: false, error: 'Missing league' });
+        const data = await get(FB_BASE + '/standings', { league: league||39, season: season||2025 });
+        const table = data.response?.[0]?.league?.standings?.[0] || [];
+        return res.json({ success: true, data: table });
+      }
+
+      // ── TOP SCORERS ─────────────────────────────────────────────────────────
+      case 'football-topscorers': {
+        const { league, season } = req.query;
+        const data = await get(FB_BASE + '/players/topscorers', { league: league||39, season: season||2025 });
+        return res.json({ success: true, data: (data.response||[]).slice(0,20) });
+      }
+
+      // ── TOP ASSISTS ─────────────────────────────────────────────────────────
+      case 'football-topassists': {
+        const { league, season } = req.query;
+        const data = await get(FB_BASE + '/players/topassists', { league: league||39, season: season||2025 });
+        return res.json({ success: true, data: (data.response||[]).slice(0,20) });
+      }
+
+      // ── INJURIES ────────────────────────────────────────────────────────────
+      case 'football-injuries': {
+        if (!id) return res.json({ success: false, error: 'Missing fixture id' });
+        const data = await get(FB_BASE + '/injuries', { fixture: id });
+        return res.json({ success: true, data: data.response||[] });
+      }
+
+      // ── HEAD TO HEAD ────────────────────────────────────────────────────────
+      case 'football-h2h': {
+        const { h2h } = req.query;
+        if (!h2h) return res.json({ success: false, error: 'Missing h2h param (e.g. 33-34)' });
+        const data = await get(FB_BASE + '/fixtures/headtohead', { h2h, last: 10 });
+        return res.json({ success: true, data: (data.response||[]) });
+      }
+
+      // ── FIXTURES BY TEAM (for form guide) ───────────────────────────────────
+      case 'football-team-form': {
+        const { team } = req.query;
+        if (!team) return res.json({ success: false, error: 'Missing team id' });
+        const data = await get(FB_BASE + '/fixtures', { team, last: 6, season: 2025 });
+        return res.json({ success: true, data: data.response||[] });
+      }
+
+      // ── TEAM INFO (for IDs) ──────────────────────────────────────────────────
+      case 'football-team-search': {
+        const { name } = req.query;
+        if (!name) return res.json({ success: false, error: 'Missing name' });
+        const data = await get(FB_BASE + '/teams', { search: name });
+        return res.json({ success: true, data: (data.response||[]).slice(0,5) });
+      }
+
+      // ── PLAYER SEARCH / COMPARE ─────────────────────────────────────────────
+      case 'football-player-search': {
+        const { name, season } = req.query;
+        if (!name) return res.json({ success: false, error: 'Missing name' });
+        const data = await get(FB_BASE + '/players', { search: name, season: season||2025 });
+        return res.json({ success: true, data: (data.response||[]).slice(0,5) });
+      }
+
+      // ── PLAYER SEASON STATS ─────────────────────────────────────────────────
+      case 'football-player-stats': {
+        const { player, season } = req.query;
+        if (!player) return res.json({ success: false, error: 'Missing player id' });
+        const data = await get(FB_BASE + '/players', { id: player, season: season||2025 });
+        return res.json({ success: true, data: data.response?.[0] || null });
+      }
+
+      // ── VALUE BETS — fetch fixtures + predictions for multiple leagues ───────
+      case 'football-value-bets': {
+        const leagues = [39, 140, 78, 135, 61, 2, 3];
+        const today   = todayStr(0);
+        const dayResp = await get(FB_BASE + '/fixtures', { date: today, timezone: 'UTC' });
+        const matches = (dayResp.response||[]).filter(f => leagues.includes(f.league?.id));
+        // Return fixture list — client will fetch predictions per fixture
+        return res.json({ success: true, data: matches.slice(0,20).map(f => ({
+          id:     String(f.fixture?.id),
+          home:   f.teams?.home?.name,
+          away:   f.teams?.away?.name,
+          homeid: f.teams?.home?.id,
+          awayid: f.teams?.away?.id,
+          league: f.league?.name,
+          leagueId: f.league?.id,
+          kickoff: f.fixture?.date ? new Date(f.fixture.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'UTC'}) : '',
+          status: f.fixture?.status?.short,
+        }))});
+      }
+
+      // ── BASKETBALL PLAYER PROPS (simulated from team stats) ─────────────────
+      case 'basketball-player-props': {
+        if (!id) return res.json({ success: false, error: 'Missing game id' });
+        const data = await bbGet('/games/statistics/players', { id });
+        return res.json({ success: true, data: data.response||[] });
+      }
+
       default:
         return res.status(400).json({ success: false, error: `Unknown type: ${type}` });
     }
@@ -349,5 +447,5 @@ function get(url, params={}) {
       });
     }).on('error',reject);
   });
-            }
-          
+                         }
+            
