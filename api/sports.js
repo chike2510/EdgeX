@@ -87,51 +87,49 @@ module.exports = async (req, res) => {
 
       // ── FOOTBALL LIVE ─────────────────────────────────────────────────────
       case 'football-live': {
-        // Step 1: Check for live matches (1 request)
+        const requestedDate = req.query.date;
+
+        // If a specific date requested by client (date navigation)
+        if (requestedDate) {
+          const dated = await get(FB_BASE + '/fixtures', { date: requestedDate, timezone: 'UTC' });
+          const filtered = (dated.response || []).filter(f => FOOTBALL_LEAGUES.has(f.league?.id));
+          if (filtered.length > 0) {
+            filtered.sort((a,b) => {
+              const pa=[39,2,140,78,135,61].includes(a.league?.id)?0:1;
+              const pb=[39,2,140,78,135,61].includes(b.league?.id)?0:1;
+              return pa-pb;
+            });
+            return res.json({ success: true, source: 'dated', date: requestedDate, data: filtered.map(transformFixture) });
+          }
+          return res.json({ success: false, error: 'No matches on ' + requestedDate });
+        }
+
+        // Step 1: Check for live matches
         const liveResp  = await get(FB_BASE + '/fixtures', { live: 'all' });
         const liveGames = (liveResp.response || []).filter(f => FOOTBALL_LEAGUES.has(f.league?.id));
-
         if (liveGames.length > 0) {
-          liveGames.sort((a, b) => {
-            const ta = [39,2,140,78,135,61].includes(a.league?.id) ? 0 : 1;
-            const tb = [39,2,140,78,135,61].includes(b.league?.id) ? 0 : 1;
-            return ta - tb;
-          });
           return res.json({ success: true, source: 'live', data: liveGames.map(transformFixture) });
         }
 
-        // Step 2: Fetch ALL of today's fixtures in one request, filter client-side
-        const todayResp = await get(FB_BASE + '/fixtures', { date: todayStr(0), timezone: 'UTC' });
+        // Step 2: Today by date
+        const todayResp  = await get(FB_BASE + '/fixtures', { date: todayStr(0), timezone: 'UTC' });
         const todayGames = (todayResp.response || []).filter(f => FOOTBALL_LEAGUES.has(f.league?.id));
-
         if (todayGames.length > 0) {
-          // Sort: top leagues first
-          todayGames.sort((a, b) => {
-            const priority = [39,2,140,78,135,61,3,848];
-            const ta = priority.indexOf(a.league?.id); 
-            const tb = priority.indexOf(b.league?.id);
-            const pa = ta === -1 ? 99 : ta;
-            const pb = tb === -1 ? 99 : tb;
-            if (pa !== pb) return pa - pb;
-            return new Date(a.fixture?.date) - new Date(b.fixture?.date);
-          });
+          todayGames.sort((a,b)=>{const pa=[39,2,140,78,135,61].includes(a.league?.id)?0:1,pb=[39,2,140,78,135,61].includes(b.league?.id)?0:1;return pa-pb;});
           return res.json({ success: true, source: 'today', data: todayGames.map(transformFixture) });
         }
 
-        // Step 3: Look ahead day by day (1 request per day max)
+        // Step 3: Look ahead
         for (let i = 1; i <= 5; i++) {
           const nextResp  = await get(FB_BASE + '/fixtures', { date: todayStr(i), timezone: 'UTC' });
           const nextGames = (nextResp.response || []).filter(f => FOOTBALL_LEAGUES.has(f.league?.id));
           if (nextGames.length > 0) {
-            nextGames.sort((a,b) => new Date(a.fixture?.date)-new Date(b.fixture?.date));
+            nextGames.sort((a,b)=>new Date(a.fixture?.date)-new Date(b.fixture?.date));
             return res.json({ success: true, source: 'upcoming', data: nextGames.map(transformFixture) });
           }
         }
-
-        return res.json({ success: false, error: 'No major league matches found in next 5 days' });
+        return res.json({ success: false, error: 'No major league matches found' });
       }
-
-      // ── FOOTBALL FIXTURES ─────────────────────────────────────────────────
       case 'football-fixtures': {
         const all = [];
         // Fetch next 7 days — 1 request per day = 7 requests max
@@ -178,29 +176,26 @@ module.exports = async (req, res) => {
 
       // ── BASKETBALL ────────────────────────────────────────────────────────
       case 'basketball-live': {
-        // Live first
-        const liveResp  = await get(BB_BASE + '/games', { live: 'all' });
+        const requestedDate = req.query.date;
+
+        if (requestedDate) {
+          const dated = await bbGet('/games', { date: requestedDate, timezone: 'UTC' });
+          const filtered = (dated.response||[]).filter(g => BASKETBALL_LEAGUES.has(g.league?.id));
+          if (filtered.length > 0) return res.json({ success: true, source: 'dated', data: filtered.map(transformGame) });
+          return res.json({ success: false, error: 'No games on ' + requestedDate });
+        }
+
+        const liveResp  = await bbGet('/games', { live: 'all' });
         const liveGames = (liveResp.response||[]).filter(g => BASKETBALL_LEAGUES.has(g.league?.id));
-        if (liveGames.length > 0) {
-          return res.json({ success: true, source: 'live', data: liveGames.map(transformGame) });
-        }
-        // Today
-        const todayResp  = await get(BB_BASE + '/games', { date: todayStr(0), timezone: 'UTC' });
-        const todayGames = (todayResp.response||[]).filter(g => BASKETBALL_LEAGUES.has(g.league?.id));
-        if (todayGames.length > 0) {
-          return res.json({ success: true, source: 'today', data: todayGames.map(transformGame) });
-        }
-        // Upcoming
-        for (let i = 1; i <= 3; i++) {
-          const nextResp  = await get(BB_BASE + '/games', { date: todayStr(i), timezone: 'UTC' });
-          const nextGames = (nextResp.response||[]).filter(g => BASKETBALL_LEAGUES.has(g.league?.id));
-          if (nextGames.length > 0) {
-            return res.json({ success: true, source: 'upcoming', data: nextGames.map(transformGame) });
-          }
+        if (liveGames.length > 0) return res.json({ success: true, source: 'live', data: liveGames.map(transformGame) });
+
+        for (let i = 0; i <= 3; i++) {
+          const day   = await bbGet('/games', { date: todayStr(i), timezone: 'UTC' });
+          const games = (day.response||[]).filter(g => BASKETBALL_LEAGUES.has(g.league?.id));
+          if (games.length > 0) return res.json({ success: true, source: i===0?'today':'upcoming', data: games.map(transformGame) });
         }
         return res.json({ success: false, error: 'No major basketball games found' });
       }
-
       case 'basketball-fixtures': {
         const all = [];
         for (let i = 0; i <= 5; i++) {
@@ -282,18 +277,27 @@ module.exports = async (req, res) => {
 
       // ── PLAYER SEARCH / COMPARE ─────────────────────────────────────────────
       case 'football-player-search': {
-        const { name, season } = req.query;
+        const { name } = req.query;
         if (!name) return res.json({ success: false, error: 'Missing name' });
-        const data = await get(FB_BASE + '/players', { search: name, season: season||2025 });
-        return res.json({ success: true, data: (data.response||[]).slice(0,5) });
+        // Try current season first, fall back to previous
+        for (const season of [2025, 2024, 2023]) {
+          const data = await get(FB_BASE + '/players', { search: name, season });
+          if (data.response?.length > 0) {
+            return res.json({ success: true, data: data.response.slice(0,5), season });
+          }
+        }
+        return res.json({ success: false, error: 'Player not found' });
       }
 
       // ── PLAYER SEASON STATS ─────────────────────────────────────────────────
       case 'football-player-stats': {
         const { player, season } = req.query;
         if (!player) return res.json({ success: false, error: 'Missing player id' });
-        const data = await get(FB_BASE + '/players', { id: player, season: season||2025 });
-        return res.json({ success: true, data: data.response?.[0] || null });
+        for (const s of [season||2025, 2024, 2023]) {
+          const data = await get(FB_BASE + '/players', { id: player, season: s });
+          if (data.response?.[0]) return res.json({ success: true, data: data.response[0], season: s });
+        }
+        return res.json({ success: false, error: 'No stats found' });
       }
 
       // ── VALUE BETS — fetch fixtures + predictions for multiple leagues ───────
@@ -435,17 +439,4 @@ function transformGame(g) {
 }
 
 function get(url, params={}) {
-  return new Promise((resolve, reject) => {
-    const u = new URL(url);
-    Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,String(v)));
-    https.get(u.toString(),{headers:HEADERS},r=>{
-      let body='';
-      r.on('data',c=>{body+=c;});
-      r.on('end',()=>{
-        try{resolve(JSON.parse(body));}
-        catch{reject(new Error('Invalid JSON'));}
-      });
-    }).on('error',reject);
-  });
-                         }
-            
+  return new Promise((resolve, 
