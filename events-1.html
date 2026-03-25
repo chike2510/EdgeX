@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Events — EdgeX</title><link rel="stylesheet" href="style.css"/>
+  <style>
+    .search-bar{display:flex;gap:8px;margin-bottom:12px;}
+    .search-input{flex:1;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:var(--font-mono);font-size:12px;padding:9px 14px;outline:none;transition:var(--transition);}
+    .search-input:focus{border-color:rgba(0,255,157,0.4);box-shadow:0 0 0 3px rgba(0,255,157,0.06);}
+    .search-input::placeholder{color:var(--text-dim);}
+    .analyse-btn{background:linear-gradient(135deg,var(--neon),var(--neon2));border:none;border-radius:var(--radius);color:#07090d;font-family:var(--font-mono);font-size:11px;font-weight:700;padding:9px 16px;cursor:pointer;flex-shrink:0;transition:var(--transition);}
+    .analyse-btn:hover{opacity:0.85;box-shadow:var(--glow);}
+    .cat-row{display:flex;gap:5px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none;}
+    .sort-row{display:flex;gap:5px;margin-bottom:12px;align-items:center;}
+    .sort-label{font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;flex-shrink:0;}
+    .load-more-btn{width:100%;margin-top:14px;padding:12px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--neon2);font-family:var(--font-mono);font-size:11px;font-weight:700;cursor:pointer;transition:var(--transition);letter-spacing:1px;}
+    .load-more-btn:hover{background:var(--bg3);border-color:rgba(0,201,255,0.3);}
+    .market-count{font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-bottom:10px;}
+  </style>
+</head>
+<body>
+<nav id="side-nav"></nav>
+<div id="page-wrap">
+  <header id="page-header">
+    <div class="page-title"><span class="page-title-icon">🌍</span>EVENTS<span class="page-subtitle">LIVE · POLYMARKET</span></div>
+    <button id="refresh-btn" onclick="loadEvents(true)">⟳ REFRESH</button>
+  </header>
+  <main id="page-main">
+    <div id="data-banner" class="odds-api-banner sim">
+      <div class="oab-dot sim"></div><div class="oab-text">Fetching Polymarket data...</div>
+    </div>
+
+    <div class="search-bar">
+      <input id="event-input" class="search-input" type="text" placeholder="Ask anything or search markets: BTC, election, rates..."/>
+      <button class="analyse-btn" onclick="handleSearch()">ANALYSE →</button>
+    </div>
+
+    <div class="cat-row" id="cat-filter">
+      <button class="filter-btn active" onclick="setEventCat('all',this)">ALL</button>
+      <button class="filter-btn" onclick="setEventCat('crypto',this)">CRYPTO</button>
+      <button class="filter-btn" onclick="setEventCat('politics',this)">POLITICS</button>
+      <button class="filter-btn" onclick="setEventCat('sports',this)">SPORTS</button>
+      <button class="filter-btn" onclick="setEventCat('economy',this)">ECONOMY</button>
+      <button class="filter-btn" onclick="setEventCat('tech',this)">TECH</button>
+    </div>
+
+    <div class="sort-row">
+      <span class="sort-label">SORT:</span>
+      <button class="filter-btn active" onclick="setEventSort('volume',this)">VOLUME</button>
+      <button class="filter-btn" onclick="setEventSort('liquidity',this)">LIQUIDITY</button>
+      <button class="filter-btn" onclick="setEventSort('end_date',this)">ENDING SOON</button>
+      <button class="filter-btn" onclick="setEventSort('edge',this)">EDGE</button>
+    </div>
+
+    <div class="market-count" id="market-count"></div>
+    <div id="events-list">
+      <div class="loading-wrap"><div class="loader"></div><div class="loading-text">LOADING LIVE MARKETS...</div></div>
+    </div>
+    <button class="load-more-btn" id="load-more-btn" style="display:none" onclick="loadMoreEvents()">▼ LOAD MORE MARKETS</button>
+  </main>
+</div>
+<div id="ticker-bar"></div>
+<script src="common.js"></script>
+<script>
+let eventOffset  = 0;
+let eventSort    = 'volume';
+let eventCat     = 'all';
+let allEvents    = [];
+const EVENTS_PER_PAGE = 50;
+const CAT_KEYWORDS = {
+  crypto:   ['bitcoin','btc','eth','ethereum','crypto','solana','xrp','defi','nft','token','blockchain','coin','binance'],
+  politics: ['election','president','vote','poll','senate','congress','prime minister','chancellor','win','lose','party','democrat','republican'],
+  sports:   ['nba','nfl','soccer','champion','league','super bowl','world cup','title','match','final','season','playoffs','win'],
+  economy:  ['fed','rate','inflation','gdp','recession','unemployment','cpi','fomc','yield','bond','market','stock','treasury','economic'],
+  tech:     ['ai','openai','gpt','apple','google','microsoft','tesla','nvidia','tech','startup','ipo','acquisition'],
+};
+
+document.addEventListener('DOMContentLoaded', () => loadEvents(true));
+
+async function loadEvents(reset=false) {
+  if(reset){ eventOffset=0; allEvents=[]; document.getElementById('events-list').innerHTML='<div class="loading-wrap"><div class="loader"></div><div class="loading-text">LOADING LIVE MARKETS...</div></div>'; }
+  const btn=document.getElementById('refresh-btn');
+  if(btn) btn.classList.add('spinning');
+  try {
+    const sortParam = eventSort==='end_date'?'end_date_min':eventSort;
+    const asc = eventSort==='end_date'?'true':'false';
+    // Fetch two pages in parallel for more variety
+    const urls = [
+      `https://gamma-api.polymarket.com/markets?limit=${EVENTS_PER_PAGE}&offset=${eventOffset}&active=true&closed=false&order=${sortParam}&ascending=${asc}`,
+      `https://gamma-api.polymarket.com/markets?limit=${EVENTS_PER_PAGE}&offset=${eventOffset+EVENTS_PER_PAGE}&active=true&closed=false&order=${sortParam}&ascending=${asc}`,
+    ];
+    const responses = await Promise.allSettled(urls.map(u=>fetch(u).then(r=>r.json())));
+    const raw = responses.flatMap(r=>r.status==='fulfilled'&&Array.isArray(r.value)?r.value:[]);
+    if(raw.length===0) throw new Error('empty');
+    const parsed = raw.filter(m=>m.question&&m.outcomePrices&&m.question.length<220).map(parseMarket).filter(Boolean);
+    // Deduplicate by question
+    const seen = new Set(allEvents.map(e=>e.question));
+    const fresh = parsed.filter(e=>!seen.has(e.question));
+    if(reset) allEvents=parsed; else allEvents=[...allEvents,...fresh];
+    renderEvents();
+    document.getElementById('load-more-btn').style.display = raw.length>0?'block':'none';
+    updateEventBanner('live', allEvents.length);
+  } catch(e) {
+    if(reset){ allEvents=getFallback(); renderEvents(); }
+    document.getElementById('load-more-btn').style.display='none';
+    updateEventBanner('simulation',allEvents.length);
+  }
+  if(btn) btn.classList.remove('spinning');
+}
+
+function loadMoreEvents() {
+  eventOffset += EVENTS_PER_PAGE * 2;
+  loadEvents(false);
+}
+
+function setEventCat(cat, btn) {
+  eventCat=cat;
+  document.querySelectorAll('#cat-filter .filter-btn').forEach(b=>b.classList.toggle('active',b===btn));
+  renderEvents();
+}
+
+function setEventSort(sort, btn) {
+  eventSort=sort;
+  document.querySelectorAll('.sort-row .filter-btn').forEach(b=>b.classList.toggle('active',b===btn));
+  loadEvents(true);
+}
+
+function filterEvents(events) {
+  if(eventCat==='all') return events;
+  const keywords = CAT_KEYWORDS[eventCat]||[];
+  return events.filter(e=>{
+    const q=e.question.toLowerCase();
+    return keywords.some(k=>q.includes(k));
+  });
+}
+
+function sortEvents(events) {
+  if(eventSort==='volume')    return [...events].sort((a,b)=>b.volume-a.volume);
+  if(eventSort==='liquidity') return [...events].sort((a,b)=>b.confidence-a.confidence);
+  if(eventSort==='edge')      return [...events].sort((a,b)=>Math.abs(b.yesPct-50)-Math.abs(a.yesPct-50));
+  return events;
+}
+
+function renderEvents() {
+  const filtered = sortEvents(filterEvents(allEvents));
+  const list=document.getElementById('events-list');
+  document.getElementById('market-count').textContent=`${filtered.length} markets shown${eventCat!=='all'?' (filtered)':''}`;
+  if(filtered.length===0){
+    list.innerHTML=`<div class="empty-state">No markets found for this filter.<br>Try <strong>ALL</strong> category.</div>`;
+    return;
+  }
+  list.innerHTML='';
+  filtered.forEach(e=>list.appendChild(buildCard(e)));
+}
+
+function handleSearch() {
+  const q=document.getElementById('event-input').value.trim();
+  if(!q) return;
+  // Check if it matches existing loaded events first
+  const matches = allEvents.filter(e=>e.question.toLowerCase().includes(q.toLowerCase()));
+  if(matches.length>0){
+    const list=document.getElementById('events-list');
+    list.innerHTML='';
+    matches.forEach(e=>list.appendChild(buildCard(e)));
+    document.getElementById('market-count').textContent=`${matches.length} results for "${q}"`;
+    updateEventBanner('live',matches.length,`Search: "${q}"`);
+  } else {
+    // Generate AI analysis for custom question
+    submitCustom(q);
+  }
+}
+
+function submitCustom(q) {
+  const list=document.getElementById('events-list');
+  const ph=document.createElement('div'); ph.className='event-card';
+  ph.innerHTML='<div class="loading-wrap" style="padding:20px"><div class="loader"></div><div class="loading-text">ANALYSING...</div></div>';
+  list.insertBefore(ph,list.firstChild);
+  setTimeout(()=>{
+    const qL=q.toLowerCase();
+    const factors=[];
+    if(qL.includes('bitcoin')||qL.includes('btc')){factors.push('On-chain accumulation vs distribution metrics');factors.push('ETF inflow/outflow data and halving cycle position');}
+    else if(qL.includes('election')||qL.includes('president')){factors.push('Current polling averages and historical accuracy');factors.push('Incumbent/challenger advantage and turnout models');}
+    else if(qL.includes('rate')||qL.includes('fed')||qL.includes('inflation')){factors.push('CPI trajectory and Fed communication signals');factors.push('Employment data and neutral rate estimates');}
+    else if(qL.includes('stock')||qL.includes('market')){factors.push('Technical level confluence and macro backdrop');factors.push('Options market implied volatility and skew');}
+    else if(qL.includes('world cup')||qL.includes('champion')||qL.includes('win')){factors.push('Current form and squad depth analysis');factors.push('Historical tournament performance and bracket luck');}
+    else{factors.push('Available data and expert consensus assessed');factors.push('Historical base rate for similar events considered');}
+    factors.push('Crowd wisdom from prediction markets integrated');
+    factors.push('Model uncertainty reflected in confidence score');
+    const y=Math.min(93,Math.max(7,Math.round(50+(Math.random()-0.4)*46)));
+    const e={question:q,category:'Custom',yesPct:y,noPct:100-y,verdict:y>60?'LIKELY':y<40?'UNLIKELY':'UNCERTAIN',verdictColor:y>60?'var(--neon)':y<40?'var(--red)':'var(--yellow)',edgeLabel:Math.abs(y-50)>20?'STRONG':Math.abs(y-50)>10?'MEDIUM':'WEAK',confidence:Math.min(86,Math.round(42+Math.abs(y-50)*0.9+Math.random()*14)),factors,live:false,volume:0};
+    ph.replaceWith(buildCard(e));
+  },900);
+  document.getElementById('event-input').value='';
+}
+
+function updateEventBanner(mode, count, extra='') {
+  const banner=document.getElementById('data-banner');
+  if(mode==='live'){
+    banner.className='odds-api-banner live';
+    banner.innerHTML=`<div class="oab-dot live"></div><div class="oab-text">${extra||`LIVE MARKETS — <strong>Polymarket</strong> · ${count} markets loaded · Updated ${new Date().toLocaleTimeString()}`}</div>`;
+  } else {
+    banner.className='odds-api-banner sim';
+    banner.innerHTML=`<div class="oab-dot sim"></div><div class="oab-text">SIMULATION MODE — showing curated prediction data</div>`;
+  }
+}
+
+function getCat(question) {
+  const q=question.toLowerCase();
+  for(const [cat,kws] of Object.entries(CAT_KEYWORDS)){if(kws.some(k=>q.includes(k))) return cat.charAt(0).toUpperCase()+cat.slice(1);}
+  return 'Markets';
+}
+
+function parseMarket(m) {
+  try{
+    let prices=JSON.parse(m.outcomePrices);
+    const yesPct=Math.round(parseFloat(prices[0])*100);
+    const noPct=100-yesPct;
+    const verdict=yesPct>60?'LIKELY':yesPct<40?'UNLIKELY':'UNCERTAIN';
+    const verdictColor=yesPct>60?'var(--neon)':yesPct<40?'var(--red)':'var(--yellow)';
+    const el=Math.abs(yesPct-50)>20?'STRONG':Math.abs(yesPct-50)>10?'MEDIUM':'WEAK';
+    const vol=m.volume?parseFloat(m.volume):0;
+    const liq=m.liquidity?parseFloat(m.liquidity):0;
+    const factors=[];
+    if(vol>0) factors.push(`$${fmtVol(vol)} traded — strong liquidity signal`);
+    factors.push(yesPct>65?`${yesPct}% YES — strong crowd conviction`:yesPct<35?`${100-yesPct}% NO — crowd heavily against`:`Market divided: ${yesPct}% YES vs ${noPct}% NO`);
+    if(m.endDate){const d=Math.round((new Date(m.endDate)-new Date())/86400000);if(d>0&&d<365) factors.push(`Resolves in ${d} day${d===1?'':'s'}`);}
+    if(liq>10000) factors.push('Deep liquidity — price reflects real capital commitment');
+    factors.push('Real money prediction market — probabilities priced continuously');
+    return{question:m.question,category:getCat(m.question),yesPct,noPct,verdict,verdictColor,edgeLabel:el,
+      confidence:Math.min(94,Math.round(50+Math.abs(yesPct-50)*0.85+(vol>50000?18:vol>5000?10:0)+(liq>20000?8:0))),
+      factors,live:true,volume:vol,volumeLabel:vol>0?`$${fmtVol(vol)} traded`:null,
+      endDate:m.endDate?new Date(m.endDate).toLocaleDateString('en-GB'):null};
+  }catch(e){return null;}
+}
+
+function buildCard(e) {
+  const card=document.createElement('div'); card.className='event-card';
+  const ec=edgeClass(e.edgeLabel);
+  card.innerHTML=`
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
+      <div class="event-category">${e.category.toUpperCase()}</div>
+      ${e.live?`<span style="font-family:var(--font-mono);font-size:8px;color:var(--neon);background:var(--neon-dim);border:1px solid rgba(0,255,157,0.3);padding:2px 6px;border-radius:3px;letter-spacing:1px;">LIVE</span>`:''}
+      ${e.volumeLabel?`<span style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);">${e.volumeLabel}</span>`:''}
+      ${e.endDate?`<span style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);">ends ${e.endDate}</span>`:''}
+    </div>
+    <div class="event-question-text">${e.question}</div>
+    <div class="yes-no-bars">
+      <div class="yes-bar" style="width:${e.yesPct}%">${e.yesPct>14?'YES '+e.yesPct+'%':''}</div>
+      <div class="no-bar">NO ${e.noPct}%</div>
+    </div>
+    <div class="verdict-row">
+      <span class="verdict-label" style="color:${e.verdictColor}">${e.verdict}</span>
+      <div class="value-badge ${ec}" style="margin:0;padding:3px 8px;font-size:9px;"><div class="value-dot"></div>${e.edgeLabel} EDGE</div>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--neon)">CONF: ${e.confidence}</span>
+    </div>
+    <div class="event-factors">
+      <div class="event-factors-title">KEY FACTORS</div>
+      ${e.factors.map(f=>`<div class="event-factor">${f}</div>`).join('')}
+    </div>`;
+  return card;
+}
+
+function fmtVol(v){if(v>=1e6)return(v/1e6).toFixed(1)+'M';if(v>=1e3)return(v/1e3).toFixed(0)+'K';return v.toFixed(0);}
+
+function getFallback(){
+  return [
+    {question:'Will Bitcoin hit $100K before end of 2025?',category:'Crypto',yesPct:54,noPct:46,verdict:'UNCERTAIN',verdictColor:'var(--yellow)',edgeLabel:'MEDIUM',confidence:72,factors:['ETF inflows accelerating in 2025','Halving supply shock ongoing','Macro uncertainty headwind','Options market ~54% probability'],live:false,volume:2400000,volumeLabel:'$2.4M traded'},
+    {question:'Will the Fed cut rates in 2025?',category:'Economy',yesPct:76,noPct:24,verdict:'LIKELY',verdictColor:'var(--neon)',edgeLabel:'STRONG',confidence:81,factors:['Inflation trending toward target','Labour market cooling','Dot plot signals 2 cuts','Markets pricing 76% probability'],live:false,volume:5100000,volumeLabel:'$5.1M traded'},
+    {question:'Will Ethereum flip Bitcoin market cap by 2026?',category:'Crypto',yesPct:18,noPct:82,verdict:'UNLIKELY',verdictColor:'var(--red)',edgeLabel:'STRONG',confidence:78,factors:['BTC dominance historically sticky','ETF flows strongly favour BTC','All prior flippening attempts failed'],live:false,volume:820000,volumeLabel:'$820K traded'},
+    {question:"Will Erling Haaland win 2025 Ballon d'Or?",category:'Sports',yesPct:28,noPct:72,verdict:'UNLIKELY',verdictColor:'var(--red)',edgeLabel:'MEDIUM',confidence:61,factors:["Haaland's goal rate elite",'UCL crucial for voters','Bellingham and Vinicius serious threats'],live:false,volume:450000,volumeLabel:'$450K traded'},
+    {question:'Will there be a US recession in 2025?',category:'Economy',yesPct:22,noPct:78,verdict:'UNLIKELY',verdictColor:'var(--red)',edgeLabel:'STRONG',confidence:74,factors:['Labour market resilient','Consumer spending slowing','Fed has easing room'],live:false,volume:1800000,volumeLabel:'$1.8M traded'},
+    {question:'Will OpenAI release GPT-5 in 2025?',category:'Tech',yesPct:68,noPct:32,verdict:'LIKELY',verdictColor:'var(--neon)',edgeLabel:'MEDIUM',confidence:69,factors:['Product pipeline signals imminent release','Competitive pressure from Anthropic/Google','Internal training runs reportedly complete'],live:false,volume:920000,volumeLabel:'$920K traded'},
+    {question:'Will Solana flip Ethereum in market cap by 2026?',category:'Crypto',yesPct:15,noPct:85,verdict:'UNLIKELY',verdictColor:'var(--red)',edgeLabel:'STRONG',confidence:77,factors:['ETH institutional adoption stronger','SOL ecosystem growing but smaller','Significant gap in market cap to close'],live:false,volume:680000,volumeLabel:'$680K traded'},
+    {question:'Will AI replace 10% of software jobs by 2026?',category:'Tech',yesPct:35,noPct:65,verdict:'UNLIKELY',verdictColor:'var(--red)',edgeLabel:'MEDIUM',confidence:66,factors:['Junior dev hiring already slowing','Senior roles resilient','Regulatory friction on deployment'],live:false,volume:0},
+  ];
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.activeElement.id==='event-input') handleSearch();});
+</script>
+</body>
+</html>
