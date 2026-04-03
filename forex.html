@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Forex — EdgeX</title>
+<link rel="stylesheet" href="style.css"/>
+<style>
+.pair-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.pair-btn{padding:10px;font-family:var(--font-mono);font-size:11px;font-weight:700;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-muted);cursor:pointer;text-align:center;transition:var(--transition);}
+.pair-btn.active{background:var(--neon-dim);border-color:rgba(0,255,157,0.4);color:var(--neon);}
+.pair-btn:hover:not(.active){border-color:var(--border2);color:var(--text);}
+.fx-input-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.fx-input-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;}
+.fx-field{display:flex;flex-direction:column;gap:4px;}
+.fx-field label{font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:0.5px;}
+.fx-field input,.fx-field select{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 10px;font-size:12px;font-family:var(--font-mono);outline:none;width:100%;transition:var(--transition);}
+.fx-field input:focus,.fx-field select:focus{border-color:rgba(0,255,157,0.4);}
+.fx-field select option{background:var(--bg2);}
+.run-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--neon),var(--neon2));border:none;border-radius:var(--radius);color:#07090d;font-family:var(--font-mono);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px;margin-top:4px;}
+.run-btn:hover{opacity:0.9;}
+.signal-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:14px;margin-bottom:10px;}
+.sig-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.sig-pair{font-family:var(--font-mono);font-size:14px;font-weight:700;}
+.sig-dir{font-family:var(--font-mono);font-size:12px;font-weight:700;padding:4px 12px;border-radius:4px;}
+.sig-dir.BUY{background:rgba(0,255,157,0.12);border:1px solid rgba(0,255,157,0.35);color:var(--neon);}
+.sig-dir.SELL{background:rgba(255,45,85,0.10);border:1px solid rgba(255,45,85,0.35);color:var(--red);}
+.sig-dir.WAIT{background:var(--bg3);border:1px solid var(--border);color:var(--text-dim);}
+.signal-matrix{display:flex;flex-direction:column;gap:0;}
+.sm-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.sm-lbl{font-family:var(--font-mono);font-size:9px;color:var(--text-dim);width:80px;flex-shrink:0;}
+.sm-val{font-family:var(--font-mono);font-size:11px;font-weight:700;}
+.sm-bar-wrap{flex:1;height:4px;background:var(--bg4);border-radius:2px;margin:0 10px;overflow:hidden;}
+.sm-bar{height:100%;border-radius:2px;transition:width 0.8s ease;}
+.level-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0;}
+.level-cell{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px;text-align:center;}
+.level-cell.tp{border-color:rgba(0,255,157,0.25);}
+.level-cell.sl{border-color:rgba(255,45,85,0.25);}
+.level-lbl{font-family:var(--font-mono);font-size:8px;color:var(--text-dim);letter-spacing:0.5px;}
+.level-val{font-family:var(--font-mono);font-size:13px;font-weight:700;margin-top:4px;}
+.session-tabs{display:flex;gap:5px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none;}
+.session-tab{flex-shrink:0;padding:6px 14px;font-family:var(--font-mono);font-size:10px;font-weight:700;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text-muted);cursor:pointer;transition:var(--transition);}
+.session-tab.active{background:var(--neon-dim);border-color:rgba(0,255,157,0.35);color:var(--neon);}
+.chip-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.fx-chip{padding:4px 10px;border-radius:20px;font-size:10px;font-family:var(--font-mono);border:1px solid var(--border2);color:var(--text-dim);background:var(--bg2);cursor:pointer;}
+.fx-chip.on{background:rgba(0,255,157,0.12);border-color:rgba(0,255,157,0.35);color:var(--neon);}
+.live-rates{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.rate-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px;}
+.rate-pair{font-family:var(--font-mono);font-size:9px;color:var(--text-dim);}
+.rate-price{font-family:var(--font-mono);font-size:14px;font-weight:700;margin:3px 0;}
+.rate-chg{font-family:var(--font-mono);font-size:10px;font-weight:700;}
+</style>
+</head>
+<body>
+<nav id="side-nav"></nav>
+<div id="page-wrap">
+<header id="page-header">
+  <div class="page-title">
+    <span class="page-title-icon">📉</span>FOREX
+    <span class="page-subtitle">APEX ENGINE · MACD+RSI+PIVOT</span>
+  </div>
+  <button id="refresh-btn" onclick="refreshRates()">⟳</button>
+</header>
+<main id="page-main">
+
+  <!-- Live rate cards -->
+  <div id="live-rates-banner" class="odds-api-banner sim" style="margin-bottom:10px">
+    <div class="oab-dot sim"></div><div class="oab-text">Loading rates...</div>
+  </div>
+  <div class="live-rates" id="live-rates"></div>
+
+  <!-- Pair selector -->
+  <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:1.5px;margin-bottom:8px">SELECT PAIR</div>
+  <div class="pair-grid">
+    <button class="pair-btn active" onclick="selectPair('EUR/USD',this)">EUR/USD</button>
+    <button class="pair-btn" onclick="selectPair('GBP/USD',this)">GBP/USD</button>
+    <button class="pair-btn" onclick="selectPair('USD/JPY',this)">USD/JPY</button>
+    <button class="pair-btn" onclick="selectPair('USD/CHF',this)">USD/CHF</button>
+    <button class="pair-btn" onclick="selectPair('AUD/USD',this)">AUD/USD</button>
+    <button class="pair-btn" onclick="selectPair('USD/CAD',this)">USD/CAD</button>
+  </div>
+
+  <!-- Session -->
+  <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:1.5px;margin-bottom:8px">SESSION</div>
+  <div class="session-tabs">
+    <button class="session-tab active" onclick="selectSession('London',this)">🇬🇧 London</button>
+    <button class="session-tab" onclick="selectSession('New York',this)">🇺🇸 New York</button>
+    <button class="session-tab" onclick="selectSession('Tokyo',this)">🇯🇵 Tokyo</button>
+    <button class="session-tab" onclick="selectSession('Sydney',this)">🇦🇺 Sydney</button>
+  </div>
+
+  <!-- Inputs -->
+  <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:1.5px;margin-bottom:8px">MARKET DATA</div>
+  <div class="fx-input-row">
+    <div class="fx-field"><label>Current Rate</label><input type="number" id="fx-rate" placeholder="e.g. 1.0842" step="0.0001"/></div>
+    <div class="fx-field"><label>Pivot Level</label><input type="number" id="fx-pivot" placeholder="e.g. 1.0850" step="0.0001"/></div>
+  </div>
+  <div class="fx-input-row-3">
+    <div class="fx-field"><label>RSI (14)</label><input type="number" id="fx-rsi" placeholder="e.g. 55" min="0" max="100"/></div>
+    <div class="fx-field"><label>ATR (pips)</label><input type="number" id="fx-atr" placeholder="e.g. 68"/></div>
+    <div class="fx-field"><label>MACD</label>
+      <select id="fx-macd">
+        <option>Bullish Crossover</option>
+        <option>Bearish Crossover</option>
+        <option>Above Signal</option>
+        <option>Below Signal</option>
+        <option>Histogram Rising</option>
+        <option>Histogram Falling</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Intelligence flags -->
+  <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:1.5px;margin-bottom:8px">CONTEXT FLAGS</div>
+  <div class="chip-row">
+    <div class="fx-chip" onclick="this.classList.toggle('on')">USD Bullish Bias</div>
+    <div class="fx-chip on" onclick="this.classList.toggle('on')">Trending</div>
+    <div class="fx-chip" onclick="this.classList.toggle('on')">Risk-Off Mode</div>
+    <div class="fx-chip" onclick="this.classList.toggle('on')">News Pending</div>
+    <div class="fx-chip" onclick="this.classList.toggle('on')">Strong Support</div>
+    <div class="fx-chip" onclick="this.classList.toggle('on')">Key Resistance</div>
+  </div>
+
+  <button class="run-btn" onclick="runApexForex()">⚡ RUN APEX FOREX ENGINE</button>
+
+  <!-- Results -->
+  <div id="forex-result" style="display:none;margin-top:16px"></div>
+
+</main>
+</div>
+<div id="ticker-bar"></div>
+<script src="common.js"></script>
+<script>
+'use strict';
+
+let activePair = 'EUR/USD';
+let activeSession = 'London';
+
+// Live rate seeds (updated on load from forex.js if available)
+const RATE_SEEDS = {
+  'EUR/USD':{ rate:1.0824, chg:'-0.12%', pos:false },
+  'GBP/USD':{ rate:1.2681, chg:'+0.08%', pos:true  },
+  'USD/JPY': { rate:151.42,chg:'+0.21%', pos:true  },
+  'USD/CHF': { rate:0.9012,chg:'-0.06%', pos:false },
+  'AUD/USD': { rate:0.6431,chg:'+0.14%', pos:true  },
+  'USD/CAD': { rate:1.3641,chg:'-0.09%', pos:false },
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderLiveRates();
+  refreshRates();
+  // Pre-fill defaults for EUR/USD
+  prefill('EUR/USD');
+});
+
+function renderLiveRates() {
+  const el = document.getElementById('live-rates');
+  el.innerHTML = Object.entries(RATE_SEEDS).map(([pair, d]) => `
+    <div class="rate-card" onclick="selectPairByName('${pair}')" style="cursor:pointer">
+      <div class="rate-pair">${pair}</div>
+      <div class="rate-price">${d.rate}</div>
+      <div class="rate-chg" style="color:${d.pos?'var(--neon)':'var(--red)'}">${d.chg}</div>
+    </div>`).join('');
+}
+
+async function refreshRates() {
+  const btn = document.getElementById('refresh-btn');
+  if(btn) btn.classList.add('spinning');
+  try {
+    // Alpha Vantage free tier
+    const pairs = ['EUR','GBP','JPY','CHF','AUD','CAD'];
+    // Fetch EUR/USD as a test
+    const res = await fetch(`https://api.exchangerate-api.com/v4/latest/USD`);
+    const data = await res.json();
+    if (data.rates) {
+      RATE_SEEDS['EUR/USD'].rate = +(1/data.rates.EUR).toFixed(4);
+      RATE_SEEDS['GBP/USD'].rate = +(1/data.rates.GBP).toFixed(4);
+      RATE_SEEDS['USD/JPY'].rate = +data.rates.JPY.toFixed(3);
+      RATE_SEEDS['USD/CHF'].rate = +data.rates.CHF.toFixed(4);
+      RATE_SEEDS['AUD/USD'].rate = +(1/data.rates.AUD).toFixed(4);
+      RATE_SEEDS['USD/CAD'].rate = +data.rates.CAD.toFixed(4);
+      renderLiveRates();
+      document.getElementById('live-rates-banner').className='odds-api-banner live';
+      document.getElementById('live-rates-banner').innerHTML='<div class="oab-dot live"></div><div class="oab-text">LIVE rates · ExchangeRate-API · '+new Date().toLocaleTimeString()+'</div>';
+      // Update prefill if pair already selected
+      prefill(activePair);
+    }
+  } catch(e) {
+    document.getElementById('live-rates-banner').className='odds-api-banner sim';
+    document.getElementById('live-rates-banner').innerHTML='<div class="oab-dot sim"></div><div class="oab-text">Simulation mode — using reference rates</div>';
+  }
+  if(btn) btn.classList.remove('spinning');
+}
+
+function selectPair(pair, btn) {
+  activePair = pair;
+  document.querySelectorAll('.pair-btn').forEach(b=>b.classList.toggle('active',b===btn));
+  prefill(pair);
+}
+function selectPairByName(pair) {
+  activePair = pair;
+  document.querySelectorAll('.pair-btn').forEach(b=>b.classList.toggle('active',b.textContent===pair));
+  prefill(pair);
+}
+function selectSession(session, btn) {
+  activeSession = session;
+  document.querySelectorAll('.session-tab').forEach(b=>b.classList.toggle('active',b===btn));
+}
+
+function prefill(pair) {
+  const d = RATE_SEEDS[pair];
+  if (!d) return;
+  document.getElementById('fx-rate').value  = d.rate;
+  document.getElementById('fx-pivot').value = +(d.rate * (1 + (Math.random()-0.5)*0.002)).toFixed(4);
+  document.getElementById('fx-atr').value   = Math.round(40 + Math.random()*60);
+  document.getElementById('fx-rsi').value   = Math.round(40 + Math.random()*30);
+}
+
+// ── APEX FOREX ENGINE ─────────────────────────────────────────────────────────
+function runApexForex() {
+  const rate    = parseFloat(document.getElementById('fx-rate').value)  || 1.0842;
+  const pivot   = parseFloat(document.getElementById('fx-pivot').value) || 1.0850;
+  const rsi     = parseFloat(document.getElementById('fx-rsi').value)   || 55;
+  const atr     = parseFloat(document.getElementById('fx-atr').value)   || 68;
+  const macdVal = document.getElementById('fx-macd').value;
+
+  const chips = [...document.querySelectorAll('.fx-chip.on')].map(c=>c.textContent);
+  const usdBull    = chips.includes('USD Bullish Bias');
+  const trending   = chips.includes('Trending');
+  const riskOff    = chips.includes('Risk-Off Mode');
+  const newsPend   = chips.includes('News Pending');
+  const support    = chips.includes('Strong Support');
+  const resistance = chips.includes('Key Resistance');
+
+  // APEX signal scoring
+  const macdScore  = macdVal.includes('Bull')||macdVal.includes('Rising')?+0.20:macdVal.includes('Bear')||macdVal.includes('Falling')?-0.20:macdVal.includes('Above')?+0.10:-0.10;
+  const rsiScore   = rsi>65?+0.15:rsi<35?-0.15:rsi>55?+0.08:rsi<45?-0.08:0;
+  const pivotScore = rate>pivot?+0.10:-0.10;
+  const usdScore   = usdBull?-0.10:+0.05; // USD bull = headwind for non-USD pairs
+  const trendScore = trending?+0.10:0;
+  const riskScore  = riskOff?-0.08:0;
+  const newsScore  = newsPend?-0.05:0;
+  const suppScore  = support?+0.06:0;
+  const resScore   = resistance?-0.06:0;
+
+  const bullProb = Math.max(0.08, Math.min(0.92, 0.50 + macdScore + rsiScore + pivotScore + usdScore + trendScore + riskScore + newsScore + suppScore + resScore));
+  const direction = bullProb > 0.57 ? 'BUY' : bullProb < 0.43 ? 'SELL' : 'WAIT';
+  const dirCol    = direction==='BUY'?'var(--neon)':direction==='SELL'?'var(--red)':'var(--text-dim)';
+  const conf      = Math.round(50 + Math.abs(bullProb-0.5)*80);
+
+  // APEX target levels
+  const atrUnit = atr * 0.0001;
+  const tp1 = direction==='BUY'  ? +(rate + atrUnit*1.0).toFixed(4) : direction==='SELL' ? +(rate - atrUnit*1.0).toFixed(4) : null;
+  const tp2 = direction==='BUY'  ? +(rate + atrUnit*2.0).toFixed(4) : direction==='SELL' ? +(rate - atrUnit*2.0).toFixed(4) : null;
+  const sl  = direction==='BUY'  ? +(rate - atrUnit*0.5).toFixed(4) : direction==='SELL' ? +(rate + atrUnit*0.5).toFixed(4) : null;
+
+  // Signal matrix signals
+  const signals = [
+    { lbl:'MACD',     val:macdVal,                             score:macdScore,  bar:Math.abs(macdScore)*500 },
+    { lbl:'RSI',      val:`${rsi} ${rsi>65?'▲ Overbought':rsi<35?'▼ Oversold':'Neutral'}`, score:rsiScore, bar:Math.abs(rsiScore)*500 },
+    { lbl:'vs Pivot', val:rate>pivot?'Above (bullish)':'Below (bearish)', score:pivotScore, bar:50 },
+    { lbl:'USD Bias', val:usdBull?'USD Bull (headwind)':'Neutral',        score:usdScore,  bar:Math.abs(usdScore)*500 },
+    { lbl:'Trend',    val:trending?'Trending (tailwind)':'Ranging',       score:trendScore,bar:Math.abs(trendScore)*500 },
+    { lbl:'Session',  val:activeSession,                                   score:0,         bar:40 },
+  ];
+
+  const verdict = direction==='BUY'
+    ? bullProb>0.70 ? 'Strong bullish confluence. Enter long on retest of pivot.' : 'Moderate bullish bias. Wait for confirmation candle.'
+    : direction==='SELL'
+    ? bullProb<0.30 ? 'Strong bearish setup confirmed. Scale in on rally to pivot.' : 'Moderate bearish bias. Use tight stop.'
+    : 'Conflicting signals. Wait for cleaner setup — do not force entry.';
+
+  const rr = tp1 && sl ? Math.abs(tp1-rate)/Math.abs(sl-rate) : 0;
+
+  document.getElementById('forex-result').style.display='block';
+  document.getElementById('forex-result').innerHTML = `
+    <div class="signal-card">
+      <div class="sig-header">
+        <div>
+          <div class="sig-pair">${activePair}</div>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim)">${activeSession} Session</div>
+        </div>
+        <div class="sig-dir ${direction}">${direction}</div>
+      </div>
+
+      <!-- Probability bar -->
+      <div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-bottom:4px">
+          <span>BEAR ${Math.round((1-bullProb)*100)}%</span><span>BULL ${Math.round(bullProb*100)}%</span>
+        </div>
+        <div style="height:8px;background:var(--bg4);border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${Math.round(bullProb*100)}%;background:${dirCol};border-radius:4px;transition:width 0.8s ease"></div>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:4px">Confidence: <span style="color:${dirCol};font-weight:700">${conf}%</span></div>
+      </div>
+
+      <!-- Target levels -->
+      ${direction!=='WAIT'?`<div class="level-grid">
+        <div class="level-cell tp"><div class="level-lbl">TP1</div><div class="level-val" style="color:var(--neon)">${tp1}</div></div>
+        <div class="level-cell tp"><div class="level-lbl">TP2</div><div class="level-val" style="color:var(--neon2)">${tp2}</div></div>
+        <div class="level-cell sl"><div class="level-lbl">STOP LOSS</div><div class="level-val" style="color:var(--red)">${sl}</div></div>
+      </div>
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-bottom:14px">R:R Ratio: <span style="color:var(--yellow);font-weight:700">1:${rr.toFixed(1)}</span> · ATR: ${atr} pips</div>`:''}
+
+      <!-- Signal matrix -->
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:8px">SIGNAL MATRIX</div>
+      <div class="signal-matrix">
+        ${signals.map(s=>`<div class="sm-row">
+          <span class="sm-lbl">${s.lbl}</span>
+          <div class="sm-bar-wrap"><div class="sm-bar" style="width:${Math.min(100,s.bar)}%;background:${s.score>0?'var(--neon)':s.score<0?'var(--red)':'var(--border2)'}"></div></div>
+          <span class="sm-val" style="color:${s.score>0?'var(--neon)':s.score<0?'var(--red)':'var(--text-dim)'}">${s.val}</span>
+        </div>`).join('')}
+      </div>
+
+      <!-- Composite signal -->
+      <div style="background:var(--bg3);border-radius:var(--radius);padding:12px;margin-top:12px;text-align:center">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-bottom:4px">COMPOSITE SIGNAL</div>
+        <div style="font-family:var(--font-mono);font-size:24px;font-weight:700;color:${dirCol}">${direction}</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-top:4px">${Math.round(bullProb*100)}% bull probability</div>
+      </div>
+
+      <div class="ai-explain" style="margin-top:12px">
+        <div class="ai-explain-title">⚡ APEX VERDICT</div>
+        <ul class="ai-explain-list">
+          <li>${verdict}</li>
+          <li>${activePair} at ${rate} — pivot at ${pivot} (${rate>pivot?'trading above':'below'} key level)</li>
+          <li>RSI ${rsi} · MACD: ${macdVal}</li>
+          ${direction!=='WAIT'?`<li>Entry: ${rate} · TP1: ${tp1} · TP2: ${tp2} · SL: ${sl}</li>`:'<li>No trade — wait for cleaner confluence</li>'}
+        </ul>
+      </div>
+    </div>`;
+}
+</script>
+</body>
+</html>
