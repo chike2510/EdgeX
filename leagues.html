@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leagues & Standings — EdgeX</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="shared.js"></script>
+<style>
+:root{--bg:#080b0f;--surface:#0d1117;--surface2:#141a22;--border:rgba(255,255,255,0.07);--accent:#00f5a0;--blue:#00b8d4;--gold:#f5a623;--red:#ff4757;--text:#e8edf3;--text2:#b0bec5;--muted:#5a6a7a;--font-head:'Syne',sans-serif;--font-mono:'DM Mono',monospace;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+
+.ticker-wrap{background:var(--surface);border-bottom:1px solid var(--border);overflow:hidden;height:34px;display:flex;align-items:center;position:sticky;top:0;z-index:200}
+.ticker-track{display:flex;animation:tk 80s linear infinite;white-space:nowrap}
+@keyframes tk{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ti{display:inline-flex;align-items:center;gap:5px;padding:0 14px;font-size:10px;border-right:1px solid var(--border)}
+.td{width:4px;height:4px;border-radius:50%;background:var(--gold);flex-shrink:0}
+
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 12px;height:50px;border-bottom:1px solid var(--border);background:rgba(8,11,15,0.97);backdrop-filter:blur(20px);position:sticky;top:34px;z-index:199}
+.nav-logo{font-family:var(--font-head);font-weight:800;font-size:16px;color:var(--text);text-decoration:none;letter-spacing:-.02em}
+.nav-logo em{color:var(--accent);font-style:normal}
+.nav-back{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:11px;text-decoration:none;padding:5px 9px;border:1px solid var(--border);border-radius:6px;transition:all .15s}
+.nav-back:hover{border-color:var(--gold);color:var(--gold)}
+
+.page{max-width:960px;margin:0 auto;padding:16px 12px 80px}
+
+/* REGION TABS */
+.regions{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none}
+.regions::-webkit-scrollbar{display:none}
+.reg{flex:0 0 auto;padding:6px 13px;border-radius:20px;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;background:var(--surface);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .15s;font-family:var(--font-mono)}
+.reg:hover,.reg.on{background:var(--surface2);border-color:var(--gold);color:var(--gold)}
+
+/* LEAGUE GRID */
+.lg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:20px}
+.lg-btn{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 10px;cursor:pointer;transition:all .18s;text-align:center;font-family:var(--font-mono)}
+.lg-btn:hover,.lg-btn.on{border-color:var(--gold);background:var(--surface2)}
+.lg-flag{font-size:20px;margin-bottom:5px}
+.lg-name{font-size:9.5px;color:var(--text2);line-height:1.3;font-weight:500}
+.lg-conf{font-size:8px;color:var(--muted);margin-top:2px}
+
+/* STATUS */
+.status{display:flex;align-items:center;gap:7px;padding:7px 11px;background:var(--surface);border:1px solid var(--border);border-radius:7px;margin-bottom:14px;font-size:10px;color:var(--muted)}
+.sdot{width:5px;height:5px;border-radius:50%}
+.sdot.ok{background:var(--accent);box-shadow:0 0 5px var(--accent)}.sdot.err{background:var(--red)}.sdot.load{background:var(--gold);animation:pulse 1s infinite}
+
+/* STANDINGS */
+.stbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.stbl-hdr{padding:10px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.stbl-league{font-family:var(--font-head);font-size:13px;font-weight:700}
+.stbl-season{font-size:9px;color:var(--muted);margin-left:auto}
+
+table.stbl{width:100%;border-collapse:collapse;font-size:10.5px}
+.stbl th{padding:6px 8px;text-align:left;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:400;border-bottom:1px solid var(--border)}
+.stbl th.r{text-align:center}
+.stbl td{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,0.04)}
+.stbl td.r{text-align:center;color:var(--text2)}
+.stbl tr:last-child td{border-bottom:none}
+.stbl tr:hover td{background:rgba(255,255,255,0.015)}
+.pos{width:18px;text-align:center;font-size:10px}
+.pos.top{color:var(--accent)}.pos.eur{color:var(--blue)}.pos.rel{color:var(--red)}.pos.def{color:var(--muted)}
+.st{display:flex;align-items:center;gap:6px}
+.sb{width:18px;height:18px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:8px;flex-shrink:0}
+.sb img{width:100%;height:100%;object-fit:contain}
+.spts{font-family:var(--font-head);font-weight:700;color:var(--text)}
+.sform{display:flex;gap:2px}
+.sfd{width:6px;height:6px;border-radius:50%}
+.sfd.W{background:var(--accent)}.sfd.D{background:var(--gold)}.sfd.L{background:var(--red)}
+
+.spc{display:flex;justify-content:center;padding:36px}
+.sp{width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+.empty{text-align:center;padding:40px 20px}
+.empty-t{font-family:var(--font-head);font-size:14px;color:var(--muted);margin-bottom:5px}
+.legend{display:flex;gap:12px;padding:8px 12px;font-size:9px;color:var(--muted);border-top:1px solid var(--border);flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:4px}
+.legend-dot{width:8px;height:8px;border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="ticker-wrap">
+  <div class="ticker-track">
+    <span class="ti"><span class="td"></span>Leagues & Standings</span>
+    <span class="ti"><span class="td"></span>50+ Competitions · Live Tables</span>
+    <span class="ti"><span class="td"></span>Form Guide · Points · GD</span>
+    <span class="ti"><span class="td"></span>Leagues & Standings</span>
+    <span class="ti"><span class="td"></span>50+ Competitions · Live Tables</span>
+    <span class="ti"><span class="td"></span>Form Guide · Points · GD</span>
+  </div>
+</div>
+
+<nav>
+  <div style="display:flex;align-items:center;gap:10px">
+    <a href="football.html" class="nav-back">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Football
+    </a>
+    <span style="font-family:var(--font-head);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">🏆 LEAGUES & <span style="color:var(--gold)">STANDINGS</span></span>
+  </div>
+  <a href="index.html" class="nav-logo">EDGE<em>X</em></a>
+</nav>
+
+<div class="page">
+
+  <!-- REGION FILTER -->
+  <div class="regions">
+    <div class="reg on" onclick="setRegion('top5',this)">⭐ Top 5</div>
+    <div class="reg" onclick="setRegion('europe',this)">🇪🇺 Europe</div>
+    <div class="reg" onclick="setRegion('cups',this)">🏆 Cups</div>
+    <div class="reg" onclick="setRegion('americas',this)">🌎 Americas</div>
+    <div class="reg" onclick="setRegion('africa',this)">🌍 Africa</div>
+    <div class="reg" onclick="setRegion('asia',this)">🌏 Asia/ME</div>
+    <div class="reg" onclick="setRegion('all',this)">🌍 All</div>
+  </div>
+
+  <!-- LEAGUE SELECTOR GRID -->
+  <div class="lg-grid" id="lg-grid"></div>
+
+  <!-- STATUS -->
+  <div class="status">
+    <div class="sdot load" id="sdot"></div>
+    <span id="stxt">Select a league above…</span>
+  </div>
+
+  <!-- STANDINGS OUTPUT -->
+  <div id="standings-content"><div class="empty"><div class="empty-t">Select a league to view standings</div></div></div>
+</div>
+
+<script>
+const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/soccer';
+
+const REGIONS = {
+  top5:    ['eng.1','esp.1','ger.1','ita.1','fra.1'],
+  cups:    ['uefa.champions','uefa.europa','uefa.eurconf','conmebol.libertadores','conmebol.sudamericana','caf.champions','conc.champions','afc.champions'],
+  europe:  ['ned.1','por.1','sco.1','tur.1','bel.1','gre.1','rus.1','ukr.1','aut.1','swe.1','den.1','nor.1','che.1','eng.2','eng.3','esp.2','ger.2','ita.2','fra.2'],
+  americas:['usa.1','mex.1','bra.1','arg.1','col.1','chi.1','bra.2','mex.2'],
+  africa:  ['nga.1','egy.1','zaf.1','mar.1'],
+  asia:    ['sau.1','qat.1','uae.pro','jpn.1','kor.k1','chn.1'],
+  all:     Object.keys(window.COMPETITIONS||{}),
+};
+
+let currentRegion = 'top5', selectedLeague = null;
+const ss = (s,m) => { document.getElementById('sdot').className='sdot '+s; document.getElementById('stxt').textContent=m; };
+
+function setRegion(r,el){
+  currentRegion=r;document.querySelectorAll('.reg').forEach(b=>b.classList.remove('on'));el.classList.add('on');
+  buildGrid();
+}
+
+function buildGrid(){
+  const COMPS = window.COMPETITIONS||{};
+  const slugs = REGIONS[currentRegion]||Object.keys(COMPS);
+  const grid = document.getElementById('lg-grid');
+  grid.innerHTML = slugs.map(slug=>{
+    const L=COMPS[slug]||{n:slug,f:'⚽',conf:slug};
+    return`<div class="lg-btn ${selectedLeague===slug?'on':''}" onclick="selectLeague('${slug}',this)">
+      <div class="lg-flag">${L.f}</div>
+      <div class="lg-name">${L.n}</div>
+      <div class="lg-conf">${L.conf||''}</div>
+    </div>`;
+  }).join('');
+}
+
+async function selectLeague(slug, el) {
+  selectedLeague=slug;
+  document.querySelectorAll('.lg-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  const L=window.COMPETITIONS?.[slug]||{n:slug,f:'⚽'};
+  ss('load',`Loading ${L.n} standings…`);
+  document.getElementById('standings-content').innerHTML='<div class="spc"><div class="sp"></div></div>';
+  try{
+    const r=await fetch(`${ESPN}/${slug}/standings`);
+    if(!r.ok) throw new Error(`${r.status}`);
+    const d=await r.json();
+    renderStandings(d,slug,L);
+    ss('ok',`${L.n} standings loaded`);
+  }catch(e){
+    document.getElementById('standings-content').innerHTML=`<div class="empty"><div class="empty-t">Could not load standings</div><div style="font-size:11px;color:var(--muted);margin-top:4px">ESPN may not have standings for ${L.n}. Try a league with an active season.</div></div>`;
+    ss('err',`Failed to load ${L.n}`);
+  }
+}
+
+function renderStandings(data,slug,L){
+  const groups=data.children||[data];
+  const season=data.season?.displayName||'';
+  let html='';
+  groups.forEach((g,gi)=>{
+    const entries=g.standings?.entries||[];
+    if(!entries.length) return;
+    const groupName=g.name||g.abbreviation||'';
+    html+=`<div class="stbl-wrap">
+      <div class="stbl-hdr">
+        <span style="font-size:18px">${L.f}</span>
+        <div>
+          <div class="stbl-league">${L.n}${groupName?' — '+groupName:''}</div>
+        </div>
+        <span class="stbl-season">${season}</span>
+      </div>
+      <table class="stbl">
+        <thead><tr>
+          <th style="width:22px">#</th>
+          <th>Team</th>
+          <th class="r">P</th>
+          <th class="r">W</th>
+          <th class="r">D</th>
+          <th class="r">L</th>
+          <th class="r">GF</th>
+          <th class="r">GA</th>
+          <th class="r">GD</th>
+          <th class="r" style="color:var(--accent)">Pts</th>
+          <th class="r">Form</th>
+        </tr></thead>
+        <tbody>${entries.slice(0,24).map((entry,i)=>{
+          const stats=entry.stats||[];
+          const gv=n=>stats.find(s=>s.name===n||s.abbreviation===n)?.value??'—';
+          const form=(gv('form')||'').toString().split('').slice(0,5);
+          // Position coloring
+          const tot=entries.length;
+          const posClass=i<4?'top':i<6?'eur':i>=tot-3?'rel':i>=tot-5?'def':'def';
+          return`<tr>
+            <td><div class="pos ${posClass}">${i+1}</div></td>
+            <td><div class="st">
+              <div class="sb">${entry.team?.logo?`<img src="${entry.team.logo}" onerror="this.parentElement.textContent='⚽'">`:'⚽'}</div>
+              <span>${entry.team?.shortDisplayName||entry.team?.displayName||'?'}</span>
+            </div></td>
+            <td class="r">${gv('gamesPlayed')||gv('GP')||'—'}</td>
+            <td class="r">${gv('wins')||gv('W')||'—'}</td>
+            <td class="r">${gv('ties')||gv('D')||'—'}</td>
+            <td class="r">${gv('losses')||gv('L')||'—'}</td>
+            <td class="r">${gv('pointsFor')||gv('GF')||'—'}</td>
+            <td class="r">${gv('pointsAgainst')||gv('GA')||'—'}</td>
+            <td class="r">${gv('pointDifferential')||gv('GD')||'—'}</td>
+            <td class="r"><span class="spts">${gv('points')||gv('Pts')||'—'}</span></td>
+            <td class="r"><div class="sform">${form.map(f=>`<div class="sfd ${f==='W'?'W':f==='D'?'D':'L'}"></div>`).join('')}</div></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div> Champions League</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div> Europa/Conference</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Relegation</div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('standings-content').innerHTML=html||`<div class="empty"><div class="empty-t">No standings data available</div></div>`;
+}
+
+// Init
+buildGrid();
+// Auto-load EPL on start
+setTimeout(()=>{
+  const eplBtn=document.querySelector('.lg-btn');
+  if(eplBtn)eplBtn.click();
+},200);
+</script>
+</body>
+</html>
