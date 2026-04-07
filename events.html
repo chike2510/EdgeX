@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Events — EdgeX</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080b0f;--surface:#0d1117;--surface2:#141a22;
+  --border:rgba(255,255,255,0.07);--accent:#00f5a0;--blue:#00b8d4;
+  --gold:#f5a623;--red:#ff4757;--purple:#a78bfa;
+  --text:#e8edf3;--text2:#b0bec5;--muted:#5a6a7a;
+  --font-head:'Syne',sans-serif;--font-mono:'DM Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh;overflow-x:hidden}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* TICKER */
+.ticker-wrap{background:var(--surface);border-bottom:1px solid var(--border);overflow:hidden;height:34px;display:flex;align-items:center;position:sticky;top:0;z-index:200}
+.ticker-track{display:flex;animation:tk 70s linear infinite;white-space:nowrap}
+@keyframes tk{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ti{display:inline-flex;align-items:center;gap:5px;padding:0 16px;font-size:10.5px;border-right:1px solid var(--border)}
+.td{width:4px;height:4px;border-radius:50%;background:var(--red);flex-shrink:0;animation:pulse 2s infinite}
+
+/* NAV */
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:52px;border-bottom:1px solid var(--border);background:rgba(8,11,15,0.97);backdrop-filter:blur(20px);position:sticky;top:34px;z-index:199}
+.nav-logo{font-family:var(--font-head);font-weight:800;font-size:17px;color:var(--text);text-decoration:none;letter-spacing:-.02em}
+.nav-logo em{color:var(--accent);font-style:normal}
+.nav-back{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:11px;text-decoration:none;padding:5px 10px;border:1px solid var(--border);border-radius:6px;transition:all .15s}
+.nav-back:hover{border-color:var(--red);color:var(--red)}
+.nav-title{font-family:var(--font-head);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.nav-title em{color:var(--red);font-style:normal}
+
+.page{max-width:960px;margin:0 auto;padding:20px 12px 100px}
+
+/* BANNER */
+.banner{background:linear-gradient(135deg,rgba(13,17,23,1),rgba(17,24,35,1),rgba(10,15,21,1));border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:20px;position:relative;overflow:hidden}
+.banner::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(255,71,87,0.08),transparent 70%)}
+.banner::after{content:'';position:absolute;bottom:-40px;left:20%;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(0,245,160,0.05),transparent 70%)}
+.banner-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.bayse-logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#1a73e8,#0d47a1);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;font-family:var(--font-head)}
+.banner-brand{font-family:var(--font-head);font-size:20px;font-weight:800;letter-spacing:-.02em}
+.banner-brand em{color:var(--red);font-style:normal}
+.banner-tag{font-size:9px;padding:2px 7px;background:rgba(255,71,87,0.1);border:1px solid rgba(255,71,87,0.25);border-radius:4px;color:var(--red);letter-spacing:.08em;text-transform:uppercase}
+.banner-sub{font-size:11.5px;color:var(--muted);line-height:1.6;margin-bottom:16px;max-width:500px}
+.banner-stats{display:flex;gap:20px;flex-wrap:wrap}
+.bs-v{font-family:var(--font-head);font-size:18px;font-weight:700}
+.bs-v.acc{color:var(--accent)}
+.bs-v.ngn{color:var(--gold)}
+.bs-l{font-size:9px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:1px}
+.api-status{display:inline-flex;align-items:center;gap:5px;font-size:9px;padding:3px 8px;border-radius:10px;margin-top:14px}
+.api-status.ok{background:rgba(0,245,160,0.08);border:1px solid rgba(0,245,160,0.2);color:var(--accent)}
+.api-status.err{background:rgba(255,71,87,0.08);border:1px solid rgba(255,71,87,0.2);color:var(--red)}
+.api-status.poly{background:rgba(0,184,212,0.08);border:1px solid rgba(0,184,212,0.2);color:var(--blue)}
+.api-dot{width:5px;height:5px;border-radius:50%;background:currentColor;animation:pulse 2s infinite}
+
+/* CONTROLS */
+.controls{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.search-wrap{flex:1;min-width:180px;position:relative}
+.search-inp{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px 9px 34px;font-family:var(--font-mono);font-size:12px;color:var(--text);outline:none;transition:border-color .15s}
+.search-inp:focus{border-color:rgba(255,71,87,0.4)}
+.search-inp::placeholder{color:var(--muted)}
+.s-ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.curr-toggle{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.curr-btn{padding:9px 12px;font-family:var(--font-mono);font-size:11px;cursor:pointer;border:none;background:none;color:var(--muted);transition:all .15s}
+.curr-btn.on{background:var(--surface2);color:var(--gold)}
+.sort-sel{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-family:var(--font-mono);font-size:11px;color:var(--muted);outline:none;cursor:pointer}
+
+/* CATS */
+.cats{display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cat{flex:0 0 auto;padding:5px 12px;border-radius:20px;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;background:var(--surface);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .15s;font-family:var(--font-mono)}
+.cat.on{background:rgba(255,71,87,0.08);border-color:rgba(255,71,87,0.35);color:var(--red)}
+
+/* TABS (Trending / For You / All) */
+.market-tabs{display:flex;gap:3px;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:3px}
+.mtab{flex:1;padding:8px 4px;text-align:center;font-size:10px;letter-spacing:.06em;text-transform:uppercase;border-radius:7px;cursor:pointer;color:var(--muted);transition:all .15s;background:none;border:none;font-family:var(--font-mono)}
+.mtab.on{background:var(--surface2);color:var(--red)}
+
+/* STATUS */
+.statusbar{display:flex;align-items:center;gap:7px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:14px;font-size:10.5px;color:var(--muted)}
+.sdot{width:5px;height:5px;border-radius:50%}
+.sdot.ok{background:var(--accent);box-shadow:0 0 5px var(--accent)}.sdot.err{background:var(--red)}.sdot.load{background:var(--gold);animation:pulse 1s infinite}
+.srfr{margin-left:auto;background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-size:10px;padding:3px 8px;cursor:pointer;font-family:var(--font-mono);transition:all .15s}
+.srfr:hover{border-color:var(--red);color:var(--red)}
+
+/* GRID */
+.egrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+
+/* EVENT CARD — Bayse style */
+.ecard{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:all .2s;animation:slideUp .2s ease both}
+.ecard:hover{border-color:rgba(255,71,87,0.25);transform:translateY(-2px);box-shadow:0 10px 36px rgba(0,0,0,.45)}
+.eimg{width:100%;height:100px;object-fit:cover;display:block}
+.eimg-ph{width:100%;height:100px;display:flex;align-items:center;justify-content:center;font-size:30px}
+.ebody{padding:13px}
+
+/* Market header */
+.mhdr{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px}
+.mhdr-ico{width:38px;height:38px;border-radius:10px;overflow:hidden;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:16px}
+.mhdr-ico img{width:100%;height:100%;object-fit:cover}
+.mtitle{font-family:var(--font-head);font-size:13px;font-weight:700;line-height:1.3;letter-spacing:-.01em}
+.mcat-row{display:flex;align-items:center;gap:5px;margin-top:3px;font-size:9px;color:var(--muted)}
+.cdot{width:4px;height:4px;border-radius:50%}
+
+/* MULTI-OUTCOME (like Bayse screenshot - ADC candidates) */
+.outcomes{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.outcome-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:6px;padding:6px 8px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);transition:border-color .15s}
+.outcome-row:hover{border-color:rgba(0,245,160,0.2)}
+.outcome-name{font-size:11.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.outcome-yes{padding:4px 8px;background:rgba(30,100,255,0.12);border:1px solid rgba(30,100,255,0.25);border-radius:5px;font-size:10.5px;font-weight:600;color:#4d8cf5;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:var(--font-mono)}
+.outcome-yes:hover{background:rgba(30,100,255,0.22);border-color:#4d8cf5}
+.outcome-no{padding:4px 8px;background:rgba(255,71,87,0.08);border:1px solid rgba(255,71,87,0.2);border-radius:5px;font-size:10.5px;font-weight:600;color:var(--red);cursor:pointer;transition:all .15s;white-space:nowrap;font-family:var(--font-mono)}
+.outcome-no:hover{background:rgba(255,71,87,0.18);border-color:var(--red)}
+
+/* BINARY (simple YES/NO like "Will Carter Efe Defeat Portable?") */
+.binary-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.bin-yes{padding:10px 8px;background:rgba(30,100,255,0.08);border:1px solid rgba(30,100,255,0.2);border-radius:7px;cursor:pointer;font-family:var(--font-mono);display:flex;flex-direction:column;align-items:center;gap:1px;transition:all .15s}
+.bin-yes:hover{background:rgba(30,100,255,0.18);border-color:#4d8cf5;transform:translateY(-1px)}
+.bin-yes .lbl{font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:#4d8cf5;opacity:.8}
+.bin-yes .price{font-family:var(--font-head);font-size:14px;font-weight:800;color:#4d8cf5}
+.bin-yes .payout{font-size:9px;color:var(--muted);margin-top:1px}
+.bin-no{padding:10px 8px;background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.18);border-radius:7px;cursor:pointer;font-family:var(--font-mono);display:flex;flex-direction:column;align-items:center;gap:1px;transition:all .15s}
+.bin-no:hover{background:rgba(255,71,87,0.16);border-color:var(--red);transform:translateY(-1px)}
+.bin-no .lbl{font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--red);opacity:.8}
+.bin-no .price{font-family:var(--font-head);font-size:14px;font-weight:800;color:var(--red)}
+.bin-no .payout{font-size:9px;color:var(--muted);margin-top:1px}
+
+/* PROB BAR */
+.pbar-wrap{margin-bottom:8px}
+.pbar-labels{display:flex;justify-content:space-between;font-size:9.5px;margin-bottom:4px}
+.pbar-track{width:100%;height:4px;background:rgba(255,71,87,0.15);border-radius:2px;overflow:hidden}
+.pbar-fill{height:100%;background:linear-gradient(90deg,#4d8cf5,#00b8d4);border-radius:2px;transition:width .5s}
+
+/* META */
+.emeta{display:flex;justify-content:space-between;align-items:center;font-size:9.5px;color:var(--muted);padding-top:8px;border-top:1px solid var(--border)}
+.vol-ico{display:flex;align-items:center;gap:3px}
+.eng-chip{font-size:8px;padding:2px 5px;border-radius:3px;text-transform:uppercase;letter-spacing:.06em}
+.eng-chip.amm{background:rgba(245,166,35,0.08);color:var(--gold);border:1px solid rgba(245,166,35,0.2)}
+.eng-chip.clob{background:rgba(167,139,250,0.08);color:var(--purple);border:1px solid rgba(167,139,250,0.2)}
+.eng-chip.pm{background:rgba(0,184,212,0.08);color:var(--blue);border:1px solid rgba(0,184,212,0.2)}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(5px);z-index:1000;display:none;align-items:flex-end;justify-content:center;padding:10px}
+.overlay.on{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:18px 18px 12px 12px;width:100%;max-width:540px;max-height:88vh;overflow-y:auto;animation:slideUp .22s ease}
+.mhead{padding:16px 16px 13px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.mhead-ico{width:40px;height:40px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:18px;flex-shrink:0}
+.mhead-ico img{width:100%;height:100%;object-fit:cover}
+.mhead-info{flex:1;min-width:0}
+.mhead-title{font-family:var(--font-head);font-size:14px;font-weight:700;line-height:1.3;letter-spacing:-.01em}
+.mhead-cat{font-size:9.5px;color:var(--muted);margin-top:2px}
+.mclose{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.mclose:hover{border-color:var(--red);color:var(--red)}
+.mbody{padding:16px}
+
+/* Modal outcomes */
+.modal-outcomes{display:flex;flex-direction:column;gap:7px;margin-bottom:16px}
+.mo-row{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px}
+.mo-name{font-size:12.5px;font-weight:600;margin-bottom:7px}
+.mo-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.mo-yes,.mo-no{padding:8px;border-radius:6px;font-family:var(--font-mono);font-size:11px;cursor:pointer;border:none;display:flex;flex-direction:column;align-items:center;gap:1px;transition:all .15s}
+.mo-yes{background:rgba(30,100,255,0.1);color:#4d8cf5;border:1px solid rgba(30,100,255,0.22)}
+.mo-yes:hover{background:rgba(30,100,255,0.2)}
+.mo-no{background:rgba(255,71,87,0.08);color:var(--red);border:1px solid rgba(255,71,87,0.2)}
+.mo-no:hover{background:rgba(255,71,87,0.18)}
+.mo-lbl{font-size:8px;letter-spacing:.08em;text-transform:uppercase;opacity:.75}
+.mo-price{font-family:var(--font-head);font-size:16px;font-weight:800}
+.mo-payout{font-size:9px;color:var(--muted)}
+
+.minfo-grid{background:var(--surface2);border-radius:9px;padding:13px}
+.mirow{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:11px}
+.mirow:last-child{border-bottom:none}
+.mil{color:var(--muted)}.miv{color:var(--text);font-weight:500}
+.miv.acc{color:var(--accent)}.miv.gld{color:var(--gold)}
+
+.mfoot{padding:13px 16px;border-top:1px solid var(--border)}
+.trade-link{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;background:rgba(255,71,87,0.08);border:1px solid rgba(255,71,87,0.25);border-radius:9px;color:var(--red);text-decoration:none;font-size:12px;font-weight:600;font-family:var(--font-head);transition:all .15s}
+.trade-link:hover{background:rgba(255,71,87,0.18)}
+.mnote{margin-top:8px;font-size:9.5px;color:var(--muted);text-align:center;line-height:1.5}
+.mnote a{color:var(--blue)}
+
+/* EMPTY / SPINNER */
+.empty{text-align:center;padding:48px 24px}
+.empty-ic{font-size:32px;margin-bottom:10px;opacity:.4}
+.empty-t{font-family:var(--font-head);font-size:15px;color:var(--muted);margin-bottom:5px}
+.empty-s{font-size:11px;color:var(--muted);opacity:.55;line-height:1.7;max-width:280px;margin:0 auto}
+.spc{display:flex;flex-direction:column;align-items:center;gap:12px;padding:48px}
+.sp{width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite}
+
+.more-btn{display:flex;justify-content:center;margin-top:18px}
+.morebtn{padding:11px 28px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--font-mono);font-size:11.5px;cursor:pointer;transition:all .15s}
+.morebtn:hover{border-color:var(--red);color:var(--red)}
+
+@media(max-width:580px){.egrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="ticker-wrap">
+  <div class="ticker-track">
+    <span class="ti"><span class="td"></span>Bayse Markets · Nigeria's #1 Prediction Market</span>
+    <span class="ti"><span class="td"></span>Sports · Finance · Crypto · Politics · Culture</span>
+    <span class="ti"><span class="td"></span>Trade in NGN or USD · Win when you're right</span>
+    <span class="ti"><span class="td"></span>Bayse Markets · Nigeria's #1 Prediction Market</span>
+    <span class="ti"><span class="td"></span>Sports · Finance · Crypto · Politics · Culture</span>
+    <span class="ti"><span class="td"></span>Trade in NGN or USD · Win when you're right</span>
+  </div>
+</div>
+
+<nav>
+  <div style="display:flex;align-items:center;gap:10px">
+    <a href="index.html" class="nav-back">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Back
+    </a>
+    <div class="nav-title"><em>BAYSE</em> MARKETS · PREDICT</div>
+  </div>
+  <a href="index.html" class="nav-logo">EDGE<em>X</em></a>
+</nav>
+
+<div class="page">
+
+  <!-- BANNER -->
+  <div class="banner">
+    <div class="banner-top">
+      <div class="bayse-logo">B</div>
+      <div>
+        <div class="banner-brand"><em>bayse</em> markets</div>
+        <div class="banner-tag">Africa's Largest Prediction Market</div>
+      </div>
+    </div>
+    <div class="banner-sub" style="margin-top:12px">
+      Trade YES or NO on real-world outcomes — Super Eagles, naira rate, crypto prices, Nollywood, elections. Win in NGN or USD when you're right.
+    </div>
+    <div class="banner-stats">
+      <div><div class="bs-v acc" id="total-m">—</div><div class="bs-l">Open Markets</div></div>
+      <div><div class="bs-v ngn" id="total-v">—</div><div class="bs-l">Total Volume</div></div>
+      <div><div class="bs-v" style="color:var(--purple)" id="curr-display">NGN + USD</div><div class="bs-l">Currencies</div></div>
+    </div>
+    <div class="api-status load" id="api-pill">
+      <div class="api-dot"></div>
+      <span id="api-pill-text">Connecting to Bayse…</span>
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls">
+    <div class="search-wrap">
+      <svg class="s-ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="search-inp" id="search" type="text" placeholder="Super Eagles, BTC, election…" oninput="onSearch()">
+    </div>
+    <div class="curr-toggle">
+      <button class="curr-btn on" id="curr-ngn" onclick="setCurr('NGN')">₦ NGN</button>
+      <button class="curr-btn" id="curr-usd" onclick="setCurr('USD')">$ USD</button>
+    </div>
+    <select class="sort-sel" id="sort" onchange="load(1)">
+      <option value="">Trending</option>
+      <option value="volume">Volume</option>
+      <option value="liquidity">Liquidity</option>
+    </select>
+  </div>
+
+  <!-- CATEGORY TABS -->
+  <div class="cats">
+    <div class="cat on" onclick="setCat('',this)">🔥 All</div>
+    <div class="cat" onclick="setCat('sports',this)">⚽ Sports</div>
+    <div class="cat" onclick="setCat('crypto',this)">₿ Crypto</div>
+    <div class="cat" onclick="setCat('politics',this)">🏛 Politics</div>
+    <div class="cat" onclick="setCat('finance',this)">💵 Finance</div>
+    <div class="cat" onclick="setCat('entertainment',this)">🎭 Entertainment</div>
+    <div class="cat" onclick="setCat('technology',this)">💻 Tech</div>
+  </div>
+
+  <!-- MARKET TABS -->
+  <div class="market-tabs">
+    <button class="mtab on" id="mt-trending" onclick="setMTab('trending',this)">📈 Trending</button>
+    <button class="mtab" id="mt-all" onclick="setMTab('all',this)">🌍 All Markets</button>
+    <button class="mtab" id="mt-ending" onclick="setMTab('ending',this)">⏰ Ending Soon</button>
+  </div>
+
+  <!-- STATUS -->
+  <div class="statusbar">
+    <div class="sdot load" id="sdot"></div>
+    <span id="stxt">Loading Bayse Markets…</span>
+    <button class="srfr" onclick="load(1)">↺ Refresh</button>
+  </div>
+
+  <div id="grid">
+    <div class="spc">
+      <div class="sp"></div>
+      <div style="font-size:11px;color:var(--muted)">Connecting to Bayse Markets…</div>
+    </div>
+  </div>
+
+  <div class="more-btn" id="more-wrap" style="display:none">
+    <button class="morebtn" onclick="loadMore()">Load More</button>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="mhead">
+      <div class="mhead-ico" id="m-ico">📊</div>
+      <div class="mhead-info">
+        <div class="mhead-title" id="m-title">—</div>
+        <div class="mhead-cat" id="m-cat">—</div>
+      </div>
+      <button class="mclose" onclick="closeModal()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="mbody" id="m-body"></div>
+    <div class="mfoot">
+      <a class="trade-link" id="m-link" href="https://app.bayse.markets" target="_blank" rel="noopener">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+        Trade on Bayse Markets
+      </a>
+      <div class="mnote">Opens app.bayse.markets. Download the Bayse app to trade in NGN or USD. <a href="https://link.bayse.markets/app" target="_blank">Get the app →</a></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────
+const BAYSE = 'https://relay.bayse.markets/v1/pm';
+const GAMMA = 'https://gamma-api.polymarket.com'; // silent fallback
+const CAT_IC = {sports:'⚽',crypto:'₿',politics:'🏛',finance:'💵',entertainment:'🎭',technology:'💻',culture:'🎭'};
+const CAT_COL = {sports:'#00f5a0',crypto:'#00b8d4',politics:'#8ab4f8',finance:'#f5a623',entertainment:'#ff9ff3',technology:'#a78bfa'};
+
+let cat='', curr='NGN', mtab='trending', page=1, events=[], searchTerm='', currentEvent=null, usingFallback=false;
+
+// ── HELPERS ───────────────────────────────────────────────
+const fmtV=(v,c)=>{if(!v||v===0)return'—';const sym=c==='NGN'?'₦':'$';if(v>=1e6)return sym+(v/1e6).toFixed(1)+'M';if(v>=1e3)return sym+(v/1e3).toFixed(0)+'K';return sym+Math.round(v)};
+const fmtNGN=p=>`₦${Math.round(p)}`;// e.g. ₦64.2
+const fmtUSD=p=>`$${(p/100).toFixed(2)}`;
+const fmtPrice=(p,c)=>c==='NGN'?fmtNGN(p*100):fmtUSD(p*100);// p is 0-1
+const fmtD=d=>{if(!d)return'—';return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'})};
+const dLeft=d=>{if(!d)return null;const df=Math.ceil((new Date(d)-Date.now())/86400000);if(df<0)return'Ended';if(df===0)return'Today';return`${df}d left`};
+const ss=(s,m)=>{document.getElementById('sdot').className='sdot '+s;document.getElementById('stxt').textContent=m};
+const setApiPill=(state,txt)=>{const el=document.getElementById('api-pill');el.className='api-status '+state;document.getElementById('api-pill-text').textContent=txt};
+
+function setCat(c,el){cat=c;page=1;document.querySelectorAll('.cat').forEach(b=>b.classList.remove('on'));el.classList.add('on');load(1)}
+function setCurr(c){curr=c;document.getElementById('curr-ngn').classList.toggle('on',c==='NGN');document.getElementById('curr-usd').classList.toggle('on',c==='USD');renderEvents()}
+function setMTab(t,el){mtab=t;page=1;document.querySelectorAll('.mtab').forEach(b=>b.classList.remove('on'));el.classList.add('on');load(1)}
+function onSearch(){searchTerm=document.getElementById('search').value.toLowerCase();renderEvents()}
+
+// ── LOAD ──────────────────────────────────────────────────
+async function load(pg=1){
+  page=pg;
+  if(pg===1){ss('load','Loading Bayse Markets…');document.getElementById('grid').innerHTML='<div class="spc"><div class="sp"></div><div style="font-size:11px;color:var(--muted)">Fetching markets…</div></div>'}
+
+  // Build Bayse params
+  const params=new URLSearchParams({status:'open',size:20,page:pg,currency:curr});
+  if(cat)params.set('category',cat);
+  if(mtab==='trending')params.set('trending','true');
+  if(mtab==='ending')params.set('sort','end_date_asc');
+
+  let ok=false;
+  try{
+    const r=await fetch(`${BAYSE}/events?${params}`,{signal:AbortSignal.timeout(8000)});
+    if(!r.ok)throw new Error(`${r.status}`);
+    const d=await r.json();
+    const evts=d.events||[];
+    if(pg===1)events=evts;else events=[...events,...evts];
+    const tot=d.pagination?.totalCount||evts.length;
+    document.getElementById('total-m').textContent=tot.toLocaleString();
+    const tv=evts.reduce((s,e)=>s+(e.totalVolume||0),0);
+    document.getElementById('total-v').textContent=fmtV(tv,curr);
+    const hasMore=d.pagination&&d.pagination.page<d.pagination.lastPage;
+    document.getElementById('more-wrap').style.display=hasMore?'flex':'none';
+    ss('ok',`${events.length} markets · Bayse · ${cat||'All'}`);
+    setApiPill('ok','● Bayse Markets · Live');
+    usingFallback=false;
+    ok=true;
+  }catch(e){
+    // Silent fallback to Polymarket
+    if(!usingFallback||pg===1){
+      ok=await loadPolyFallback(pg);
+    }
+  }
+  if(ok)renderEvents();
+}
+
+async function loadPolyFallback(pg){
+  try{
+    const params=new URLSearchParams({active:'true',closed:'false',limit:20,offset:(pg-1)*20,order:'volume',ascending:'false'});
+    if(cat&&cat!=='finance')params.set('tag',cat);
+    const r=await fetch(`${GAMMA}/markets?${params}`,{signal:AbortSignal.timeout(8000)});
+    if(!r.ok)throw new Error(`${r.status}`);
+    const data=await r.json();
+    const mkts=Array.isArray(data)?data:data.data||data.markets||[];
+    // Adapt Polymarket format to Bayse-like structure
+    const adapted=mkts.map(m=>({
+      id:m.id||m.conditionId,
+      title:m.question||m.title,
+      category:cat||(m.tags?.[0]?.label)||'general',
+      imageUrl:m.image||m.imageUrl,
+      totalVolume:parseFloat(m.volume||0),
+      liquidity:parseFloat(m.liquidity||0),
+      totalOrders:m.numTraders||0,
+      resolutionDate:m.endDate||m.end_date_iso,
+      engine:'AMM',
+      _source:'polymarket',
+      _url:m.url||`https://polymarket.com/event/${m.slug||m.conditionId}`,
+      markets:[{
+        outcome1Label:'YES',outcome2Label:'NO',
+        outcome1Price:parseFloat(m.outcomePrices?.[0]||0.5),
+        outcome2Price:parseFloat(m.outcomePrices?.[1]||0.5),
+        yesBuyPrice:parseFloat(m.outcomePrices?.[0]||0.5),
+        noBuyPrice:parseFloat(m.outcomePrices?.[1]||0.5),
+      }]
+    }));
+    if(pg===1)events=adapted;else events=[...events,...adapted];
+    document.getElementById('total-m').textContent=events.length;
+    const tv=adapted.reduce((s,e)=>s+(e.totalVolume||0),0);
+    document.getElementById('total-v').textContent=fmtV(tv,'USD');
+    document.getElementById('more-wrap').style.display=mkts.length>=20?'flex':'none';
+    ss('ok',`${events.length} markets · Polymarket (Bayse currently unreachable from this network)`);
+    setApiPill('poly','Fallback: Polymarket · Bayse geo-restricted here');
+    usingFallback=true;
+    return true;
+  }catch{
+    ss('err','Could not load markets — check your connection');
+    setApiPill('err','Offline');
+    document.getElementById('grid').innerHTML='<div class="empty"><div class="empty-ic">📡</div><div class="empty-t">Could not load markets</div><div class="empty-s">Both Bayse and Polymarket are unreachable. Check your internet and try again.</div></div>';
+    return false;
+  }
+}
+
+async function loadMore(){page++;await load(page)}
+
+// ── RENDER ────────────────────────────────────────────────
+function renderEvents(){
+  const el=document.getElementById('grid');
+  let evts=events;
+  if(searchTerm)evts=evts.filter(e=>(e.title||'').toLowerCase().includes(searchTerm)||(e.category||'').toLowerCase().includes(searchTerm));
+  if(!evts.length){el.innerHTML='<div class="empty"><div class="empty-ic">🔍</div><div class="empty-t">No markets found</div><div class="empty-s">Try a different search or category.</div></div>';return}
+  el.innerHTML=`<div class="egrid">${evts.map((ev,i)=>ecard(ev,i)).join('')}</div>`;
+}
+
+function ecard(ev,i){
+  const title=ev.title||'Market';
+  const img=ev.imageUrl||'';
+  const catName=ev.category||'general';
+  const color=CAT_COL[catName.toLowerCase()]||'var(--muted)';
+  const dl=dLeft(ev.resolutionDate||ev.closingDate);
+  const trades=ev.totalOrders||0;
+  const vol=ev.totalVolume||0;
+  const mkts=ev.markets||[];
+  const isMulti=mkts.length>1;
+
+  // MULTI OUTCOME (combined event like ADC candidates)
+  let inner='';
+  if(isMulti){
+    inner=`<div class="outcomes">${mkts.slice(0,3).map(m=>{
+      const yp=fmtPrice(m.yesBuyPrice||m.outcome1Price||0.5,curr);
+      const np=fmtPrice(m.noBuyPrice||m.outcome2Price||0.5,curr);
+      const name=m.title||m.outcome1Label||'Option';
+      return`<div class="outcome-row">
+        <div class="outcome-name">${name}</div>
+        <button class="outcome-yes" onclick="event.stopPropagation();openModal(${i})">Yes ${yp}</button>
+        <button class="outcome-no" onclick="event.stopPropagation();openModal(${i})">No ${np}</button>
+      </div>`;
+    }).join('')}${mkts.length>3?`<div style="font-size:9.5px;color:var(--muted);text-align:center;padding:3px 0">+${mkts.length-3} more outcomes</div>`:''}
+    </div>`;
+  } else {
+    // BINARY
+    const m=mkts[0]||{};
+    const yp=fmtPrice(m.yesBuyPrice||m.outcome1Price||0.5,curr);
+    const np=fmtPrice(m.noBuyPrice||m.outcome2Price||0.5,curr);
+    const yesPct=Math.round((m.outcome1Price||0.5)*100);
+    // Payout calc: ₦1k → ₦Xk
+    const yPayout=curr==='NGN'?`₦1k → ₦${Math.round(100/((m.yesBuyPrice||0.5)*100+1)*.9)}k`:'';
+    const nPayout=curr==='NGN'?`₦1k → ₦${Math.round(100/((m.noBuyPrice||0.5)*100+1)*.9)}k`:'';
+    inner=`
+    <div class="pbar-wrap">
+      <div class="pbar-labels"><span style="color:#4d8cf5">YES ${yesPct}%</span><span style="color:var(--red)">NO ${100-yesPct}%</span></div>
+      <div class="pbar-track"><div class="pbar-fill" style="width:${yesPct}%"></div></div>
+    </div>
+    <div class="binary-btns">
+      <button class="bin-yes" onclick="event.stopPropagation();openModal(${i})">
+        <span class="lbl">Buy Yes</span>
+        <span class="price">${yp}</span>
+        ${yPayout?`<span class="payout">${yPayout}</span>`:''}
+      </button>
+      <button class="bin-no" onclick="event.stopPropagation();openModal(${i})">
+        <span class="lbl">Buy No</span>
+        <span class="price">${np}</span>
+        ${nPayout?`<span class="payout">${nPayout}</span>`:''}
+      </button>
+    </div>`;
+  }
+
+  const engLabel=ev._source==='polymarket'?'Polymarket':ev.engine||'AMM';
+  const engClass=ev._source==='polymarket'?'pm':ev.engine==='CLOB'?'clob':'amm';
+
+  return`<div class="ecard" style="animation-delay:${i*.025}s" onclick="openModal(${i})">
+    ${img?`<img class="eimg" src="${img}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`:''}
+    <div class="eimg-ph" style="${img?'display:none':''};background:linear-gradient(135deg,var(--surface2),#1a2332)">
+      ${CAT_IC[catName.toLowerCase()]||'📊'}
+    </div>
+    <div class="ebody">
+      <div class="mhdr">
+        <div class="mhdr-ico">${img?`<img src="${img}" alt="" onerror="this.parentElement.textContent='${CAT_IC[catName]||'📊'}'">`:(CAT_IC[catName.toLowerCase()]||'📊')}</div>
+        <div style="flex:1;min-width:0">
+          <div class="mtitle">${title}</div>
+          <div class="mcat-row"><div class="cdot" style="background:${color}"></div>${catName}</div>
+        </div>
+      </div>
+      ${inner}
+      <div class="emeta">
+        <span class="vol-ico">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          ${fmtV(vol,curr)}
+        </span>
+        <span class="eng-chip ${engClass}">${engLabel}</span>
+        <span>${dl||'—'}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── MODAL ─────────────────────────────────────────────────
+function openModal(i){
+  let evts=events;
+  if(searchTerm)evts=evts.filter(e=>(e.title||'').toLowerCase().includes(searchTerm));
+  currentEvent=evts[i];if(!currentEvent)return;
+  const ev=currentEvent;
+  const catName=ev.category||'general';
+  const color=CAT_COL[catName.toLowerCase()]||'var(--muted)';
+  const img=ev.imageUrl||'';
+  const mkts=ev.markets||[];
+  const dl=dLeft(ev.resolutionDate||ev.closingDate);
+  const url=ev._url||`https://app.bayse.markets`;
+
+  // Header
+  document.getElementById('m-title').textContent=ev.title||'Market';
+  document.getElementById('m-cat').textContent=`${catName} · ${ev.engine||'AMM'} · ${dl||'—'}`;
+  const ico=document.getElementById('m-ico');
+  ico.innerHTML=img?`<img src="${img}" onerror="this.parentElement.textContent='${CAT_IC[catName]||'📊'}'">`:(CAT_IC[catName.toLowerCase()]||'📊');
+  document.getElementById('m-link').href=url;
+
+  // Body
+  document.getElementById('m-body').innerHTML=`
+    <div class="modal-outcomes">
+      ${mkts.map(m=>{
+        const yp=fmtPrice(m.yesBuyPrice||m.outcome1Price||0.5,curr);
+        const np=fmtPrice(m.noBuyPrice||m.outcome2Price||0.5,curr);
+        const name=m.title||ev.title||'Market';
+        const yesPct=Math.round((m.outcome1Price||0.5)*100);
+        // Payout like Bayse: ₦1k → ₦Xk
+        const yBase=curr==='NGN'?1000:10;
+        const yPay=Math.round(yBase/((m.yesBuyPrice||0.5)));
+        const nPay=Math.round(yBase/((m.noBuyPrice||0.5)));
+        return`<div class="mo-row">
+          <div class="mo-name">${name}</div>
+          <div style="width:100%;height:3px;background:rgba(255,71,87,0.12);border-radius:2px;margin-bottom:7px;overflow:hidden">
+            <div style="height:100%;width:${yesPct}%;background:linear-gradient(90deg,#4d8cf5,#00b8d4);border-radius:2px"></div>
+          </div>
+          <div class="mo-btns">
+            <button class="mo-yes" onclick="window.open('${url}','_blank')">
+              <span class="mo-lbl">Buy Yes</span>
+              <span class="mo-price">${yp}</span>
+              <span class="mo-payout">${curr==='NGN'?`₦1k → ₦${Math.round(yPay/10)*10}`:''}</span>
+            </button>
+            <button class="mo-no" onclick="window.open('${url}','_blank')">
+              <span class="mo-lbl">Buy No</span>
+              <span class="mo-price">${np}</span>
+              <span class="mo-payout">${curr==='NGN'?`₦1k → ₦${Math.round(nPay/10)*10}`:''}</span>
+            </button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="minfo-grid">
+      <div class="mirow"><span class="mil">Category</span><span class="miv" style="color:${color}">${catName}</span></div>
+      <div class="mirow"><span class="mil">Engine</span><span class="miv">${ev.engine||'AMM'}</span></div>
+      <div class="mirow"><span class="mil">Volume</span><span class="miv gld">${fmtV(ev.totalVolume,curr)}</span></div>
+      <div class="mirow"><span class="mil">Liquidity</span><span class="miv">${fmtV(ev.liquidity,curr)}</span></div>
+      <div class="mirow"><span class="mil">Total Trades</span><span class="miv">${(ev.totalOrders||0).toLocaleString()}</span></div>
+      <div class="mirow"><span class="mil">Currencies</span><span class="miv acc">${(ev.supportedCurrencies||['NGN','USD']).join(' · ')}</span></div>
+      <div class="mirow"><span class="mil">Closes</span><span class="miv">${ev.closingDate?new Date(ev.closingDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—'}</span></div>
+      <div class="mirow"><span class="mil">Resolves</span><span class="miv">${fmtD(ev.resolutionDate)} · ${dl}</span></div>
+    </div>`;
+
+  document.getElementById('overlay').classList.add('on');
+  document.body.style.overflow='hidden';
+}
+
+function closeModal(e){
+  if(e&&e.target!==document.getElementById('overlay'))return;
+  document.getElementById('overlay').classList.remove('on');
+  document.body.style.overflow='';
+}
+
+// Init
+load(1);
+</script>
+</body>
+</html>

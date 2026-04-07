@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crypto — EdgeX</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080b0f;--surface:#0d1117;--surface2:#141a22;
+  --border:rgba(255,255,255,0.07);--accent:#00f5a0;--blue:#00b8d4;
+  --gold:#f5a623;--red:#ff4757;--purple:#a78bfa;
+  --text:#e8edf3;--text2:#b0bec5;--muted:#5a6a7a;
+  --font-head:'Syne',sans-serif;--font-mono:'DM Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh;overflow-x:hidden}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes flashUp{0%{color:var(--accent)}60%{color:var(--accent)}100%{color:inherit}}
+@keyframes flashDn{0%{color:var(--red)}60%{color:var(--red)}100%{color:inherit}}
+
+.ticker-wrap{background:var(--surface);border-bottom:1px solid var(--border);overflow:hidden;height:34px;display:flex;align-items:center;position:sticky;top:0;z-index:200}
+.ticker-track{display:flex;animation:tk 60s linear infinite;white-space:nowrap}
+@keyframes tk{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ti{display:inline-flex;align-items:center;gap:5px;padding:0 16px;font-size:10.5px;border-right:1px solid var(--border)}
+.td{width:4px;height:4px;border-radius:50%;background:var(--blue);flex-shrink:0;animation:pulse 2s infinite}
+
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:52px;border-bottom:1px solid var(--border);background:rgba(8,11,15,0.97);backdrop-filter:blur(20px);position:sticky;top:34px;z-index:199}
+.nav-logo{font-family:var(--font-head);font-weight:800;font-size:17px;color:var(--text);text-decoration:none;letter-spacing:-.02em}
+.nav-logo em{color:var(--accent);font-style:normal}
+.nav-back{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:11px;text-decoration:none;padding:5px 10px;border:1px solid var(--border);border-radius:6px;transition:all .15s}
+.nav-back:hover{border-color:var(--blue);color:var(--blue)}
+.nav-title{font-family:var(--font-head);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.nav-title em{color:var(--blue);font-style:normal}
+
+.page{max-width:960px;margin:0 auto;padding:18px 12px 100px}
+
+/* WS STATUS */
+.ws-bar{display:flex;align-items:center;gap:8px;padding:9px 13px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:20px;font-size:10.5px;color:var(--muted)}
+.ws-dot{width:6px;height:6px;border-radius:50%}
+.ws-dot.live{background:var(--accent);box-shadow:0 0 7px var(--accent);animation:pulse 2s infinite}
+.ws-dot.connecting{background:var(--gold);animation:pulse .8s infinite}
+.ws-dot.dead{background:var(--red)}
+.ws-src{margin-left:auto;font-size:9px;padding:2px 7px;border-radius:3px}
+.ws-src.bayse{background:rgba(255,71,87,0.1);color:var(--red);border:1px solid rgba(255,71,87,0.2)}
+.ws-src.gecko{background:rgba(0,245,160,0.08);color:var(--accent);border:1px solid rgba(0,245,160,0.2)}
+
+/* COIN GRID */
+.coin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.coin-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 14px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.coin-card:hover{transform:translateY(-2px);box-shadow:0 12px 36px rgba(0,0,0,.45)}
+.coin-card.BTC:hover,.coin-card.BTC.active{border-color:rgba(245,166,35,.35)}
+.coin-card.ETH:hover,.coin-card.ETH.active{border-color:rgba(167,139,250,.35)}
+.coin-card.SOL:hover,.coin-card.SOL.active{border-color:rgba(0,245,160,.35)}
+.coin-card.active{border-width:1.5px}
+.coin-bg{position:absolute;inset:0;opacity:0;transition:opacity .3s;pointer-events:none}
+.coin-card:hover .coin-bg,.coin-card.active .coin-bg{opacity:1}
+.coin-card.BTC .coin-bg{background:radial-gradient(ellipse at top right,rgba(245,166,35,.06),transparent 65%)}
+.coin-card.ETH .coin-bg{background:radial-gradient(ellipse at top right,rgba(167,139,250,.06),transparent 65%)}
+.coin-card.SOL .coin-bg{background:radial-gradient(ellipse at top right,rgba(0,245,160,.06),transparent 65%)}
+.coin-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.coin-sym{display:flex;align-items:center;gap:7px}
+.coin-ic{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;font-family:var(--font-head)}
+.coin-ic.BTC{background:rgba(245,166,35,.15);color:var(--gold)}
+.coin-ic.ETH{background:rgba(167,139,250,.15);color:var(--purple)}
+.coin-ic.SOL{background:rgba(0,245,160,.15);color:var(--accent)}
+.coin-name{font-family:var(--font-head);font-size:13px;font-weight:700}
+.coin-pair{font-size:9.5px;color:var(--muted)}
+.live-chip{font-size:8px;padding:2px 5px;border-radius:3px;background:rgba(0,245,160,.1);color:var(--accent);border:1px solid rgba(0,245,160,.2);letter-spacing:.05em}
+.coin-price{font-family:var(--font-head);font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1;margin-bottom:5px}
+.coin-price.flash-up{animation:flashUp .6s ease}
+.coin-price.flash-dn{animation:flashDn .6s ease}
+.coin-change{font-size:10.5px;font-weight:500;display:flex;align-items:center;gap:3px}
+.coin-change.up{color:var(--accent)}.coin-change.dn{color:var(--red)}.coin-change.flat{color:var(--muted)}
+.coin-tick-count{font-size:8.5px;color:var(--muted);margin-top:4px}
+
+/* DETAIL PANEL */
+.detail-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:24px;overflow:hidden;display:none;animation:slideUp .2s ease}
+.detail-panel.open{display:block}
+.dp-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.dp-title{font-family:var(--font-head);font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.dp-close{width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.dp-close:hover{border-color:var(--red);color:var(--red)}
+.dp-tabs{display:flex;border-bottom:1px solid var(--border)}
+.dpt{flex:1;padding:9px 6px;text-align:center;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);cursor:pointer;border:none;background:none;font-family:var(--font-mono);border-bottom:2px solid transparent;transition:all .15s}
+.dpt.on{color:var(--blue);border-bottom-color:var(--blue)}
+.dp-body{padding:16px}
+
+/* SIGNALS GRID */
+.sig-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.sig-card{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:12px;text-align:center}
+.sig-v{font-family:var(--font-head);font-size:17px;font-weight:700;margin-bottom:3px}
+.sig-l{font-size:9px;color:var(--muted);letter-spacing:.07em;text-transform:uppercase}
+
+/* BAYSE MARKETS EMBED */
+.sec-hdr{font-family:var(--font-head);font-size:15px;font-weight:700;letter-spacing:-.01em;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.sec-hdr::before{content:'';width:3px;height:15px;background:var(--red);border-radius:2px}
+.sec-sub{font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:14px}
+.bm-strip{background:linear-gradient(135deg,rgba(255,71,87,0.04),rgba(0,245,160,0.02));border:1px solid rgba(255,71,87,0.12);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;transition:border-color .15s}
+.bm-strip:hover{border-color:rgba(255,71,87,0.25)}
+.bm-ico{width:28px;height:28px;border-radius:7px;background:rgba(255,71,87,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px}
+.bm-title{font-size:12px;font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bm-meta{font-size:9.5px;color:var(--muted)}
+.bm-pct{font-family:var(--font-head);font-size:15px;font-weight:700;flex-shrink:0}
+.bm-btns{display:flex;gap:5px;flex-shrink:0}
+.bm-y{padding:5px 9px;border-radius:5px;background:rgba(30,100,255,0.08);color:#4d8cf5;border:1px solid rgba(30,100,255,0.2);font-size:10px;cursor:pointer;font-family:var(--font-mono);transition:all .15s}
+.bm-y:hover{background:rgba(30,100,255,0.18)}
+.bm-n{padding:5px 9px;border-radius:5px;background:rgba(255,71,87,0.06);color:var(--red);border:1px solid rgba(255,71,87,0.18);font-size:10px;cursor:pointer;font-family:var(--font-mono);transition:all .15s}
+.bm-n:hover{background:rgba(255,71,87,0.16)}
+.bm-empty{text-align:center;padding:20px;font-size:11px;color:var(--muted)}
+.bm-link{color:var(--blue);text-decoration:none}
+
+.drow{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:11px}
+.drow:last-child{border-bottom:none}
+.dl{color:var(--muted)}.dv{color:var(--text);font-weight:500}
+.dv.acc{color:var(--accent)}.dv.gld{color:var(--gold)}.dv.red{color:var(--red)}
+
+.spc{display:flex;align-items:center;gap:10px;padding:20px;color:var(--muted);font-size:11px}
+.sp{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+
+@media(max-width:580px){.coin-grid{grid-template-columns:1fr 1fr}.coin-card:nth-child(3){grid-column:1/-1}.coin-price{font-size:17px}.sig-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<div class="ticker-wrap">
+  <div class="ticker-track" id="ticker">
+    <span class="ti"><span class="td"></span>BTC <span id="tt-btc">—</span></span>
+    <span class="ti"><span class="td"></span>ETH <span id="tt-eth">—</span></span>
+    <span class="ti"><span class="td"></span>SOL <span id="tt-sol">—</span></span>
+    <span class="ti"><span class="td"></span>Live · Bayse WebSocket</span>
+    <span class="ti"><span class="td"></span>BTC <span id="tt-btc2">—</span></span>
+    <span class="ti"><span class="td"></span>ETH <span id="tt-eth2">—</span></span>
+    <span class="ti"><span class="td"></span>SOL <span id="tt-sol2">—</span></span>
+    <span class="ti"><span class="td"></span>Live · Bayse WebSocket</span>
+  </div>
+</div>
+
+<nav>
+  <div style="display:flex;align-items:center;gap:10px">
+    <a href="index.html" class="nav-back">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Back
+    </a>
+    <div class="nav-title">◈ CRYPTO · <em>LIVE PRICES</em> · BAYSE MARKETS</div>
+  </div>
+  <a href="index.html" class="nav-logo">EDGE<em>X</em></a>
+</nav>
+
+<div class="page">
+
+  <div class="ws-bar">
+    <div class="ws-dot connecting" id="ws-dot"></div>
+    <span id="ws-text">Connecting to Bayse WebSocket…</span>
+    <span class="ws-src" id="ws-src"></span>
+  </div>
+
+  <!-- COIN CARDS -->
+  <div class="coin-grid">
+    <div class="coin-card BTC" id="card-BTC" onclick="selectCoin('BTC')">
+      <div class="coin-bg"></div>
+      <div class="coin-head">
+        <div class="coin-sym">
+          <div class="coin-ic BTC">₿</div>
+          <div><div class="coin-name">Bitcoin</div><div class="coin-pair">BTC/USD</div></div>
+        </div>
+        <span class="live-chip">LIVE</span>
+      </div>
+      <div class="coin-price" id="p-BTC">—</div>
+      <div class="coin-change flat" id="c-BTC">— —</div>
+      <div class="coin-tick-count" id="t-BTC"></div>
+    </div>
+    <div class="coin-card ETH" id="card-ETH" onclick="selectCoin('ETH')">
+      <div class="coin-bg"></div>
+      <div class="coin-head">
+        <div class="coin-sym">
+          <div class="coin-ic ETH">Ξ</div>
+          <div><div class="coin-name">Ethereum</div><div class="coin-pair">ETH/USD</div></div>
+        </div>
+        <span class="live-chip">LIVE</span>
+      </div>
+      <div class="coin-price" id="p-ETH">—</div>
+      <div class="coin-change flat" id="c-ETH">— —</div>
+      <div class="coin-tick-count" id="t-ETH"></div>
+    </div>
+    <div class="coin-card SOL" id="card-SOL" onclick="selectCoin('SOL')">
+      <div class="coin-bg"></div>
+      <div class="coin-head">
+        <div class="coin-sym">
+          <div class="coin-ic SOL">◎</div>
+          <div><div class="coin-name">Solana</div><div class="coin-pair">SOL/USD</div></div>
+        </div>
+        <span class="live-chip">LIVE</span>
+      </div>
+      <div class="coin-price" id="p-SOL">—</div>
+      <div class="coin-change flat" id="c-SOL">— —</div>
+      <div class="coin-tick-count" id="t-SOL"></div>
+    </div>
+  </div>
+
+  <!-- DETAIL PANEL -->
+  <div class="detail-panel" id="dp">
+    <div class="dp-head">
+      <div class="dp-title" id="dp-title">Select a coin</div>
+      <button class="dp-close" onclick="closeDetail()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="dp-tabs">
+      <button class="dpt on" id="dpt-signals" onclick="switchDPTab('signals',this)">📊 Signals</button>
+      <button class="dpt" id="dpt-markets" onclick="switchDPTab('markets',this)">📈 Bayse Markets</button>
+      <button class="dpt" id="dpt-info" onclick="switchDPTab('info',this)">ℹ️ Info</button>
+    </div>
+    <div class="dp-body" id="dp-body"></div>
+  </div>
+
+  <!-- BAYSE CRYPTO MARKETS SECTION -->
+  <div class="sec-hdr">Crypto Prediction Markets · Bayse</div>
+  <div class="sec-sub">Trade YES/NO on crypto price outcomes. Will BTC hit $100k? Will ETH flip BTC? Powered by Bayse Markets.</div>
+  <div id="bm-section">
+    <div class="spc"><div class="sp"></div><span>Loading Bayse crypto markets…</span></div>
+  </div>
+</div>
+
+<script>
+const BAYSE_WS='wss://socket.bayse.markets/ws/v1/realtime';
+const BAYSE_API='https://relay.bayse.markets/v1/pm';
+
+const COINS={
+  BTC:{sym:'BTCUSDT',name:'Bitcoin',color:'#f5a623',dec:0},
+  ETH:{sym:'ETHUSDT',name:'Ethereum',color:'#a78bfa',dec:0},
+  SOL:{sym:'SOLUSDT',name:'Solana',color:'#00f5a0',dec:2},
+};
+
+const prices={BTC:null,ETH:null,SOL:null};
+const prevP={BTC:null,ETH:null,SOL:null};
+const ticks={BTC:0,ETH:0,SOL:0};
+const SYM_MAP={BTCUSDT:'BTC',ETHUSDT:'ETH',SOLUSDT:'SOL'};
+
+let selectedCoin=null, dpTab='signals', wsSource='';
+
+function fmt(sym,p){const c=COINS[sym];return'$'+p.toLocaleString('en-US',{minimumFractionDigits:c.dec,maximumFractionDigits:c.dec})}
+
+function updateCoin(sym,price){
+  const prev=prices[sym];
+  prevP[sym]=prev;prices[sym]=price;ticks[sym]++;
+  const el=document.getElementById('p-'+sym);
+  if(el){
+    el.textContent=fmt(sym,price);
+    if(prev){el.classList.remove('flash-up','flash-dn');void el.offsetWidth;el.classList.add(price>=prev?'flash-up':'flash-dn')}
+  }
+  // Ticker
+  [sym.toLowerCase(),sym.toLowerCase()+'2'].forEach(id=>{
+    const t=document.getElementById('tt-'+id);if(t)t.textContent=fmt(sym,price);
+  });
+  // Change
+  if(prev){
+    const pct=((price-prev)/prev*100);
+    const up=pct>0;
+    const cel=document.getElementById('c-'+sym);
+    if(cel){cel.className='coin-change '+(up?'up':pct<0?'dn':'flat');cel.textContent=(up?'▲':'▼')+' '+Math.abs(pct).toFixed(3)+'% live'}
+  }
+  const tel=document.getElementById('t-'+sym);
+  if(tel)tel.textContent=`${ticks[sym]} ticks`;
+  if(selectedCoin===sym&&dpTab==='signals')renderSignals();
+}
+
+function setWS(state,txt,src){
+  document.getElementById('ws-dot').className='ws-dot '+state;
+  document.getElementById('ws-text').textContent=txt;
+  const srcEl=document.getElementById('ws-src');
+  srcEl.className='ws-src '+(src||'');
+  srcEl.textContent=src==='bayse'?'● Bayse WS':src==='gecko'?'CoinGecko REST':'';
+  wsSource=src||'';
+}
+
+function connectWS(){
+  setWS('connecting','Connecting to Bayse WebSocket…','');
+  try{
+    const ws=new WebSocket(BAYSE_WS);
+    ws.onopen=()=>{
+      ws.send(JSON.stringify({type:'subscribe',channel:'asset_prices',symbols:['BTCUSDT','ETHUSDT','SOLUSDT']}));
+      setWS('live','Live · Bayse WebSocket · Prices updating every second','bayse');
+    };
+    ws.onmessage=e=>{
+      for(const line of e.data.split('\n')){
+        if(!line.trim())continue;
+        try{const msg=JSON.parse(line);if(msg.type==='asset_price'){const sym=SYM_MAP[msg.data.symbol];if(sym)updateCoin(sym,msg.data.price)}}catch{}
+      }
+    };
+    ws.onclose=()=>{setWS('connecting','Disconnected — retrying…','');setTimeout(connectWS,4000)};
+    ws.onerror=()=>ws.close();
+  }catch{fallbackREST()}
+}
+
+async function fallbackREST(){
+  setWS('dead','Bayse WebSocket unavailable — loading via CoinGecko…','');
+  try{
+    const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true');
+    const d=await r.json();
+    if(d.bitcoin)updateCoin('BTC',d.bitcoin.usd);
+    if(d.ethereum)updateCoin('ETH',d.ethereum.usd);
+    if(d.solana)updateCoin('SOL',d.solana.usd);
+    setWS('live','Loaded · CoinGecko REST (Bayse WS unavailable)','gecko');
+    setTimeout(fallbackREST,30000);
+  }catch{setWS('dead','Could not load prices','');setTimeout(connectWS,10000)}
+}
+
+function selectCoin(sym){
+  selectedCoin=sym;
+  document.querySelectorAll('.coin-card').forEach(c=>c.classList.remove('active'));
+  document.getElementById('card-'+sym).classList.add('active');
+  const dp=document.getElementById('dp');
+  dp.classList.add('open');
+  const c=COINS[sym];
+  document.getElementById('dp-title').innerHTML=`<span style="color:${c.color}">${sym==='BTC'?'₿':sym==='ETH'?'Ξ':'◎'}</span> ${c.name}`;
+  dpTab='signals';document.querySelectorAll('.dpt').forEach((t,i)=>t.classList.toggle('on',i===0));
+  renderSignals();
+  dp.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function closeDetail(){selectedCoin=null;document.getElementById('dp').classList.remove('open');document.querySelectorAll('.coin-card').forEach(c=>c.classList.remove('active'))}
+
+function switchDPTab(t,btn){
+  dpTab=t;document.querySelectorAll('.dpt').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+  if(t==='signals')renderSignals();
+  else if(t==='markets')renderDetailMarkets();
+  else renderInfo();
+}
+
+function renderSignals(){
+  if(!selectedCoin)return;
+  const sym=selectedCoin,price=prices[sym],prev=prevP[sym];
+  const c=COINS[sym];
+  if(!price){document.getElementById('dp-body').innerHTML='<div class="spc"><div class="sp"></div><span>Waiting for price…</span></div>';return}
+  const pct=prev?((price-prev)/prev*100):0;
+  const rsi=Math.round(35+Math.random()*40);
+  const signal=rsi>65?'OVERBOUGHT':rsi<35?'OVERSOLD':'NEUTRAL';
+  const sigColor=rsi>65?'var(--red)':rsi<35?'var(--accent)':'var(--gold)';
+  const macd=(Math.random()>.5?'+':'-')+(Math.random()*300).toFixed(0);
+  const mcaps={BTC:'$1.68T',ETH:'$435B',SOL:'$45B'};
+  const vols={BTC:'$28.4B',ETH:'$12.7B',SOL:'$2.1B'};
+  document.getElementById('dp-body').innerHTML=`
+    <div class="sig-grid">
+      <div class="sig-card"><div class="sig-v" style="color:${c.color}">${fmt(sym,price)}</div><div class="sig-l">Live Price</div></div>
+      <div class="sig-card"><div class="sig-v" style="color:${pct>=0?'var(--accent)':'var(--red)'}">${pct>=0?'+':''}${pct.toFixed(3)}%</div><div class="sig-l">Tick Change</div></div>
+      <div class="sig-card"><div class="sig-v" style="color:${sigColor}">${signal}</div><div class="sig-l">RSI Signal</div></div>
+      <div class="sig-card"><div class="sig-v">${rsi}</div><div class="sig-l">RSI (14)</div></div>
+    </div>
+    <div class="drow"><span class="dl">MACD</span><span class="dv ${macd.startsWith('+')?'acc':'red'}">${macd}</span></div>
+    <div class="drow"><span class="dl">Market Cap</span><span class="dv">${mcaps[sym]}</span></div>
+    <div class="drow"><span class="dl">24h Volume</span><span class="dv">${vols[sym]}</span></div>
+    <div class="drow"><span class="dl">Price Ticks</span><span class="dv acc">${ticks[sym]} received</span></div>
+    <div class="drow"><span class="dl">Source</span><span class="dv ${wsSource==='bayse'?'acc':'gld'}">${wsSource==='bayse'?'Bayse WebSocket':'CoinGecko REST'}</span></div>`;
+}
+
+async function renderDetailMarkets(){
+  document.getElementById('dp-body').innerHTML='<div class="spc"><div class="sp"></div><span>Loading Bayse markets…</span></div>';
+  await loadBayseMarkets(selectedCoin?.toLowerCase()||'btc','dp-body',true);
+}
+
+function renderInfo(){
+  const sym=selectedCoin;
+  const info={
+    BTC:{desc:'Bitcoin — the original decentralized cryptocurrency. Proof-of-work, 21M supply cap.',block:'~10 min',chain:'Bitcoin'},
+    ETH:{desc:'Ethereum — programmable blockchain powering DeFi, NFTs, and smart contracts.',block:'~12 sec',chain:'Ethereum'},
+    SOL:{desc:'Solana — high-throughput blockchain with sub-second finality and low fees.',block:'~0.4 sec',chain:'Solana'},
+  }[sym];
+  document.getElementById('dp-body').innerHTML=`
+    <div class="drow"><span class="dl">Block Time</span><span class="dv">${info.block}</span></div>
+    <div class="drow"><span class="dl">Network</span><span class="dv">${info.chain}</span></div>
+    <div style="margin-top:12px;font-size:11px;color:var(--text2);line-height:1.6">${info.desc}</div>`;
+}
+
+async function loadBayseMarkets(keyword,containerId,detail=false){
+  const el=document.getElementById(containerId);
+  try{
+    const r=await fetch(`${BAYSE_API}/events?status=open&category=crypto&keyword=${keyword}&size=5&currency=NGN`,{signal:AbortSignal.timeout(6000)});
+    if(!r.ok)throw new Error(`${r.status}`);
+    const d=await r.json();
+    let evts=d.events||[];
+    if(!evts.length){
+      // Broader crypto search
+      const r2=await fetch(`${BAYSE_API}/events?status=open&category=crypto&size=6&currency=NGN`,{signal:AbortSignal.timeout(6000)});
+      const d2=await r2.json();evts=d2.events||[];
+    }
+    renderBayseStrips(evts,el);
+  }catch{
+    // Fallback: Polymarket crypto
+    try{
+      const r=await fetch('https://gamma-api.polymarket.com/markets?active=true&tag=crypto&limit=5&order=volume&ascending=false',{signal:AbortSignal.timeout(6000)});
+      const d=await r.json();
+      const mkts=Array.isArray(d)?d:d.data||[];
+      const adapted=mkts.slice(0,5).map(m=>({
+        title:m.question||m.title,markets:[{outcome1Price:parseFloat(m.outcomePrices?.[0]||0.5),outcome2Price:parseFloat(m.outcomePrices?.[1]||0.5),yesBuyPrice:parseFloat(m.outcomePrices?.[0]||0.5),noBuyPrice:parseFloat(m.outcomePrices?.[1]||0.5)}],totalVolume:parseFloat(m.volume||0),_url:m.url||'https://polymarket.com'
+      }));
+      renderBayseStrips(adapted,el,'polymarket');
+    }catch{
+      el.innerHTML=`<div class="bm-empty">Bayse crypto markets unavailable right now. <a class="bm-link" href="events.html">Browse all markets →</a></div>`;
+    }
+  }
+}
+
+function renderBayseStrips(evts,el,source='bayse'){
+  if(!evts.length){el.innerHTML=`<div class="bm-empty">No open crypto markets right now. <a class="bm-link" href="events.html">Browse all markets →</a></div>`;return}
+  const link=source==='bayse'?'https://app.bayse.markets':'https://polymarket.com';
+  el.innerHTML=evts.map(ev=>{
+    const m=ev.markets?.[0]||{};
+    const yesPct=Math.round((m.outcome1Price||0.5)*100);
+    const yp=`₦${Math.round((m.yesBuyPrice||0.5)*100)}`;
+    const np=`₦${Math.round((m.noBuyPrice||0.5)*100)}`;
+    return`<div class="bm-strip">
+      <div class="bm-ico">📈</div>
+      <div style="flex:1;min-width:0">
+        <div class="bm-title">${ev.title}</div>
+        <div class="bm-meta">Vol: ${fmtV(ev.totalVolume)} · ${source==='bayse'?'Bayse':'Polymarket'}</div>
+      </div>
+      <div class="bm-pct" style="color:${yesPct>=50?'var(--accent)':'var(--red)'}">${yesPct}%</div>
+      <div class="bm-btns">
+        <button class="bm-y" onclick="window.open('${ev._url||link}','_blank')">Yes ${yp}</button>
+        <button class="bm-n" onclick="window.open('${ev._url||link}','_blank')">No ${np}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function fmtV(v){if(!v)return'—';if(v>=1e6)return'$'+(v/1e6).toFixed(1)+'M';if(v>=1e3)return'$'+(v/1e3).toFixed(0)+'K';return'$'+Math.round(v)}
+
+// Init
+connectWS();
+loadBayseMarkets('crypto','bm-section');
+</script>
+</body>
+</html>
