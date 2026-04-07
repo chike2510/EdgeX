@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EdgeX — Intelligence Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080b0f;
+    --surface: #0d1117;
+    --surface2: #141a22;
+    --border: rgba(255,255,255,0.07);
+    --accent: #00f5a0;
+    --accent2: #00b8d4;
+    --gold: #f5a623;
+    --red: #ff4757;
+    --text: #e8edf3;
+    --muted: #5a6a7a;
+    --font-head: 'Syne', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── TICKER ── */
+  .ticker-wrap {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .ticker-track {
+    display: flex;
+    gap: 0;
+    animation: ticker 60s linear infinite;
+    white-space: nowrap;
+  }
+  .ticker-track:hover { animation-play-state: paused; }
+  .ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 24px;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    border-right: 1px solid var(--border);
+  }
+  .ticker-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); }
+  .ticker-dot.live { background: var(--accent); box-shadow: 0 0 6px var(--accent); animation: pulse 2s infinite; }
+  .ticker-price { color: var(--text); font-weight: 500; }
+  .ticker-chg.up { color: var(--accent); }
+  .ticker-chg.dn { color: var(--red); }
+  @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* ── NAV ── */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 60px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(8,11,15,0.95);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 36px;
+    z-index: 99;
+  }
+  .nav-logo {
+    font-family: var(--font-head);
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .nav-logo span { color: var(--accent); }
+  .logo-badge {
+    background: var(--accent);
+    color: #000;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 3px;
+    letter-spacing: 0.1em;
+  }
+  .nav-links {
+    display: flex;
+    gap: 4px;
+    list-style: none;
+  }
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .nav-links a:hover, .nav-links a.active {
+    color: var(--text);
+    background: var(--surface2);
+  }
+  .nav-links a.active { color: var(--accent); }
+  .nav-icon { width: 14px; height: 14px; }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 64px 24px 48px;
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+  }
+  .hero-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 1px;
+    background: var(--accent);
+  }
+  .hero-title {
+    font-family: var(--font-head);
+    font-size: clamp(36px, 5vw, 56px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 20px;
+  }
+  .hero-title em { color: var(--accent); font-style: normal; }
+  .hero-sub {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.7;
+    max-width: 420px;
+    margin-bottom: 32px;
+  }
+  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.18s ease;
+    cursor: pointer;
+    border: none;
+  }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { background: #00e090; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,245,160,0.25); }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── STAT CARDS ── */
+  .hero-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .stat-card:hover { border-color: rgba(0,245,160,0.3); }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .stat-card:hover::before { opacity: 1; }
+  .stat-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .stat-value { font-family: var(--font-head); font-size: 28px; font-weight: 700; color: var(--text); }
+  .stat-value.accent { color: var(--accent); }
+  .stat-sub { font-size: 10px; color: var(--muted); margin-top: 4px; }
+  .stat-icon {
+    position: absolute;
+    right: 16px; top: 16px;
+    opacity: 0.07;
+    font-size: 40px;
+  }
+
+  /* ── SECTION ── */
+  .section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 24px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .section-title {
+    font-family: var(--font-head);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title::before {
+    content: '';
+    width: 3px;
+    height: 18px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+  .view-all { font-size: 11px; color: var(--accent); text-decoration: none; letter-spacing: 0.06em; }
+  .view-all:hover { text-decoration: underline; }
+
+  /* ── MODULE GRID ── */
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .module-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .module-card:hover {
+    border-color: rgba(0,245,160,0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+  .module-card-bg {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .module-card:hover .module-card-bg { opacity: 1; }
+  .module-card.football .module-card-bg { background: radial-gradient(ellipse at top right, rgba(0,245,160,0.05), transparent 60%); }
+  .module-card.basketball .module-card-bg { background: radial-gradient(ellipse at top right, rgba(245,166,35,0.05), transparent 60%); }
+  .module-card.crypto .module-card-bg { background: radial-gradient(ellipse at top right, rgba(0,184,212,0.05), transparent 60%); }
+  .module-card.forex .module-card-bg { background: radial-gradient(ellipse at top right, rgba(138,180,248,0.05), transparent 60%); }
+  .module-card.events .module-card-bg { background: radial-gradient(ellipse at top right, rgba(255,71,87,0.05), transparent 60%); }
+  .module-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    font-size: 20px;
+  }
+  .module-icon.green { background: rgba(0,245,160,0.1); }
+  .module-icon.orange { background: rgba(245,166,35,0.1); }
+  .module-icon.blue { background: rgba(0,184,212,0.1); }
+  .module-icon.purple { background: rgba(138,180,248,0.1); }
+  .module-icon.red { background: rgba(255,71,87,0.1); }
+  .module-name {
+    font-family: var(--font-head);
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+  }
+  .module-desc { font-size: 11px; color: var(--muted); line-height: 1.6; margin-bottom: 16px; }
+  .module-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .tag.accent { border-color: rgba(0,245,160,0.3); color: var(--accent); }
+  .tag.gold { border-color: rgba(245,166,35,0.3); color: var(--gold); }
+  .tag.blue { border-color: rgba(0,184,212,0.3); color: var(--accent2); }
+  .module-arrow {
+    position: absolute;
+    right: 20px; bottom: 20px;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .module-card:hover .module-arrow { border-color: var(--accent); background: rgba(0,245,160,0.1); }
+
+  /* ── LIVE FEED PREVIEW ── */
+  .live-feed {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .feed-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2s infinite;
+  }
+  .feed-item {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+  .feed-item:last-child { border-bottom: none; }
+  .feed-item:hover { background: var(--surface2); }
+  .feed-teams { font-weight: 500; color: var(--text); }
+  .feed-meta { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .feed-score { font-family: var(--font-head); font-size: 15px; font-weight: 700; color: var(--accent); }
+  .feed-badge {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: rgba(0,245,160,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(0,245,160,0.2);
+  }
+  .feed-badge.upcoming { background: rgba(90,106,122,0.15); color: var(--muted); border-color: var(--border); }
+
+  /* ── TWO COL LAYOUT ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .footer-brand { font-family: var(--font-head); font-weight: 700; font-size: 14px; color: var(--muted); }
+  .footer-brand span { color: var(--accent); }
+  .footer-note { font-size: 10px; color: var(--muted); letter-spacing: 0.04em; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .hero { grid-template-columns: 1fr; gap: 32px; padding: 32px 16px; }
+    .hero-stats { grid-template-columns: 1fr 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    nav { padding: 0 16px; }
+    .nav-links { display: none; }
+    .section { padding: 32px 16px; }
+    footer { flex-direction: column; gap: 12px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-track" id="ticker"></div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">
+    EDGE<span>X</span>
+    <span class="logo-badge">v2.0</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html" class="active">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a></li>
+    <li><a href="football.html">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0110 10M12 2C6.48 2 2 6.48 2 12"/></svg>
+      Football
+    </a></li>
+    <li><a href="basketball.html">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M4.93 4.93c4.69 4.69 4.69 12.26 0 16.95M19.07 4.93c-4.69 4.69-4.69 12.26 0 16.95M2 12h20"/></svg>
+      Basketball
+    </a></li>
+    <li><a href="crypto.html">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      Crypto
+    </a></li>
+    <li><a href="forex.html">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Forex
+    </a></li>
+    <li><a href="events.html">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Markets
+    </a></li>
+    <li><a href="leagues.html">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
+      Leagues
+    </a></li>
+    <li><a href="squads.html">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+      Squads
+    </a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div>
+    <div class="hero-eyebrow">Sports · Crypto · Markets</div>
+    <h1 class="hero-title">The <em>Edge</em><br>You Need to Win</h1>
+    <p class="hero-sub">AI-powered prediction engine combining live sports data, crypto markets, and prediction market intelligence — built for the serious bettor.</p>
+    <div class="hero-actions">
+      <a href="football.html" class="btn btn-primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg>
+        Live Sports
+      </a>
+      <a href="events.html" class="btn btn-ghost">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Prediction Markets
+      </a>
+    </div>
+  </div>
+  <div class="hero-stats">
+    <div class="stat-card">
+      <div class="stat-label">Live Matches</div>
+      <div class="stat-value accent" id="live-count">—</div>
+      <div class="stat-sub">Across all sports</div>
+      <div class="stat-icon">⚡</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Markets Open</div>
+      <div class="stat-value" id="market-count">—</div>
+      <div class="stat-sub">Bayse Markets</div>
+      <div class="stat-icon">📈</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">BTC Price</div>
+      <div class="stat-value" id="btc-price">—</div>
+      <div class="stat-sub" id="btc-chg">Loading…</div>
+      <div class="stat-icon">₿</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">APEX Engine</div>
+      <div class="stat-value accent">ON</div>
+      <div class="stat-sub">AI predictions active</div>
+      <div class="stat-icon">🧠</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODULES -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">Modules</div>
+  </div>
+  <div class="module-grid">
+    <a href="football.html" class="module-card football">
+      <div class="module-card-bg"></div>
+      <div class="module-icon green">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00f5a0" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2c-1.657 0-3 4.477-3 10S10.343 22 12 22s3-4.477 3-10S13.657 2 12 2zM2 12h20"/></svg>
+      </div>
+      <div class="module-name">Football</div>
+      <div class="module-desc">Live scores, fixtures, APEX predictions, xG analysis, and betting edge across EPL, UCL, La Liga, Bundesliga, Serie A.</div>
+      <div class="module-tags">
+        <span class="tag accent">Live</span>
+        <span class="tag">Fixtures</span>
+        <span class="tag">APEX</span>
+        <span class="tag">xG</span>
+      </div>
+      <div class="module-arrow">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+    </a>
+
+    <a href="basketball.html" class="module-card basketball">
+      <div class="module-card-bg"></div>
+      <div class="module-icon orange">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M4.93 4.93c4.69 4.69 4.69 12.26 0 16.95M19.07 4.93c-4.69 4.69-4.69 12.26 0 16.95M2 12h20"/></svg>
+      </div>
+      <div class="module-name">Basketball</div>
+      <div class="module-desc">NBA, CBA, FIBA live games with NET rating engine, spread analysis, quarter-by-quarter breakdowns and edge scoring.</div>
+      <div class="module-tags">
+        <span class="tag gold">NBA</span>
+        <span class="tag">CBA</span>
+        <span class="tag">NET Rating</span>
+        <span class="tag">Edge</span>
+      </div>
+      <div class="module-arrow">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+    </a>
+
+    <a href="crypto.html" class="module-card crypto">
+      <div class="module-card-bg"></div>
+      <div class="module-icon blue">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00b8d4" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <div class="module-name">Crypto</div>
+      <div class="module-desc">Live BTC/ETH/SOL prices via Bayse WebSocket + embedded prediction markets on crypto price movements. Real-time signal intelligence.</div>
+      <div class="module-tags">
+        <span class="tag blue">Live WebSocket</span>
+        <span class="tag">Bayse Markets</span>
+        <span class="tag">Signals</span>
+      </div>
+      <div class="module-arrow">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+    </a>
+
+    <a href="forex.html" class="module-card forex">
+      <div class="module-card-bg"></div>
+      <div class="module-icon purple">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8ab4f8" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+      <div class="module-name">Forex</div>
+      <div class="module-desc">Live FX rates for EUR/USD, GBP/USD, USD/NGN, XAU/USD from Bayse + market sentiment prediction markets. NGN pairs included.</div>
+      <div class="module-tags">
+        <span class="tag">EUR/USD</span>
+        <span class="tag">NGN</span>
+        <span class="tag blue">Bayse</span>
+        <span class="tag">Sentiment</span>
+      </div>
+      <div class="module-arrow">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+    </a>
+
+    <a href="events.html" class="module-card events">
+      <div class="module-card-bg"></div>
+      <div class="module-icon red">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ff4757" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <div class="module-name">Prediction Markets</div>
+      <div class="module-desc">Global prediction markets — trade YES/NO on sports, crypto, politics and real-world outcomes. Powered by Polymarket.</div>
+      <div class="module-tags">
+        <span class="tag" style="border-color:rgba(255,71,87,0.3);color:#ff4757">Polymarket</span>
+        <span class="tag">Sports</span>
+        <span class="tag">Crypto</span>
+        <span class="tag">Politics</span>
+      </div>
+      <div class="module-arrow">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+    </a>
+
+    <a href="leagues.html" class="module-card" style="--card-accent:#f5a623">
+      <div class="module-card-bg" style="background:radial-gradient(ellipse at top right,rgba(245,166,35,0.05),transparent 60%)"></div>
+      <div class="module-icon" style="background:rgba(245,166,35,0.1)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
+      </div>
+      <div class="module-name">Leagues</div>
+      <div class="module-desc">Standings, tables, and form guides for 50+ football competitions. EPL, UCL, La Liga, Serie A, NPFL and more.</div>
+      <div class="module-tags">
+        <span class="tag gold">50+ Leagues</span>
+        <span class="tag">Standings</span>
+        <span class="tag">Form</span>
+      </div>
+      <div class="module-arrow">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+    </a>
+
+    <a href="squads.html" class="module-card" style="--card-accent:#1cb897">
+      <div class="module-card-bg" style="background:radial-gradient(ellipse at top right,rgba(28,184,151,0.05),transparent 60%)"></div>
+      <div class="module-icon" style="background:rgba(28,184,151,0.1)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1cb897" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M2 20v-2a2 2 0 012-2"/><path d="M22 20v-2a2 2 0 00-2-2"/><circle cx="4" cy="12" r="2"/><circle cx="20" cy="12" r="2"/></svg>
+      </div>
+      <div class="module-name">Squads Predictor</div>
+      <div class="module-desc">APEX player stats model — predict MORE or LESS for shots, saves, dribbles, tackles, passes, crosses on Squads.game.</div>
+      <div class="module-tags">
+        <span class="tag" style="border-color:rgba(28,184,151,0.3);color:#1cb897">Squads.game</span>
+        <span class="tag">Player Props</span>
+        <span class="tag">APEX Model</span>
+      </div>
+      <div class="module-arrow">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- LIVE FEED + MARKET PREVIEW -->
+<div class="section" style="padding-top:0">
+  <div class="two-col">
+    <div>
+      <div class="section-header">
+        <div class="section-title">Live Now</div>
+        <a href="football.html" class="view-all">See all →</a>
+      </div>
+      <div class="live-feed" id="live-feed">
+        <div class="feed-header">
+          <div class="live-dot"></div>
+          ESPN Live Data
+        </div>
+        <div id="feed-items">
+          <div class="feed-item"><div><div class="feed-teams">Loading live games…</div></div></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="section-header">
+        <div class="section-title">Top Markets</div>
+        <a href="events.html" class="view-all">See all →</a>
+      </div>
+      <div class="live-feed" id="markets-feed">
+        <div class="feed-header">
+          <div class="live-dot" style="background:var(--red);box-shadow:0 0 8px var(--red)"></div>
+          Bayse Prediction Markets
+        </div>
+        <div id="market-items">
+          <div class="feed-item"><div><div class="feed-teams">Loading markets…</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-brand">EDGE<span>X</span> v2.0</div>
+  <div class="footer-note">ESPN • Bayse Markets • CoinGecko — Data for analysis purposes only.</div>
+</footer>
+
+<script>
+// ── TICKER ──
+const tickerSymbols = [
+  { sym: 'BTC/USD', id: 'btc' },
+  { sym: 'ETH/USD', id: 'eth' },
+  { sym: 'SOL/USD', id: 'sol' },
+  { sym: 'EUR/USD', id: 'eur' },
+  { sym: 'GBP/USD', id: 'gbp' },
+  { sym: 'XAU/USD', id: 'xau' },
+];
+const prices = {};
+
+function buildTicker() {
+  const track = document.getElementById('ticker');
+  // Build double set for seamless loop
+  const items = tickerSymbols.map(s => `
+    <span class="ticker-item">
+      <span class="ticker-dot live"></span>
+      <span>${s.sym}</span>
+      <span class="ticker-price" id="tp-${s.id}">—</span>
+      <span class="ticker-chg up" id="tc-${s.id}">—</span>
+    </span>
+  `).join('');
+  track.innerHTML = items + items; // duplicate for loop
+}
+buildTicker();
+
+// Bayse WebSocket for live prices
+function connectBayse() {
+  try {
+    const ws = new WebSocket('wss://socket.bayse.markets/ws/v1/realtime');
+    ws.onopen = () => {
+      ws.send(JSON.stringify({
+        type: 'subscribe',
+        channel: 'asset_prices',
+        symbols: ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'EURUSD', 'GBPUSD', 'XAUUSD', 'USDNGN']
+      }));
+    };
+    ws.onmessage = (e) => {
+      for (const line of e.data.split('\n')) {
+        if (!line.trim()) continue;
+        try {
+          const msg = JSON.parse(line);
+          if (msg.type === 'asset_price') {
+            const { symbol, price } = msg.data;
+            const prev = prices[symbol];
+            prices[symbol] = price;
+            updateTickerPrice(symbol, price, prev);
+            if (symbol === 'BTCUSDT') updateHeroBTC(price, prev);
+          }
+        } catch {}
+      }
+    };
+    ws.onclose = () => setTimeout(connectBayse, 3000);
+    ws.onerror = () => ws.close();
+  } catch (e) {
+    // fallback to CoinGecko REST
+    fetchCryptoFallback();
+  }
+}
+
+const SYM_MAP = {
+  BTCUSDT: { id: 'btc', fmt: p => '$' + p.toLocaleString(undefined,{maximumFractionDigits:0}) },
+  ETHUSDT: { id: 'eth', fmt: p => '$' + p.toLocaleString(undefined,{maximumFractionDigits:0}) },
+  SOLUSDT: { id: 'sol', fmt: p => '$' + p.toLocaleString(undefined,{maximumFractionDigits:1}) },
+  EURUSD:  { id: 'eur', fmt: p => p.toFixed(4) },
+  GBPUSD:  { id: 'gbp', fmt: p => p.toFixed(4) },
+  XAUUSD:  { id: 'xau', fmt: p => '$' + p.toLocaleString(undefined,{maximumFractionDigits:0}) },
+  USDNGN:  { id: 'ngn', fmt: p => '₦' + p.toLocaleString(undefined,{maximumFractionDigits:0}) },
+};
+
+function updateTickerPrice(symbol, price, prev) {
+  const m = SYM_MAP[symbol];
+  if (!m) return;
+  ['tp-'+m.id, 'tp-'+m.id+'-2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = m.fmt(price);
+  });
+}
+
+function updateHeroBTC(price, prev) {
+  const el = document.getElementById('btc-price');
+  if (el) el.textContent = '$' + Math.round(price).toLocaleString();
+  const chgEl = document.getElementById('btc-chg');
+  if (chgEl && prev) {
+    const pct = ((price - prev) / prev * 100).toFixed(2);
+    const up = price >= prev;
+    chgEl.textContent = (up ? '▲' : '▼') + ' ' + Math.abs(pct) + '% today';
+    chgEl.style.color = up ? 'var(--accent)' : 'var(--red)';
+  }
+}
+
+async function fetchCryptoFallback() {
+  try {
+    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true');
+    const d = await r.json();
+    if (d.bitcoin) {
+      updateTickerPrice('BTCUSDT', d.bitcoin.usd, null);
+      updateHeroBTC(d.bitcoin.usd, null);
+      document.getElementById('btc-chg').textContent = (d.bitcoin.usd_24h_change > 0 ? '▲' : '▼') + ' ' + Math.abs(d.bitcoin.usd_24h_change).toFixed(2) + '% 24h';
+    }
+    if (d.ethereum) updateTickerPrice('ETHUSDT', d.ethereum.usd, null);
+    if (d.solana) updateTickerPrice('SOLUSDT', d.solana.usd, null);
+  } catch {}
+}
+
+// ── LIVE GAMES (ESPN) ──
+async function loadLiveFeed() {
+  const feedEl = document.getElementById('feed-items');
+  try {
+    const [fbRes, bbRes] = await Promise.all([
+      fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard'),
+      fetch('https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard'),
+    ]);
+    const [fbData, bbData] = await Promise.all([fbRes.json(), bbRes.json()]);
+
+    const events = [
+      ...(fbData.events || []).slice(0, 3).map(e => ({ ...e, sport: 'EPL' })),
+      ...(bbData.events || []).slice(0, 3).map(e => ({ ...e, sport: 'NBA' })),
+    ];
+
+    let liveCount = 0;
+    const items = events.map(ev => {
+      const comp = ev.competitions?.[0];
+      const home = comp?.competitors?.find(c => c.homeAway === 'home');
+      const away = comp?.competitors?.find(c => c.homeAway === 'away');
+      const status = comp?.status?.type;
+      const isLive = status?.state === 'in';
+      if (isLive) liveCount++;
+      const score = isLive ? `${home?.score || 0} – ${away?.score || 0}` : '';
+      return `
+        <div class="feed-item" onclick="window.location='${ev.sport === 'NBA' ? 'basketball' : 'football'}.html'">
+          <div>
+            <div class="feed-teams">${home?.team?.shortDisplayName || 'Home'} vs ${away?.team?.shortDisplayName || 'Away'}</div>
+            <div class="feed-meta">${ev.sport} · ${status?.description || '—'}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            ${score ? `<div class="feed-score">${score}</div>` : ''}
+            <span class="feed-badge ${isLive ? '' : 'upcoming'}">${isLive ? 'LIVE' : 'UPCOMING'}</span>
+          </div>
+        </div>`;
+    });
+
+    feedEl.innerHTML = items.length ? items.join('') : '<div class="feed-item"><div class="feed-teams" style="color:var(--muted)">No games right now</div></div>';
+    document.getElementById('live-count').textContent = liveCount;
+  } catch (e) {
+    feedEl.innerHTML = '<div class="feed-item"><div class="feed-teams" style="color:var(--muted)">Could not load games</div></div>';
+  }
+}
+
+// ── BAYSE MARKETS ──
+async function loadMarkets() {
+  const el = document.getElementById('market-items');
+  try {
+    const r = await fetch('https://relay.bayse.markets/v1/pm/events?status=open&size=5');
+    const d = await r.json();
+    const events = d.events || [];
+    document.getElementById('market-count').textContent = d.pagination?.totalCount || events.length;
+
+    el.innerHTML = events.map(ev => {
+      const mkt = ev.markets?.[0];
+      const yesP = mkt ? Math.round(mkt.outcome1Price * 100) : null;
+      return `
+        <div class="feed-item" onclick="window.location='events.html'">
+          <div style="flex:1;min-width:0">
+            <div class="feed-teams" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ev.title}</div>
+            <div class="feed-meta">${ev.category || '—'} · Vol: ${ev.totalVolume ? '$' + ev.totalVolume.toLocaleString() : '—'}</div>
+          </div>
+          ${yesP != null ? `<div style="text-align:right;margin-left:12px">
+            <div style="font-family:var(--font-head);font-size:15px;font-weight:700;color:${yesP >= 50 ? 'var(--accent)' : 'var(--red)'}">${yesP}%</div>
+            <div style="font-size:9px;color:var(--muted)">YES</div>
+          </div>` : ''}
+        </div>`;
+    }).join('') || '<div class="feed-item"><div class="feed-teams" style="color:var(--muted)">No open markets</div></div>';
+  } catch {
+    el.innerHTML = '<div class="feed-item"><div class="feed-teams" style="color:var(--muted)">Could not load Bayse markets</div></div>';
+  }
+}
+
+// Init
+connectBayse();
+loadLiveFeed();
+loadMarkets();
+setInterval(loadLiveFeed, 30000);
+setInterval(loadMarkets, 60000);
+</script>
+</body>
+</html>

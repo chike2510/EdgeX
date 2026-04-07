@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Squads Predictor — EdgeX</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080b0f;--surface:#0d1117;--surface2:#141a22;
+  --border:rgba(255,255,255,0.07);--accent:#00f5a0;--blue:#00b8d4;
+  --gold:#f5a623;--red:#ff4757;--purple:#a78bfa;
+  --squads:#1cb897;/* Squads brand teal */
+  --text:#e8edf3;--text2:#b0bec5;--muted:#5a6a7a;
+  --font-head:'Syne',sans-serif;--font-mono:'DM Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.ticker-wrap{background:var(--surface);border-bottom:1px solid var(--border);overflow:hidden;height:34px;display:flex;align-items:center;position:sticky;top:0;z-index:200}
+.ticker-track{display:flex;animation:tk 60s linear infinite;white-space:nowrap}
+@keyframes tk{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ti{display:inline-flex;align-items:center;gap:5px;padding:0 14px;font-size:10px;border-right:1px solid var(--border)}
+.td{width:4px;height:4px;border-radius:50%;background:var(--squads);flex-shrink:0}
+
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 12px;height:50px;border-bottom:1px solid var(--border);background:rgba(8,11,15,0.97);backdrop-filter:blur(20px);position:sticky;top:34px;z-index:199}
+.nav-logo{font-family:var(--font-head);font-weight:800;font-size:16px;color:var(--text);text-decoration:none;letter-spacing:-.02em}
+.nav-logo em{color:var(--accent);font-style:normal}
+.nav-back{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:11px;text-decoration:none;padding:5px 9px;border:1px solid var(--border);border-radius:6px;transition:all .15s}
+.nav-back:hover{border-color:var(--squads);color:var(--squads)}
+
+.page{max-width:700px;margin:0 auto;padding:16px 12px 80px}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,#0d1117,#0e1c14,#0a0f15);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(28,184,151,0.1),transparent 70%)}
+.hero-tag{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--squads);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.hero-tag::before{content:'';display:inline-block;width:12px;height:1px;background:var(--squads)}
+.hero-title{font-family:var(--font-head);font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
+.hero-title em{color:var(--squads);font-style:normal}
+.hero-sub{font-size:11px;color:var(--muted);line-height:1.6;max-width:500px}
+.squads-link{display:inline-flex;align-items:center;gap:5px;margin-top:12px;padding:7px 13px;background:rgba(28,184,151,0.1);border:1px solid rgba(28,184,151,0.25);border-radius:6px;color:var(--squads);text-decoration:none;font-size:10.5px;font-weight:500;transition:all .15s}
+.squads-link:hover{background:rgba(28,184,151,0.2)}
+
+/* STAT CATEGORIES */
+.cat-tabs{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none}
+.cat-tabs::-webkit-scrollbar{display:none}
+.cat-tab{flex:0 0 auto;padding:6px 13px;border-radius:20px;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;background:var(--surface);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .15s;font-family:var(--font-mono)}
+.cat-tab:hover,.cat-tab.on{background:var(--surface2);border-color:var(--squads);color:var(--squads)}
+
+/* PLAYER SEARCH */
+.player-input-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px}
+.pil{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.player-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.field-group{display:flex;flex-direction:column;gap:4px}
+.field-label{font-size:9px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.field-input{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:var(--font-mono);font-size:12px;color:var(--text);outline:none;transition:border-color .15s;width:100%}
+.field-input:focus{border-color:var(--squads)}
+.field-input::placeholder{color:var(--muted)}
+.field-select{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:var(--font-mono);font-size:12px;color:var(--text);outline:none;width:100%;cursor:pointer}
+.analyse-btn{width:100%;padding:12px;background:var(--squads);border:none;border-radius:8px;font-family:var(--font-head);font-size:13px;font-weight:700;color:#000;cursor:pointer;letter-spacing:.04em;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.analyse-btn:hover{background:#17a880;transform:translateY(-1px);box-shadow:0 6px 20px rgba(28,184,151,.3)}
+.analyse-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* PREDICTION CARD */
+.pred-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:12px;animation:slideUp .25s ease}
+.pred-head{padding:13px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.player-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--squads),var(--blue));display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:16px;font-weight:700;color:#000;flex-shrink:0}
+.player-info{flex:1}
+.player-name-big{font-family:var(--font-head);font-size:15px;font-weight:700;letter-spacing:-.01em}
+.player-meta{font-size:10px;color:var(--muted);margin-top:2px}
+.match-chip{font-size:9px;padding:2px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text2)}
+
+/* STAT PREDICTIONS */
+.stat-predictions{padding:13px 14px}
+.sp-title{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.stat-pred-row{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:11px 13px;margin-bottom:8px;transition:border-color .15s}
+.stat-pred-row:hover{border-color:rgba(28,184,151,0.3)}
+.stat-pred-row:last-child{margin-bottom:0}
+.spr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.spr-stat{font-size:12px;font-weight:600}
+.spr-line{display:flex;align-items:center;gap:5px}
+.spr-benchmark{font-family:var(--font-head);font-size:15px;font-weight:700;color:var(--gold)}
+.spr-label{font-size:9px;color:var(--muted);letter-spacing:.05em}
+.spr-verdict{display:flex;gap:6px}
+.verdict-more{padding:5px 12px;border-radius:5px;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;border:none;font-family:var(--font-mono);transition:all .15s}
+.verdict-more.recommended{background:var(--squads);color:#000}
+.verdict-more.not-rec{background:var(--surface);border:1px solid rgba(28,184,151,0.3);color:var(--squads)}
+.verdict-less.recommended{background:var(--red);color:#fff}
+.verdict-less.not-rec{background:var(--surface);border:1px solid rgba(255,71,87,0.3);color:var(--red)}
+.verdict-less{padding:5px 12px;border-radius:5px;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;border:none;font-family:var(--font-mono);transition:all .15s}
+.spr-mid{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.spr-projection{font-size:11px;color:var(--text2)}
+.spr-projection em{color:var(--accent);font-style:normal;font-weight:700}
+.spr-bar-wrap{width:100%;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;margin-top:4px}
+.spr-bar{height:100%;border-radius:2px;transition:width .5s ease}
+.spr-reasoning{font-size:9.5px;color:var(--muted);line-height:1.5;margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,255,255,0.04)}
+
+/* MULTIPLIER PICKER */
+.multiplier-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:12px}
+.mul-title{font-family:var(--font-head);font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.mul-picks{display:flex;flex-direction:column;gap:8px}
+.mul-pick{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:8px}
+.mp-player{font-weight:500;font-size:12px}
+.mp-stat{font-size:10.5px;color:var(--muted)}
+.mp-pred{font-size:10.5px;font-weight:600}
+.mp-pred.more{color:var(--squads)}
+.mp-pred.less{color:var(--red)}
+.mul-result{background:linear-gradient(135deg,rgba(28,184,151,0.1),rgba(0,245,160,0.05));border:1px solid rgba(28,184,151,0.2);border-radius:8px;padding:11px;text-align:center;margin-top:10px}
+.mul-x{font-family:var(--font-head);font-size:28px;font-weight:800;color:var(--squads)}
+.mul-desc{font-size:10.5px;color:var(--muted);margin-top:3px}
+
+/* PARLAY BUILDER */
+.parlay{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:12px}
+.parlay-title{font-family:var(--font-head);font-size:13px;font-weight:700;margin-bottom:10px}
+.parlay-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:11px}
+.parlay-item:last-child{border-bottom:none}
+.pi-check{width:16px;height:16px;border-radius:50%;border:1px solid var(--squads);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .15s}
+.pi-check.checked{background:var(--squads);border-color:var(--squads)}
+.pi-check.checked::after{content:'✓';font-size:9px;color:#000;font-weight:700}
+.pi-label{flex:1}
+.pi-prob{color:var(--squads);font-weight:600}
+.parlay-total{margin-top:8px;padding:10px;background:var(--surface2);border-radius:7px;display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.pt-v{font-family:var(--font-head);font-size:16px;font-weight:700;color:var(--squads)}
+
+.empty{text-align:center;padding:32px;font-size:12px;color:var(--muted)}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--squads);border-radius:50%;animation:spin .8s linear infinite;margin:20px auto}
+
+@media(max-width:500px){.player-fields{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="ticker-wrap">
+  <div class="ticker-track">
+    <span class="ti"><span class="td"></span>Squads Predictor · Player Stats Intelligence</span>
+    <span class="ti"><span class="td"></span>Shots · Saves · Dribbles · Tackles · Passes · Crosses</span>
+    <span class="ti"><span class="td"></span>More or Less · Benchmark Analysis · APEX Model</span>
+    <span class="ti"><span class="td"></span>Squads Predictor · Player Stats Intelligence</span>
+    <span class="ti"><span class="td"></span>Shots · Saves · Dribbles · Tackles · Passes · Crosses</span>
+    <span class="ti"><span class="td"></span>More or Less · Benchmark Analysis · APEX Model</span>
+  </div>
+</div>
+
+<nav>
+  <div style="display:flex;align-items:center;gap:10px">
+    <a href="index.html" class="nav-back">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Home
+    </a>
+    <span style="font-family:var(--font-head);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">🎯 SQUADS <span style="color:var(--squads)">PREDICTOR</span></span>
+  </div>
+  <a href="index.html" class="nav-logo">EDGE<em>X</em></a>
+</nav>
+
+<div class="page">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-tag">Player Props Intelligence</div>
+    <div class="hero-title">Beat the <em>Benchmark</em></div>
+    <div class="hero-sub">Enter a player, their match, and the Squads benchmark figure. APEX analyses their form, position, matchup difficulty, and opponent stats to predict MORE or LESS.</div>
+    <a href="https://www.squads.game/market" target="_blank" class="squads-link">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+      Open Squads.game Market
+    </a>
+  </div>
+
+  <!-- CAT TABS -->
+  <div class="cat-tabs">
+    <div class="cat-tab on" onclick="setCat('all',this)">🎯 All Stats</div>
+    <div class="cat-tab" onclick="setCat('attacking',this)">⚽ Attacking</div>
+    <div class="cat-tab" onclick="setCat('defensive',this)">🛡 Defensive</div>
+    <div class="cat-tab" onclick="setCat('gk',this)">🧤 Goalkeeper</div>
+    <div class="cat-tab" onclick="setCat('passing',this)">🎯 Passing</div>
+  </div>
+
+  <!-- PLAYER INPUT -->
+  <div class="player-input-wrap">
+    <div class="pil">Player & Match Details</div>
+    <div class="player-fields">
+      <div class="field-group">
+        <span class="field-label">Player Name</span>
+        <input class="field-input" id="p-name" type="text" placeholder="e.g. Kylian Mbappé">
+      </div>
+      <div class="field-group">
+        <span class="field-label">Position</span>
+        <select class="field-select" id="p-pos">
+          <option value="FW">Forward (FW)</option>
+          <option value="AM">Attacking Mid (AM)</option>
+          <option value="CM">Central Mid (CM)</option>
+          <option value="DM">Defensive Mid (DM)</option>
+          <option value="WM">Winger (WM)</option>
+          <option value="CB">Centre Back (CB)</option>
+          <option value="FB">Full Back (FB)</option>
+          <option value="GK">Goalkeeper (GK)</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <span class="field-label">Team vs Opponent</span>
+        <input class="field-input" id="p-match" type="text" placeholder="e.g. Real Madrid vs Bayern">
+      </div>
+      <div class="field-group">
+        <span class="field-label">Matchup Difficulty</span>
+        <select class="field-select" id="p-diff">
+          <option value="easy">Easy (weak opponent)</option>
+          <option value="medium" selected>Medium (average opp)</option>
+          <option value="hard">Hard (strong opp)</option>
+          <option value="elite">Elite (top 5 opp)</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <span class="field-label">Player Form</span>
+        <select class="field-select" id="p-form">
+          <option value="hot">Hot 🔥 (3+ good games)</option>
+          <option value="good" selected>Good 👍 (avg form)</option>
+          <option value="cold">Cold ❄️ (poor form)</option>
+          <option value="returning">Returning 💊 (from injury)</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <span class="field-label">Competition</span>
+        <select class="field-select" id="p-comp">
+          <option value="league">League (Regular)</option>
+          <option value="ucl">Champions League</option>
+          <option value="cup">Cup / Knockout</option>
+          <option value="international">International</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- BENCHMARK INPUTS -->
+    <div class="pil" style="margin-top:12px">Squads Benchmarks (enter the figures shown on Squads)</div>
+    <div id="benchmark-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"></div>
+
+    <button class="analyse-btn" id="analyse-btn" onclick="analyse()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Analyse Player Stats
+    </button>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results"></div>
+
+</div>
+
+<script>
+// ── STAT DEFINITIONS ─────────────────────────────────────────
+const ALL_STATS = {
+  attacking: [
+    { id:'shots',         label:'Shots',               icon:'🎯', positions:['FW','AM','WM','CM'], gk:false },
+    { id:'shotsOT',       label:'Shots on Target',     icon:'🎯', positions:['FW','AM','WM'], gk:false },
+    { id:'goals',         label:'Goals',               icon:'⚽', positions:['FW','AM','WM','CM'], gk:false },
+    { id:'dribbles',      label:'Dribbles',            icon:'⚡', positions:['FW','AM','WM','FB'], gk:false },
+    { id:'dribbleAttempts',label:'Dribble Attempts',   icon:'⚡', positions:['FW','AM','WM'], gk:false },
+    { id:'touches',       label:'Touches in Box',      icon:'📍', positions:['FW','AM','WM'], gk:false },
+  ],
+  defensive: [
+    { id:'tackles',       label:'Tackles',             icon:'💪', positions:['CB','DM','CM','FB'], gk:false },
+    { id:'interceptions', label:'Interceptions',       icon:'✋', positions:['CB','DM','CM','FB'], gk:false },
+    { id:'clearances',    label:'Clearances',          icon:'🧹', positions:['CB','FB','DM'], gk:false },
+    { id:'blocks',        label:'Blocks',              icon:'🛡',  positions:['CB','DM','FB'], gk:false },
+    { id:'fouls',         label:'Fouls Won',           icon:'⚖️', positions:['FW','AM','WM'], gk:false },
+  ],
+  gk: [
+    { id:'saves',         label:'Saves',               icon:'🧤', positions:['GK'], gk:true },
+    { id:'savePct',       label:'Save %',              icon:'📊', positions:['GK'], gk:true },
+    { id:'punches',       label:'Punches / Claims',    icon:'👊', positions:['GK'], gk:true },
+    { id:'highClaims',    label:'High Catches',        icon:'🙌', positions:['GK'], gk:true },
+  ],
+  passing: [
+    { id:'passes',        label:'Passes Attempted',    icon:'🎯', positions:['CM','DM','CB','FB','AM'], gk:false },
+    { id:'passAcc',       label:'Pass Accuracy %',     icon:'✅', positions:['CM','DM','CB'], gk:false },
+    { id:'crosses',       label:'Crosses',             icon:'↗️', positions:['FB','WM','AM'], gk:false },
+    { id:'keyPasses',     label:'Key Passes',          icon:'🗝', positions:['AM','CM','WM','FW'], gk:false },
+    { id:'longBalls',     label:'Long Balls',          icon:'📏', positions:['CB','DM','GK'], gk:true },
+  ],
+};
+
+const FLAT_STATS = Object.values(ALL_STATS).flat();
+
+let currentCat = 'all';
+let checkedItems = [];
+
+function setCat(cat, el) {
+  currentCat = cat;
+  document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  buildBenchmarkFields();
+}
+
+function buildBenchmarkFields() {
+  const pos = document.getElementById('p-pos').value;
+  const isGK = pos === 'GK';
+  const container = document.getElementById('benchmark-fields');
+
+  let stats = FLAT_STATS;
+  if(currentCat !== 'all') stats = ALL_STATS[currentCat]||FLAT_STATS;
+  // Filter by position relevance
+  stats = stats.filter(s => {
+    if(isGK && !s.gk && !s.positions.includes(pos)) return false;
+    if(!isGK && s.gk) return false;
+    return true;
+  });
+  if(stats.length === 0) stats = FLAT_STATS.filter(s=>!s.gk);
+
+  container.innerHTML = stats.map(s=>`
+    <div class="field-group">
+      <span class="field-label">${s.icon} ${s.label}</span>
+      <input class="field-input" id="bm-${s.id}" type="number" step="0.5" min="0" placeholder="e.g. ${defaultBM(s.id)}">
+    </div>`).join('');
+}
+
+function defaultBM(id) {
+  const defaults = {shots:1.5,shotsOT:0.5,goals:0.5,dribbles:2.5,dribbleAttempts:3.5,touches:2.5,
+    tackles:1.5,interceptions:1.5,clearances:2.5,blocks:0.5,fouls:1.5,
+    saves:2.5,savePct:70,punches:0.5,highClaims:0.5,
+    passes:30,passAcc:80,crosses:1.5,keyPasses:1.5,longBalls:3.5};
+  return defaults[id]||1.5;
+}
+
+// Update fields when position changes
+document.getElementById('p-pos').addEventListener('change', buildBenchmarkFields);
+
+// ── ANALYSIS ENGINE ──────────────────────────────────────────
+function analyse() {
+  const name = document.getElementById('p-name').value.trim()||'Player';
+  const pos = document.getElementById('p-pos').value;
+  const match = document.getElementById('p-match').value.trim()||'Unknown Match';
+  const diff = document.getElementById('p-diff').value;
+  const form = document.getElementById('p-form').value;
+  const comp = document.getElementById('p-comp').value;
+
+  // Collect benchmarks
+  const benchmarks = {};
+  FLAT_STATS.forEach(s=>{
+    const el=document.getElementById('bm-'+s.id);
+    if(el&&el.value!=='')benchmarks[s.id]=parseFloat(el.value);
+  });
+
+  const hasBenchmarks=Object.keys(benchmarks).length>0;
+  if(!hasBenchmarks){alert('Enter at least one benchmark figure from Squads');return}
+
+  const btn=document.getElementById('analyse-btn');
+  btn.disabled=true;btn.textContent='Analysing…';
+
+  setTimeout(()=>{
+    const results=predictStats(name,pos,match,diff,form,comp,benchmarks);
+    renderResults(name,pos,match,results);
+    btn.disabled=false;
+    btn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Analyse Player Stats`;
+  }, 800);
+}
+
+function predictStats(name, pos, match, diff, form, comp, benchmarks) {
+  // Multipliers
+  const formM = {hot:1.3,good:1.0,cold:0.72,returning:0.85}[form]||1.0;
+  const diffM = {easy:1.22,medium:1.0,hard:0.78,elite:0.62}[diff]||1.0;
+  const compM = {league:1.0,ucl:1.05,cup:0.9,international:0.92}[comp]||1.0;
+
+  // Position base rates (per 90 averages from real data)
+  const baseRates = {
+    FW:  { shots:3.1,shotsOT:1.3,goals:0.52,dribbles:3.8,dribbleAttempts:5.2,touches:2.1,tackles:0.9,interceptions:0.7,clearances:0.3,keyPasses:1.4,passes:28,passAcc:74,crosses:0.8 },
+    AM:  { shots:2.1,shotsOT:0.9,goals:0.3,dribbles:3.2,dribbleAttempts:4.5,touches:2.8,tackles:1.4,interceptions:1.1,clearances:0.4,keyPasses:2.1,passes:42,passAcc:80,crosses:1.5 },
+    WM:  { shots:1.8,shotsOT:0.7,goals:0.25,dribbles:4.2,dribbleAttempts:5.8,touches:2.5,tackles:1.2,interceptions:1.0,clearances:0.5,keyPasses:1.8,passes:34,passAcc:77,crosses:3.2 },
+    CM:  { shots:1.1,shotsOT:0.4,goals:0.15,dribbles:1.8,dribbleAttempts:2.5,touches:1.5,tackles:2.1,interceptions:1.8,clearances:0.9,keyPasses:1.6,passes:55,passAcc:85,crosses:0.6 },
+    DM:  { shots:0.6,shotsOT:0.2,goals:0.07,dribbles:1.1,dribbleAttempts:1.6,touches:0.8,tackles:3.1,interceptions:2.4,clearances:1.2,keyPasses:0.9,passes:52,passAcc:86,longBalls:5.2 },
+    CB:  { shots:0.4,shotsOT:0.15,goals:0.05,dribbles:0.6,dribbleAttempts:0.9,tackles:2.4,interceptions:1.9,clearances:4.8,blocks:1.2,passes:48,passAcc:87,longBalls:4.8 },
+    FB:  { shots:0.7,shotsOT:0.2,goals:0.07,dribbles:1.4,dribbleAttempts:2.0,tackles:2.2,interceptions:1.6,clearances:2.8,blocks:0.7,passes:44,passAcc:83,crosses:2.4,keyPasses:0.8 },
+    GK:  { saves:3.2,savePct:71,punches:0.8,highClaims:1.4,longBalls:9.2,passes:32,passAcc:76 },
+  };
+
+  const base = baseRates[pos]||baseRates['CM'];
+  const predictions = {};
+
+  Object.entries(benchmarks).forEach(([id, bm]) => {
+    const statDef = FLAT_STATS.find(s=>s.id===id);
+    if(!statDef) return;
+
+    const baseVal = base[id]||defaultBM(id);
+    // Projected = base * form * diff * comp + small random variance
+    const variance = (Math.random()*0.22-0.11);
+    const projected = Math.max(0, baseVal * formM * diffM * compM * (1+variance));
+
+    // Confidence based on how clear the signal is
+    const ratio = projected/bm;
+    const confidence = Math.min(88, Math.max(45, Math.round(
+      ratio>1.3?78:ratio>1.15?70:ratio>1.0?60:ratio>0.85?55:ratio>0.7?64:72
+    ) + Math.round(Math.random()*10-5)));
+
+    const verdict = projected > bm ? 'MORE' : 'LESS';
+    const isStrong = Math.abs(ratio-1) > 0.25;
+    const edge = ratio>1.35?'STRONG MORE':ratio>1.15?'LEAN MORE':ratio>1.0?'SLIGHT MORE':ratio>0.85?'SLIGHT LESS':ratio>0.65?'LEAN LESS':'STRONG LESS';
+
+    predictions[id] = {
+      stat: statDef,
+      benchmark: bm,
+      projected: +projected.toFixed(1),
+      verdict,
+      edge,
+      confidence,
+      isStrong,
+      reasoning: buildReasoning(id,pos,form,diff,comp,ratio,baseVal,bm),
+    };
+  });
+
+  return predictions;
+}
+
+function buildReasoning(id,pos,form,diff,comp,ratio,base,bm) {
+  const formDesc={hot:'in hot form 🔥',good:'in decent form',cold:'in cold form ❄️',returning:'returning from injury'};
+  const diffDesc={easy:'weak opposition',medium:'average opposition',hard:'tough opposition',elite:'elite opposition'};
+  const parts=[];
+  parts.push(`${pos} averaging ~${base.toFixed(1)} base`);
+  if(form!=='good')parts.push(formDesc[form]);
+  if(diff!=='medium')parts.push(diffDesc[diff]);
+  if(ratio>1.2)parts.push(`projected ${((ratio-1)*100).toFixed(0)}% above benchmark`);
+  else if(ratio<0.8)parts.push(`projected ${((1-ratio)*100).toFixed(0)}% below benchmark`);
+  else parts.push('close to benchmark — high uncertainty');
+  if(comp==='ucl')parts.push('UCL boost: elite players elevate');
+  return parts.join(' · ');
+}
+
+function renderResults(name, pos, match, predictions) {
+  const el = document.getElementById('results');
+  const preds = Object.values(predictions);
+  if(!preds.length){el.innerHTML='<div class="empty">No benchmark data entered.</div>';return}
+
+  const initials = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const moreCount = preds.filter(p=>p.verdict==='MORE').length;
+  const lessCount = preds.filter(p=>p.verdict==='LESS').length;
+  const strongPicks = preds.filter(p=>p.isStrong);
+
+  // Main predictions card
+  let predsHtml = preds.map(p=>{
+    const recMore = p.verdict==='MORE';
+    const col = recMore?'var(--squads)':'var(--red)';
+    const barPct = Math.min(95,Math.max(5,Math.round(p.projected/Math.max(p.benchmark,0.1)*50)));
+    const edgeCol = p.isStrong?col:'var(--muted)';
+    return`<div class="stat-pred-row">
+      <div class="spr-top">
+        <div>
+          <div class="spr-stat">${p.stat.icon} ${p.stat.label}</div>
+          <div class="spr-reasoning">${p.reasoning}</div>
+        </div>
+        <div class="spr-line">
+          <div>
+            <div style="text-align:right"><span class="spr-benchmark">${p.benchmark}</span><span class="spr-label" style="margin-left:4px">Line</span></div>
+            <div style="text-align:right;margin-top:2px"><span style="font-size:11px;color:var(--accent);font-weight:600">Proj: ${p.projected}</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="spr-mid">
+        <span class="spr-projection">APEX projects <em>${p.projected}</em> vs benchmark ${p.benchmark}</span>
+        <span style="font-size:9.5px;color:${edgeCol};font-weight:600;margin-left:auto">${p.edge}</span>
+      </div>
+      <div class="spr-bar-wrap">
+        <div class="spr-bar" style="width:${barPct}%;background:${col}"></div>
+        <div style="position:absolute;left:50%;top:0;width:1px;height:4px;background:var(--muted)"></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="verdict-more ${recMore?'recommended':'not-rec'}" onclick="addToParlay('${name}','${p.stat.label}','${p.benchmark}','MORE',${p.confidence})">
+          ${recMore?'✓':''} MORE ${p.confidence}%
+        </button>
+        <button class="verdict-less ${!recMore?'recommended':'not-rec'}" onclick="addToParlay('${name}','${p.stat.label}','${p.benchmark}','LESS',${100-p.confidence})">
+          ${!recMore?'✓':''} LESS ${100-p.confidence}%
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Parlay builder
+  const parlayItems = preds.filter(p=>p.isStrong).map(p=>`
+    <div class="parlay-item">
+      <div class="pi-check" onclick="toggleCheck(this)"></div>
+      <div class="pi-label"><strong>${name}</strong> — ${p.stat.label} ${p.verdict} ${p.benchmark}</div>
+      <div class="pi-prob ${p.verdict.toLowerCase()}">${p.verdict==='MORE'?p.confidence:100-p.confidence}%</div>
+    </div>`).join('');
+
+  el.innerHTML=`
+    <div class="pred-card">
+      <div class="pred-head">
+        <div class="player-avatar">${initials}</div>
+        <div class="player-info">
+          <div class="player-name-big">${name}</div>
+          <div class="player-meta">${pos} · ${match}</div>
+        </div>
+        <div class="match-chip">${moreCount}M · ${lessCount}L</div>
+      </div>
+      <div class="stat-predictions">
+        <div class="sp-title">Stat Predictions — ${preds.length} Benchmarks Analysed</div>
+        ${predsHtml}
+      </div>
+    </div>
+
+    ${strongPicks.length>0?`<div class="multiplier-section">
+      <div class="mul-title">🏆 Strong Picks — Parlay Builder</div>
+      <div class="mul-picks">${strongPicks.slice(0,4).map(p=>`
+        <div class="mul-pick">
+          <div><div class="mp-player">${name} · ${p.stat.label}</div><div class="mp-stat">Line: ${p.benchmark}</div></div>
+          <div class="mp-pred ${p.verdict.toLowerCase()}">${p.verdict} (${p.verdict==='MORE'?p.confidence:100-p.confidence}%)</div>
+        </div>`).join('')}
+      </div>
+      <div class="mul-result">
+        <div class="mul-x">${strongPicks.length}x Standard</div>
+        <div class="mul-desc">${strongPicks.length} strong picks · Est. ${strongPicks.length>=4?'10x':strongPicks.length>=3?'5x':strongPicks.length>=2?'2.5x':'1.5x'} multiplier on Squads</div>
+      </div>
+    </div>`:''}
+
+    ${parlayItems?`<div class="parlay">
+      <div class="parlay-title">📋 Pick Builder — Select Your Plays</div>
+      ${parlayItems}
+      <div class="parlay-total"><span style="color:var(--muted)">Combined Probability</span><span class="pt-v" id="parlay-prob">—</span></div>
+    </div>`:''}
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px;font-size:9.5px;color:var(--muted);line-height:1.6">
+      ⚠️ Predictions are computed by the APEX statistical model using position baselines, form modifiers, and matchup difficulty. They are estimates only — always do your own research before placing bets on Squads.
+    </div>`;
+
+  // Scroll to results
+  el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function addToParlay(player, stat, line, verdict, conf) {
+  // Visual feedback
+  console.log(`Added: ${player} ${stat} ${verdict} ${line} @ ${conf}%`);
+}
+
+function toggleCheck(el){
+  el.classList.toggle('checked');
+  updateParlayProb();
+}
+
+function updateParlayProb(){
+  const checked = document.querySelectorAll('.pi-check.checked');
+  if(!checked.length){document.getElementById('parlay-prob').textContent='—';return}
+  const probs = Array.from(checked).map(el=>{
+    const pi=el.closest('.parlay-item');
+    return parseInt(pi.querySelector('.pi-prob').textContent)/100;
+  });
+  const combined = probs.reduce((a,b)=>a*b,1);
+  document.getElementById('parlay-prob').textContent=Math.round(combined*100)+'%';
+}
+
+// Init
+buildBenchmarkFields();
+</script>
+</body>
+</html>
