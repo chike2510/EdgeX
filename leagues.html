@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leagues & Standings — EdgeX</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080b0f;--surface:#0d1117;--surface2:#141a22;--border:rgba(255,255,255,0.07);--accent:#00f5a0;--gold:#f5a623;--red:#ff4757;--blue:#00b8d4;--text:#e8edf3;--muted:#5a6a7a;--font-head:'Syne',sans-serif;--font-mono:'DM Mono',monospace;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ticker-wrap{background:var(--surface);border-bottom:1px solid var(--border);overflow:hidden;height:34px;display:flex;align-items:center;position:sticky;top:0;z-index:200}
+.ticker-track{display:flex;animation:tk 80s linear infinite;white-space:nowrap}
+@keyframes tk{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ti{display:inline-flex;align-items:center;gap:5px;padding:0 14px;font-size:10px;border-right:1px solid var(--border)}
+.td{width:4px;height:4px;border-radius:50%;background:var(--gold);flex-shrink:0}
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 12px;height:50px;border-bottom:1px solid var(--border);background:rgba(8,11,15,0.97);backdrop-filter:blur(20px);position:sticky;top:34px;z-index:199}
+.nav-logo{font-family:var(--font-head);font-weight:800;font-size:16px;color:var(--text);text-decoration:none;letter-spacing:-.02em}
+.nav-logo em{color:var(--accent);font-style:normal}
+.nav-back{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:11px;text-decoration:none;padding:5px 9px;border:1px solid var(--border);border-radius:6px;transition:all .15s}
+.nav-back:hover{border-color:var(--gold);color:var(--gold)}
+.page{max-width:960px;margin:0 auto;padding:14px 12px 80px}
+.regions{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none}
+.regions::-webkit-scrollbar{display:none}
+.reg{flex:0 0 auto;padding:6px 13px;border-radius:20px;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;background:var(--surface);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .15s;font-family:var(--font-mono)}
+.reg:hover,.reg.on{background:var(--surface2);border-color:var(--gold);color:var(--gold)}
+.lg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:18px}
+.lg-btn{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 9px;cursor:pointer;transition:all .18s;text-align:center}
+.lg-btn:hover,.lg-btn.on{border-color:var(--gold);background:var(--surface2)}
+.lg-flag{font-size:20px;margin-bottom:4px}
+.lg-name{font-size:9.5px;color:var(--text);line-height:1.3;font-weight:500}
+.lg-conf{font-size:8px;color:var(--muted);margin-top:2px}
+.status{display:flex;align-items:center;gap:7px;padding:7px 11px;background:var(--surface);border:1px solid var(--border);border-radius:7px;margin-bottom:14px;font-size:10px;color:var(--muted)}
+.sdot{width:5px;height:5px;border-radius:50%}
+.sdot.ok{background:var(--accent);box-shadow:0 0 5px var(--accent)}.sdot.err{background:var(--red)}.sdot.load{background:var(--gold);animation:pulse 1s infinite}
+.stbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.stbl-hdr{padding:10px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.stbl-league{font-family:var(--font-head);font-size:13px;font-weight:700}
+.stbl-season{font-size:9px;color:var(--muted);margin-left:auto}
+table.stbl{width:100%;border-collapse:collapse;font-size:10.5px}
+.stbl th{padding:6px 8px;text-align:left;font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:400;border-bottom:1px solid var(--border)}
+.stbl th.r{text-align:center}
+.stbl td{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,0.04)}
+.stbl td.r{text-align:center;color:var(--text)}
+.stbl tr:last-child td{border-bottom:none}
+.stbl tr:hover td{background:rgba(255,255,255,0.015)}
+.pos-num{width:22px;text-align:center;font-size:10px}
+.pos-num.champ{color:var(--accent)}.pos-num.euro{color:var(--blue)}.pos-num.rel{color:var(--red)}.pos-num.def{color:var(--muted)}
+.team-cell{display:flex;align-items:center;gap:7px}
+.tm-logo{width:18px;height:18px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:8px;flex-shrink:0}
+.tm-logo img{width:100%;height:100%;object-fit:contain}
+.pts-bold{font-family:var(--font-head);font-weight:700;color:var(--text)}
+.form-dots{display:flex;gap:2px}
+.fd{width:7px;height:7px;border-radius:50%}
+.fd.W{background:var(--accent)}.fd.D{background:var(--gold)}.fd.L{background:var(--red)}
+.spc{display:flex;justify-content:center;padding:36px}
+.sp{width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+.empty{text-align:center;padding:32px 20px}
+.empty-t{font-family:var(--font-head);font-size:14px;color:var(--muted);margin-bottom:4px}
+.empty-s{font-size:10.5px;color:var(--muted);opacity:.6;line-height:1.7;max-width:260px;margin:0 auto}
+.legend{display:flex;gap:12px;padding:8px 12px;font-size:9px;color:var(--muted);border-top:1px solid var(--border);flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:4px}
+.legend-dot{width:8px;height:8px;border-radius:2px}
+</style>
+</head>
+<body>
+<div class="ticker-wrap"><div class="ticker-track"><span class="ti"><span class="td"></span>Leagues & Standings</span><span class="ti"><span class="td"></span>EPL · La Liga · Bundesliga · Serie A</span><span class="ti"><span class="td"></span>UCL · UEL · Ligue 1 · Eredivisie</span><span class="ti"><span class="td"></span>Form Guide · Points · GD</span><span class="ti"><span class="td"></span>Leagues & Standings</span><span class="ti"><span class="td"></span>EPL · La Liga · Bundesliga · Serie A</span><span class="ti"><span class="td"></span>UCL · UEL · Ligue 1 · Eredivisie</span><span class="ti"><span class="td"></span>Form Guide · Points · GD</span></div></div>
+<nav>
+  <div style="display:flex;align-items:center;gap:10px">
+    <a href="football.html" class="nav-back"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Football</a>
+    <span style="font-family:var(--font-head);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">🏆 LEAGUES & <span style="color:var(--gold)">STANDINGS</span></span>
+  </div>
+  <a href="index.html" class="nav-logo">EDGE<em>X</em></a>
+</nav>
+<div class="page">
+  <div class="regions">
+    <div class="reg on" onclick="setRegion('top5',this)">⭐ Top 5</div>
+    <div class="reg" onclick="setRegion('europe',this)">🇪🇺 Europe</div>
+    <div class="reg" onclick="setRegion('cups',this)">🏆 Cups</div>
+    <div class="reg" onclick="setRegion('americas',this)">🌎 Americas</div>
+    <div class="reg" onclick="setRegion('all',this)">🌍 All</div>
+  </div>
+  <div class="lg-grid" id="lg-grid"></div>
+  <div class="status"><div class="sdot load" id="sdot"></div><span id="stxt">Select a league above…</span></div>
+  <div id="standings-content"><div class="empty"><div class="empty-t">Select a league</div><div class="empty-s">Tap any league above to load live standings from ESPN.</div></div></div>
+</div>
+<script>
+// IMPORTANT: standings MUST use /apis/v2/ — /apis/site/v2/ returns a stub with no data
+const ESPN_SCORES='https://site.api.espn.com/apis/site/v2/sports/soccer';
+const ESPN_STANDINGS='https://site.api.espn.com/apis/v2/sports/soccer';
+
+// Only ESPN-confirmed slugs — verified to return data
+const LEAGUES=[
+  // Top 5
+  {slug:'eng.1',   n:'Premier League',   f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',region:'top5',   season:2025},
+  {slug:'esp.1',   n:'La Liga',          f:'🇪🇸',region:'top5',   season:2025},
+  {slug:'ger.1',   n:'Bundesliga',       f:'🇩🇪',region:'top5',   season:2025},
+  {slug:'ita.1',   n:'Serie A',          f:'🇮🇹',region:'top5',   season:2025},
+  {slug:'fra.1',   n:'Ligue 1',          f:'🇫🇷',region:'top5',   season:2025},
+  // European
+  {slug:'ned.1',   n:'Eredivisie',       f:'🇳🇱',region:'europe', season:2025},
+  {slug:'por.1',   n:'Primeira Liga',    f:'🇵🇹',region:'europe', season:2025},
+  {slug:'sco.1',   n:'Scottish Prem',    f:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',region:'europe', season:2025},
+  {slug:'tur.1',   n:'Süper Lig',        f:'🇹🇷',region:'europe', season:2025},
+  {slug:'bel.1',   n:'Belgian Pro Lge',  f:'🇧🇪',region:'europe', season:2025},
+  {slug:'gre.1',   n:'Super League',     f:'🇬🇷',region:'europe', season:2025},
+  {slug:'rus.1',   n:'Russian PL',       f:'🇷🇺',region:'europe', season:2025},
+  {slug:'eng.2',   n:'Championship',     f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',region:'europe', season:2025},
+  {slug:'esp.2',   n:'La Liga 2',        f:'🇪🇸',region:'europe', season:2025},
+  {slug:'ger.2',   n:'2. Bundesliga',    f:'🇩🇪',region:'europe', season:2025},
+  {slug:'ita.2',   n:'Serie B',          f:'🇮🇹',region:'europe', season:2025},
+  {slug:'fra.2',   n:'Ligue 2',          f:'🇫🇷',region:'europe', season:2025},
+  // Cups
+  {slug:'uefa.champions', n:'Champions Lge',f:'⭐',region:'cups', season:2025},
+  {slug:'uefa.europa',    n:'Europa Lge',   f:'🟠',region:'cups', season:2025},
+  {slug:'uefa.eurconf',   n:'Conf. Lge',    f:'🟣',region:'cups', season:2025},
+  // Americas
+  {slug:'usa.1',   n:'MLS',              f:'🇺🇸',region:'americas',season:2025},
+  {slug:'mex.1',   n:'Liga MX',          f:'🇲🇽',region:'americas',season:2025},
+  {slug:'bra.1',   n:'Brasileirão',      f:'🇧🇷',region:'americas',season:2025},
+  {slug:'arg.1',   n:'Liga Prof.',       f:'🇦🇷',region:'americas',season:2025},
+  {slug:'col.1',   n:'Liga BetPlay',     f:'🇨🇴',region:'americas',season:2025},
+  {slug:'conmebol.libertadores',n:'Libertadores',f:'🌎',region:'americas',season:2025},
+];
+
+const REGIONS={
+  top5:    LEAGUES.filter(l=>l.region==='top5'),
+  europe:  LEAGUES.filter(l=>l.region==='europe'),
+  cups:    LEAGUES.filter(l=>l.region==='cups'),
+  americas:LEAGUES.filter(l=>l.region==='americas'),
+  all:     LEAGUES,
+};
+
+let currentRegion='top5',selectedSlug=null;
+const ss=(s,m)=>{document.getElementById('sdot').className='sdot '+s;document.getElementById('stxt').textContent=m};
+
+function setRegion(r,el){
+  currentRegion=r;document.querySelectorAll('.reg').forEach(b=>b.classList.remove('on'));el.classList.add('on');
+  buildGrid();
+}
+
+function buildGrid(){
+  const items=REGIONS[currentRegion]||LEAGUES;
+  const grid=document.getElementById('lg-grid');
+  grid.innerHTML=items.map(l=>`
+    <div class="lg-btn ${selectedSlug===l.slug?'on':''}" onclick="selectLeague('${l.slug}')">
+      <div class="lg-flag">${l.f}</div>
+      <div class="lg-name">${l.n}</div>
+    </div>`).join('');
+}
+
+async function selectLeague(slug){
+  selectedSlug=slug;
+  const L=LEAGUES.find(x=>x.slug===slug)||{n:slug,f:'⚽'};
+  buildGrid(); // re-render to show selection
+  ss('load',`Loading ${L.n}…`);
+  document.getElementById('standings-content').innerHTML='<div class="spc"><div class="sp"></div></div>';
+  try{
+    const r=await fetch(`${ESPN_STANDINGS}/${slug}/standings`,{signal:AbortSignal.timeout(10000)});
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const data=await r.json();
+    renderStandings(data,slug,L);
+    ss('ok',`${L.n} · Standings loaded`);
+  }catch(e){
+    // Try with season param
+    try{
+      const r2=await fetch(`${ESPN_STANDINGS}/${slug}/standings?season=${L.season||2025}`,{signal:AbortSignal.timeout(8000)});
+      if(!r2.ok)throw new Error();
+      const data=await r2.json();
+      renderStandings(data,slug,L);
+      ss('ok',`${L.n} · Standings loaded`);
+    }catch{
+      document.getElementById('standings-content').innerHTML=`
+        <div class="empty">
+          <div class="empty-t">Standings Not Available</div>
+          <div class="empty-s">ESPN doesn't have standings for ${L.n} right now. This usually happens outside the active season or for knockout competitions. Try a domestic league like EPL or La Liga.</div>
+        </div>`;
+      ss('err',`${L.n} — standings unavailable`);
+    }
+  }
+}
+
+function renderStandings(data,slug,L){
+  // ESPN standings can be in several shapes — exhaustively search for entries
+  const season=data.season?.displayName||data.season?.year||'';
+
+  // Collect all groups that have entries
+  const allGroups=[];
+
+  function extractGroups(node,depth=0){
+    if(depth>4)return;
+    // Direct entries
+    const e=node.standings?.entries;
+    if(e&&e.length){allGroups.push({name:node.name||node.abbreviation||'',entries:e});return;}
+    // children array
+    if(node.children?.length){node.children.forEach(c=>extractGroups(c,depth+1));}
+  }
+  extractGroups(data);
+
+  // If still nothing, check root-level standings
+  if(!allGroups.length&&data.standings?.entries?.length){
+    allGroups.push({name:'',entries:data.standings.entries});
+  }
+
+  if(!allGroups.length){
+    document.getElementById('standings-content').innerHTML=`
+      <div class="empty">
+        <div class="empty-t">No Standings Data</div>
+        <div class="empty-s">ESPN doesn't have standings for ${L.n} at this time. Try a domestic league like EPL or La Liga. Knockout competitions (UCL etc.) don't have traditional standings.</div>
+      </div>`;
+    return;
+  }
+
+  const season_str=season?` · ${season}`:'';
+  let html='';
+
+  allGroups.forEach(grp=>{
+    const entries=grp.entries;
+    html+=`<div class="stbl-wrap">
+      <div class="stbl-hdr">
+        <span style="font-size:18px">${L.f}</span>
+        <div>
+          <div class="stbl-league">${L.n}${grp.name?' · '+grp.name:''}</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:1px">${season_str}</div>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+      <table class="stbl">
+        <thead><tr>
+          <th style="width:24px">#</th>
+          <th>Club</th>
+          <th class="r">P</th>
+          <th class="r">W</th>
+          <th class="r">D</th>
+          <th class="r">L</th>
+          <th class="r">GF</th>
+          <th class="r">GA</th>
+          <th class="r">GD</th>
+          <th class="r" style="color:var(--accent)">Pts</th>
+          <th class="r">Form</th>
+        </tr></thead>
+        <tbody>${entries.slice(0,24).map((entry,i)=>{
+          const stats=entry.stats||[];
+          // ESPN uses multiple possible field names — check all
+          const gv=n=>{
+            const s=stats.find(x=>x.name===n||x.abbreviation===n||x.shortDisplayName===n||x.displayName===n);
+            return s!=null?(s.displayValue??s.value??'—'):'—';
+          };
+          // Form — ESPN sends as "WWDLL" string in various fields
+          const formRaw=(gv('form')||gv('formGuide')||entry.note?.text||'').toString().toUpperCase();
+          const form=formRaw.replace(/[^WDL]/g,'').split('').slice(-5);
+          // Position color
+          const pos=entry.note?.name?.toLowerCase()||'';
+          const isChamp=i<4&&!pos.includes('rel')&&!slug.includes('champions')&&!slug.includes('libertadores');
+          const isEuro=!isChamp&&i<7&&!pos.includes('rel');
+          const isRel=pos.includes('rel')||pos.includes('relegation');
+          const posClass=isChamp?'champ':isEuro?'euro':isRel?'rel':'def';
+          return`<tr>
+            <td><div class="pos-num ${posClass}">${i+1}</div></td>
+            <td><div class="team-cell">
+              <div class="tm-logo">${entry.team?.logo?`<img src="${entry.team.logo}" onerror="this.parentElement.textContent='⚽'">`:'⚽'}</div>
+              <span>${entry.team?.shortDisplayName||entry.team?.displayName||'?'}</span>
+            </div></td>
+            <td class="r">${gv('gamesPlayed')||gv('GP')||gv('games')}</td>
+            <td class="r">${gv('wins')||gv('W')}</td>
+            <td class="r">${gv('ties')||gv('draws')||gv('D')}</td>
+            <td class="r">${gv('losses')||gv('L')}</td>
+            <td class="r">${gv('pointsFor')||gv('GF')||gv('goalsFor')}</td>
+            <td class="r">${gv('pointsAgainst')||gv('GA')||gv('goalsAgainst')}</td>
+            <td class="r">${gv('pointDifferential')||gv('GD')||gv('goalDifferential')}</td>
+            <td class="r"><span class="pts-bold">${gv('points')||gv('Pts')||gv('pts')}</span></td>
+            <td class="r"><div class="form-dots">${form.map(f=>`<div class="fd ${f}"></div>`).join('')}</div></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Champions League</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Europa League</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Relegation</div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('standings-content').innerHTML=html;
+}
+
+// Init
+buildGrid();
+setTimeout(()=>selectLeague('eng.1'),100);
+</script>
+</body>
+</html>
