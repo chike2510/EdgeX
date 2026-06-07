@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather Markets — EdgeX</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080b0f;--surface:#0d1117;--surface2:#141a22;--border:rgba(255,255,255,0.07);--accent:#00f5a0;--blue:#00b8d4;--gold:#f5a623;--red:#ff4757;--text:#e8edf3;--muted:#5a6a7a;--font-head:'Syne',sans-serif;--font-mono:'DM Mono',monospace;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh;overflow-x:hidden}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}
+
+/* NAV */
+.ticker-wrap{background:var(--surface);border-bottom:1px solid var(--border);overflow:hidden;height:34px;display:flex;align-items:center;position:sticky;top:0;z-index:200}
+.ticker-track{display:flex;animation:tk 60s linear infinite;white-space:nowrap}
+@keyframes tk{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ti{display:inline-flex;align-items:center;gap:5px;padding:0 14px;font-size:10px;border-right:1px solid var(--border)}
+.td{width:4px;height:4px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 12px;height:50px;border-bottom:1px solid var(--border);background:rgba(8,11,15,0.97);backdrop-filter:blur(20px);position:sticky;top:34px;z-index:199}
+.nav-logo{font-family:var(--font-head);font-weight:800;font-size:16px;color:var(--text);text-decoration:none;letter-spacing:-.02em}
+.nav-logo em{color:var(--accent);font-style:normal}
+.nav-back{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:11px;text-decoration:none;padding:5px 9px;border:1px solid var(--border);border-radius:6px;transition:all .15s}
+.nav-back:hover{border-color:var(--accent);color:var(--accent)}
+
+/* LAYOUT */
+.page{max-width:960px;margin:0 auto;padding:16px 12px 80px}
+
+/* BANNER */
+.banner{background:linear-gradient(135deg,#0d1117,#0a1219,#080f14);border:1px solid rgba(0,184,212,0.15);border-radius:14px;padding:20px;margin-bottom:18px;position:relative;overflow:hidden}
+.banner::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(0,184,212,0.07),transparent 70%)}
+.banner-tag{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--blue);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.banner-tag::before{content:'';display:inline-block;width:12px;height:1px;background:var(--blue)}
+.banner-title{font-family:var(--font-head);font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:5px}
+.banner-title em{color:var(--blue);font-style:normal}
+.banner-sub{font-size:11px;color:var(--muted);line-height:1.6;max-width:500px}
+.banner-models{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.model-pill{font-size:8.5px;padding:3px 8px;border-radius:20px;background:rgba(0,184,212,0.06);border:1px solid rgba(0,184,212,0.2);color:var(--blue);letter-spacing:.06em;text-transform:uppercase}
+
+/* CITY SELECTOR */
+.city-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.city-btn{padding:7px 14px;border-radius:20px;font-size:10px;letter-spacing:.05em;text-transform:uppercase;background:var(--surface);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .15s;font-family:var(--font-mono)}
+.city-btn.on{background:rgba(0,184,212,0.08);border-color:rgba(0,184,212,0.35);color:var(--blue)}
+.city-btn:hover:not(.on){border-color:rgba(255,255,255,0.15);color:var(--text)}
+
+/* STATUS */
+.status{display:flex;align-items:center;gap:7px;padding:7px 11px;background:var(--surface);border:1px solid var(--border);border-radius:7px;margin-bottom:14px;font-size:10px;color:var(--muted)}
+.sdot{width:5px;height:5px;border-radius:50%}
+.sdot.ok{background:var(--accent);box-shadow:0 0 5px var(--accent)}
+.sdot.err{background:var(--red)}
+.sdot.load{background:var(--gold);animation:pulse 1s infinite}
+
+/* CURRENT WEATHER CARD */
+.current-card{background:var(--surface);border:1px solid rgba(0,184,212,0.15);border-radius:12px;padding:18px;margin-bottom:16px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.current-temp{font-family:var(--font-head);font-size:48px;font-weight:800;color:var(--blue);line-height:1}
+.current-unit{font-size:20px;color:var(--muted);margin-left:2px}
+.current-details{flex:1;min-width:160px}
+.current-city{font-family:var(--font-head);font-size:16px;font-weight:700;margin-bottom:4px}
+.current-cond{font-size:11px;color:var(--muted);margin-bottom:10px}
+.current-meta{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.cmeta-item{font-size:10px;color:var(--muted)}
+.cmeta-item span{color:var(--text);font-weight:500}
+
+/* FORECAST GRID */
+.section-label{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.forecast-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px}
+.fc-card{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:14px;transition:all .2s;cursor:default;animation:slideUp .2s ease both}
+.fc-card:hover{border-color:rgba(0,184,212,0.25);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.fc-date{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.fc-cond{font-size:10px;color:var(--blue);margin-bottom:10px;display:flex;align-items:center;gap:5px}
+.fc-temps{display:flex;gap:10px;margin-bottom:12px}
+.fc-tmax{font-family:var(--font-head);font-size:20px;font-weight:700;color:var(--text)}
+.fc-tmin{font-family:var(--font-head);font-size:16px;font-weight:500;color:var(--muted);margin-top:3px}
+.fc-metrics{display:flex;flex-direction:column;gap:5px}
+.fc-metric{font-size:9.5px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+.fc-metric span{color:var(--text)}
+
+/* EDGE PANEL */
+.edge-section{margin-bottom:20px}
+.edge-grid{display:flex;flex-direction:column;gap:8px}
+.edge-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px;display:flex;align-items:center;gap:12px;transition:all .2s;animation:slideUp .25s ease both}
+.edge-card:hover{border-color:rgba(0,245,160,0.2)}
+.edge-card.high{border-left:3px solid var(--accent)}
+.edge-card.medium{border-left:3px solid var(--gold)}
+.edge-card.low{border-left:3px solid var(--muted)}
+.edge-info{flex:1;min-width:0}
+.edge-label{font-size:11.5px;font-weight:600;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.edge-desc{font-size:10px;color:var(--muted);line-height:1.4}
+.edge-probs{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0}
+.edge-model-prob{font-family:var(--font-head);font-size:16px;font-weight:800;color:var(--accent)}
+.edge-market-prob{font-size:9.5px;color:var(--muted)}
+.edge-gap{font-size:8.5px;padding:2px 5px;border-radius:3px;margin-top:1px}
+.edge-gap.pos{background:rgba(0,245,160,0.08);color:var(--accent)}
+.edge-gap.neg{background:rgba(255,71,87,0.07);color:var(--red)}
+.edge-badge{font-size:7.5px;padding:2px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:.07em;font-weight:700}
+.edge-badge.H{background:rgba(0,245,160,0.1);color:var(--accent);border:1px solid rgba(0,245,160,0.2)}
+.edge-badge.M{background:rgba(245,166,35,0.1);color:var(--gold);border:1px solid rgba(245,166,35,0.2)}
+.edge-badge.L{background:rgba(90,106,122,0.1);color:var(--muted);border:1px solid rgba(90,106,122,0.2)}
+
+/* AI ANALYSIS */
+.ai-card{background:var(--surface);border:1px solid rgba(0,245,160,0.12);border-radius:12px;padding:16px;margin-bottom:18px}
+.ai-header{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.ai-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+.ai-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.ai-btn{margin-left:auto;padding:6px 12px;background:rgba(0,245,160,0.08);border:1px solid rgba(0,245,160,0.2);border-radius:6px;color:var(--accent);font-size:10px;cursor:pointer;font-family:var(--font-mono);transition:all .15s}
+.ai-btn:hover{background:rgba(0,245,160,0.15)}
+.ai-btn:disabled{opacity:.4;cursor:default}
+.ai-text{font-size:11.5px;line-height:1.75;color:var(--text);white-space:pre-wrap}
+.ai-text.loading{color:var(--muted);font-style:italic}
+.ai-spinner{display:inline-block;width:10px;height:10px;border:1.5px solid rgba(0,245,160,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;margin-right:6px;vertical-align:middle}
+
+/* HOW IT WORKS */
+.how-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+.how-title{font-family:var(--font-head);font-size:13px;font-weight:700;margin-bottom:12px;color:var(--muted)}
+.how-steps{display:flex;flex-direction:column;gap:9px}
+.how-step{display:flex;gap:10px;align-items:flex-start}
+.how-num{width:20px;height:20px;border-radius:50%;background:rgba(0,184,212,0.1);border:1px solid rgba(0,184,212,0.25);color:var(--blue);font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.how-text{font-size:10.5px;color:var(--muted);line-height:1.5}
+.how-text strong{color:var(--text)}
+
+/* SKELETON */
+.skel{background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 50%,var(--surface) 75%);background-size:400px 100%;animation:shimmer 1.2s infinite;border-radius:8px}
+
+@media(max-width:480px){
+  .forecast-grid{grid-template-columns:1fr 1fr}
+  .current-temp{font-size:38px}
+  .banner-title{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-track" id="ticker">
+    <span class="ti"><span class="td"></span>Weather Markets · Bayse</span>
+    <span class="ti">Lagos · Loading…</span>
+    <span class="ti">4 Ensemble Models · GFS · ECMWF · GEM · ICON</span>
+    <span class="ti">EdgeX Weather Intelligence</span>
+    <span class="ti"><span class="td"></span>Weather Markets · Bayse</span>
+    <span class="ti">Lagos · Loading…</span>
+    <span class="ti">4 Ensemble Models · GFS · ECMWF · GEM · ICON</span>
+    <span class="ti">EdgeX Weather Intelligence</span>
+  </div>
+</div>
+
+<nav>
+  <a class="nav-logo" href="index.html">Edge<em>X</em></a>
+  <a class="nav-back" href="index.html">← Home</a>
+</nav>
+
+<div class="page">
+
+  <!-- BANNER -->
+  <div class="banner">
+    <div class="banner-tag">Weather Intelligence</div>
+    <div class="banner-title">Weather <em>Markets</em></div>
+    <div class="banner-sub">Ensemble model forecasts from 4 global supercomputers — bias-corrected and converted to probabilities. Compare your model's edge against live Bayse market odds.</div>
+    <div class="banner-models">
+      <span class="model-pill">GFS</span>
+      <span class="model-pill">ECMWF</span>
+      <span class="model-pill">GEM</span>
+      <span class="model-pill">ICON</span>
+      <span class="model-pill">Open-Meteo Ensemble</span>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="how-card">
+    <div class="how-title">How the edge is calculated</div>
+    <div class="how-steps">
+      <div class="how-step"><div class="how-num">1</div><div class="how-text"><strong>Pull ensemble forecasts</strong> from 4 weather supercomputers — GFS, ECMWF, GEM, ICON — each running dozens of simulations.</div></div>
+      <div class="how-step"><div class="how-num">2</div><div class="how-text"><strong>Convert to probabilities</strong> — if 110 of 169 runs show rain &gt;10mm, that's 65% implied probability.</div></div>
+      <div class="how-step"><div class="how-num">3</div><div class="how-text"><strong>Compare to Bayse market odds</strong> — enter the market price below. If market says 80% but model says 55%, that 25% gap is your edge.</div></div>
+      <div class="how-step"><div class="how-num">4</div><div class="how-text"><strong>Edge classification:</strong> &gt;15% gap = HIGH edge · 8–15% = MEDIUM · &lt;8% = LOW.</div></div>
+    </div>
+  </div>
+
+  <!-- CITY SELECTOR -->
+  <div class="city-bar" id="cityBar">
+    <button class="city-btn on" onclick="selectCity('lagos')">Lagos</button>
+    <button class="city-btn" onclick="selectCity('abuja')">Abuja</button>
+    <button class="city-btn" onclick="selectCity('accra')">Accra</button>
+    <button class="city-btn" onclick="selectCity('nairobi')">Nairobi</button>
+    <button class="city-btn" onclick="selectCity('london')">London</button>
+    <button class="city-btn" onclick="selectCity('dubai')">Dubai</button>
+    <button class="city-btn" onclick="selectCity('newyork')">New York</button>
+  </div>
+
+  <!-- STATUS -->
+  <div class="status">
+    <div class="sdot load" id="sdot"></div>
+    <span id="stxt">Loading forecast…</span>
+    <button onclick="loadCity(currentCity)" style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-size:9.5px;padding:2px 7px;cursor:pointer;font-family:var(--font-mono)">Refresh</button>
+  </div>
+
+  <!-- CURRENT WEATHER -->
+  <div id="currentWeather" style="display:none">
+    <div class="section-label">Current Conditions</div>
+    <div class="current-card">
+      <div>
+        <div style="display:flex;align-items:flex-start">
+          <div class="current-temp" id="curTemp">—</div>
+          <div class="current-unit">°C</div>
+        </div>
+      </div>
+      <div class="current-details">
+        <div class="current-city" id="curCity">—</div>
+        <div class="current-cond" id="curCond">—</div>
+        <div class="current-meta">
+          <div class="cmeta-item">Wind <span id="curWind">—</span></div>
+          <div class="cmeta-item">Models <span>4 ensembles</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDGE CALCULATOR -->
+  <div class="edge-section">
+    <div class="section-label">Edge Calculator · Compare Model vs Market</div>
+    <div id="edgeGrid" class="edge-grid">
+      <div style="color:var(--muted);font-size:11px;padding:20px 0">Select a city to load edge calculations…</div>
+    </div>
+  </div>
+
+  <!-- AI ANALYSIS -->
+  <div class="ai-card">
+    <div class="ai-header">
+      <div class="ai-dot"></div>
+      <div class="ai-label">AI Weather Analysis</div>
+      <button class="ai-btn" id="aiBtn" onclick="getAIAnalysis()">Analyse with Groq</button>
+    </div>
+    <div class="ai-text" id="aiText" style="color:var(--muted);font-size:11px">Click "Analyse with Groq" to get an AI-powered read on the weather edge opportunities for the selected city.</div>
+  </div>
+
+  <!-- 7-DAY FORECAST -->
+  <div class="section-label">7-Day Ensemble Forecast</div>
+  <div class="forecast-grid" id="forecastGrid">
+    <!-- populated by JS -->
+  </div>
+
+</div>
+
+<script>
+let currentCity = 'lagos';
+let forecastData = null;
+
+const CITIES = {
+  lagos:   'Lagos',
+  abuja:   'Abuja',
+  accra:   'Accra',
+  nairobi: 'Nairobi',
+  london:  'London',
+  dubai:   'Dubai',
+  newyork: 'New York',
+};
+
+function ss(state, txt) {
+  const dot = document.getElementById('sdot');
+  dot.className = 'sdot ' + state;
+  document.getElementById('stxt').textContent = txt;
+}
+
+function selectCity(city) {
+  currentCity = city;
+  document.querySelectorAll('.city-btn').forEach(b => b.classList.remove('on'));
+  event.target.classList.add('on');
+  loadCity(city);
+}
+
+async function loadCity(city) {
+  ss('load', `Loading ${CITIES[city] || city} forecast…`);
+  document.getElementById('forecastGrid').innerHTML = skeletons(7);
+  document.getElementById('edgeGrid').innerHTML = skeletons(4);
+  document.getElementById('currentWeather').style.display = 'none';
+  document.getElementById('aiText').textContent = 'Click "Analyse with Groq" to get an AI-powered read on the weather edge opportunities.';
+
+  try {
+    const r = await fetch(`/api/weather?city=${city}`);
+    if (!r.ok) throw new Error(`API returned ${r.status}`);
+    const data = await r.json();
+    forecastData = data;
+
+    ss('ok', `${data.city} · ${data.models.join(', ')} · Updated ${new Date(data.generated).toLocaleTimeString()}`);
+
+    renderCurrent(data);
+    renderForecast(data.forecast);
+    renderEdge(data.forecast, data.city);
+  } catch (e) {
+    ss('err', `Failed to load forecast: ${e.message}`);
+    document.getElementById('forecastGrid').innerHTML = '<div style="color:var(--red);font-size:11px;padding:10px">Could not load weather data. Try refreshing.</div>';
+    document.getElementById('edgeGrid').innerHTML = '';
+  }
+}
+
+function renderCurrent(data) {
+  const el = document.getElementById('currentWeather');
+  el.style.display = 'block';
+  const cw = data.current;
+  if (cw) {
+    document.getElementById('curTemp').textContent = Math.round(cw.temperature ?? data.forecast[0]?.tMid ?? '—');
+    document.getElementById('curWind').textContent = cw.windspeed ? cw.windspeed + ' km/h' : '—';
+  } else {
+    const f = data.forecast[0];
+    document.getElementById('curTemp').textContent = f?.tMid ?? '—';
+    document.getElementById('curWind').textContent = f?.windMax ? f.windMax + ' km/h' : '—';
+  }
+  document.getElementById('curCity').textContent = data.city;
+  document.getElementById('curCond').textContent = data.forecast[0]?.condition || '—';
+}
+
+function renderForecast(forecast) {
+  const grid = document.getElementById('forecastGrid');
+  grid.innerHTML = forecast.map((f, i) => {
+    const d = new Date(f.date);
+    const label = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : d.toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
+    return `
+    <div class="fc-card" style="animation-delay:${i * 0.04}s">
+      <div class="fc-date">${label}</div>
+      <div class="fc-cond">
+        <svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+        ${f.condition}
+      </div>
+      <div class="fc-temps">
+        <div class="fc-tmax">${f.tMax ?? '—'}°</div>
+        <div class="fc-tmin">${f.tMin ?? '—'}°</div>
+      </div>
+      <div class="fc-metrics">
+        <div class="fc-metric">Rain <span>${f.rain ?? '—'} mm</span></div>
+        <div class="fc-metric">Rain % <span style="color:${(f.rainProb||0)>60?'var(--blue)':'var(--text)'}">${f.rainProb ?? '—'}%</span></div>
+        <div class="fc-metric">Wind <span>${f.windMax ?? '—'} km/h</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderEdge(forecast, city) {
+  const grid = document.getElementById('edgeGrid');
+  const today = forecast[0];
+  const tmrw = forecast[1];
+  if (!today) { grid.innerHTML = ''; return; }
+
+  // Build edge items from today + tomorrow
+  const items = [];
+
+  // Rain today
+  if (today.rainProb != null) {
+    items.push({
+      label: `${city} — Rain Today`,
+      modelProb: today.rainProb,
+      desc: `Ensemble model: ${today.rain}mm precipitation expected. ${today.condition}.`,
+      market: null, // user inputs market prob
+      day: 'Today',
+    });
+  }
+
+  // Temp over threshold today
+  if (today.tempEdge) {
+    const te = today.tempEdge;
+    if (te.over30 > 20) items.push({
+      label: `${city} — Max Temp Over 30°C Today`,
+      modelProb: Math.round(te.over30),
+      desc: `Forecast high: ${today.tMax}°C. Ensemble model probability.`,
+      market: null,
+      day: 'Today',
+    });
+    if (te.over25 > 30) items.push({
+      label: `${city} — Max Temp Over 25°C Today`,
+      modelProb: Math.round(te.over25),
+      desc: `Forecast high: ${today.tMax}°C.`,
+      market: null,
+      day: 'Today',
+    });
+  }
+
+  // Wind today
+  if (today.windEdge && today.windEdge.over30kmh > 15) {
+    items.push({
+      label: `${city} — Wind Over 30 km/h Today`,
+      modelProb: Math.round(today.windEdge.over30kmh),
+      desc: `Forecast max wind: ${today.windMax} km/h.`,
+      market: null,
+      day: 'Today',
+    });
+  }
+
+  // Tomorrow rain
+  if (tmrw?.rainProb != null) {
+    items.push({
+      label: `${city} — Rain Tomorrow`,
+      modelProb: tmrw.rainProb,
+      desc: `Tomorrow: ${tmrw.rain}mm expected. ${tmrw.condition}.`,
+      market: null,
+      day: 'Tomorrow',
+    });
+  }
+
+  grid.innerHTML = items.map((item, i) => {
+    const id = `market-${i}`;
+    return `
+    <div class="edge-card low" id="ecard-${i}" style="animation-delay:${i*0.05}s">
+      <div class="edge-info">
+        <div class="edge-label">${item.label}</div>
+        <div class="edge-desc">${item.desc}</div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:6px">
+          <span style="font-size:9.5px;color:var(--muted)">Bayse market %:</span>
+          <input type="number" id="${id}" min="1" max="99" placeholder="e.g. 65"
+            style="width:70px;padding:4px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:11px;font-family:var(--font-mono);outline:none"
+            oninput="calcEdge(${i}, ${item.modelProb})"
+          >
+          <span style="font-size:9px;color:var(--muted)">→ enter market odds</span>
+        </div>
+      </div>
+      <div class="edge-probs">
+        <div class="edge-model-prob">${item.modelProb}%</div>
+        <div class="edge-market-prob">Model</div>
+        <div class="edge-gap" id="egap-${i}" style="display:none"></div>
+        <div class="edge-badge L" id="ebadge-${i}">—</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function calcEdge(i, modelProb) {
+  const input = document.getElementById(`market-${i}`);
+  const marketProb = parseFloat(input.value);
+  const card = document.getElementById(`ecard-${i}`);
+  const gap = document.getElementById(`egap-${i}`);
+  const badge = document.getElementById(`ebadge-${i}`);
+  if (isNaN(marketProb) || marketProb < 1 || marketProb > 99) {
+    gap.style.display = 'none';
+    badge.textContent = '—';
+    card.className = 'edge-card low';
+    return;
+  }
+  const diff = modelProb - marketProb;
+  const absDiff = Math.abs(diff);
+  const edgeClass = absDiff >= 15 ? 'HIGH' : absDiff >= 8 ? 'MEDIUM' : 'LOW';
+  const edgeLetter = edgeClass[0];
+  gap.style.display = 'block';
+  gap.className = `edge-gap ${diff > 0 ? 'pos' : 'neg'}`;
+  gap.textContent = `${diff > 0 ? '+' : ''}${diff.toFixed(0)}% vs market`;
+  badge.textContent = edgeClass;
+  badge.className = `edge-badge ${edgeLetter}`;
+  card.className = `edge-card ${edgeClass === 'HIGH' ? 'high' : edgeClass === 'MEDIUM' ? 'medium' : 'low'}`;
+}
+
+async function getAIAnalysis() {
+  if (!forecastData) return;
+  const btn = document.getElementById('aiBtn');
+  const txt = document.getElementById('aiText');
+  btn.disabled = true;
+  btn.textContent = 'Analysing…';
+  txt.innerHTML = '<span class="ai-spinner"></span>Groq is analysing the weather data…';
+  txt.className = 'ai-text loading';
+
+  const f = forecastData.forecast.slice(0, 3);
+  const prompt = `You are a weather prediction market analyst for EdgeX.
+
+City: ${forecastData.city}
+Forecast data (next 3 days from ensemble models GFS, ECMWF, GEM, ICON):
+${f.map(d => `- ${d.date}: Max ${d.tMax}°C, Min ${d.tMin}°C, Rain ${d.rain}mm (${d.rainProb}% prob), Wind ${d.windMax}km/h, Condition: ${d.condition}`).join('\n')}
+
+Provide a concise (150 words max) weather market analysis:
+1. Most tradeable weather outcome for today/tomorrow
+2. Confidence level and why
+3. What Bayse market price would create a clear edge
+
+Be specific, data-driven, and direct. No fluff.`;
+
+  try {
+    const r = await fetch('/api/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, max_tokens: 400 }),
+    });
+    const data = await r.json();
+    if (data.text) {
+      txt.textContent = data.text;
+      txt.className = 'ai-text';
+    } else {
+      txt.textContent = data.error || 'AI analysis unavailable. Make sure GROQ_API_KEY is set in Vercel.';
+      txt.className = 'ai-text';
+    }
+  } catch (e) {
+    txt.textContent = 'Failed to reach AI endpoint. Check your deployment.';
+    txt.className = 'ai-text';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Re-analyse';
+}
+
+function skeletons(n) {
+  return Array.from({length: n}, (_, i) =>
+    `<div class="skel" style="height:${i%2===0?120:100}px;animation-delay:${i*0.06}s"></div>`
+  ).join('');
+}
+
+// Init
+loadCity('lagos');
+</script>
+</body>
+</html>
