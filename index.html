@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EdgeX — AI Intelligence Platform</title>
+<link rel="stylesheet" href="design-system.css">
+<style>
+  body { margin:0; }
+  .lp { background: var(--ex-bg); min-height: 100vh; }
+
+  /* ── Top nav (landing only — not the app bottom nav) ── */
+  .lp-nav {
+    position: sticky; top: 0; z-index: 90;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px; padding: 0 var(--ex-sp-6);
+    background: rgba(7,9,13,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--ex-border);
+  }
+  .lp-logo { font-size: var(--ex-fs-xl); font-weight: 800; letter-spacing: -0.02em; }
+  .lp-logo span { color: var(--ex-green); }
+  .lp-links { display: none; gap: var(--ex-sp-6); }
+  .lp-links a { color: var(--ex-text-secondary); font-size: var(--ex-fs-sm); font-weight: 500; text-decoration: none; }
+  .lp-links a:hover { color: var(--ex-white); }
+  .lp-nav-actions { display: flex; align-items: center; gap: var(--ex-sp-3); }
+  @media (min-width: 1024px) { .lp-links { display: flex; } }
+
+  /* ── Ticker ── */
+  .lp-ticker { border-bottom: 1px solid var(--ex-border); overflow: hidden; height: 40px; display: flex; align-items: center; background: var(--ex-bg-secondary); }
+  .lp-ticker-track { display: flex; gap: 0; white-space: nowrap; animation: lp-scroll 45s linear infinite; }
+  .lp-ticker-track:hover { animation-play-state: paused; }
+  @keyframes lp-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .lp-ticker-item { display: inline-flex; align-items: center; gap: 8px; padding: 0 var(--ex-sp-5); font-size: var(--ex-fs-sm); border-right: 1px solid var(--ex-border); }
+  .lp-live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ex-danger); box-shadow: 0 0 0 3px rgba(255,92,115,0.2); }
+
+  /* ── Hero ── */
+  .lp-hero { padding: var(--ex-sp-12) var(--ex-sp-4) var(--ex-sp-10); }
+  .lp-eyebrow { display: inline-flex; align-items: center; gap: 6px; color: var(--ex-green); font-size: var(--ex-fs-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .lp-headline { font-size: 40px; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; margin: var(--ex-sp-4) 0; }
+  .lp-headline em { color: var(--ex-green); font-style: normal; }
+  .lp-sub { color: var(--ex-text-secondary); font-size: var(--ex-fs-lg); max-width: 520px; margin-bottom: var(--ex-sp-6); }
+  .lp-cta-row { display: flex; gap: var(--ex-sp-3); flex-wrap: wrap; margin-bottom: var(--ex-sp-8); }
+  @media (min-width: 768px) { .lp-headline { font-size: 56px; } }
+
+  .lp-stats { display: grid; grid-template-columns: repeat(2,1fr); gap: var(--ex-sp-4); }
+  @media (min-width: 768px) { .lp-stats { grid-template-columns: repeat(4,1fr); } }
+  .lp-stat-num { font-size: var(--ex-fs-2xl); font-weight: 800; color: var(--ex-green); }
+  .lp-stat-label { font-size: var(--ex-fs-xs); color: var(--ex-text-muted); }
+
+  /* ── Feature grid ── */
+  .lp-section { padding: var(--ex-sp-10) var(--ex-sp-4); max-width: 1200px; margin: 0 auto; }
+  .lp-section-title { font-size: var(--ex-fs-2xl); font-weight: 800; margin-bottom: var(--ex-sp-2); }
+  .lp-section-sub { color: var(--ex-text-muted); margin-bottom: var(--ex-sp-6); }
+  .lp-grid-4 { display: grid; grid-template-columns: 1fr; gap: var(--ex-sp-4); }
+  @media (min-width: 640px)  { .lp-grid-4 { grid-template-columns: repeat(2,1fr); } }
+  @media (min-width: 1024px) { .lp-grid-4 { grid-template-columns: repeat(4,1fr); } }
+  .lp-feature-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(48,242,139,0.1); display: flex; align-items: center; justify-content: center; margin-bottom: var(--ex-sp-3); }
+
+  /* ── AI highlights ── */
+  .lp-scroll-row { display: flex; gap: var(--ex-sp-4); overflow-x: auto; padding-bottom: var(--ex-sp-2); scrollbar-width: none; }
+  .lp-scroll-row::-webkit-scrollbar { display: none; }
+  .lp-highlight-card { min-width: 260px; }
+
+  .lp-cta-band { display: flex; flex-direction: column; gap: var(--ex-sp-4); align-items: flex-start; padding: var(--ex-sp-8) var(--ex-sp-5); background: linear-gradient(135deg, rgba(48,242,139,0.08), transparent); }
+  @media (min-width: 768px) { .lp-cta-band { flex-direction: row; align-items: center; justify-content: space-between; } }
+
+  .lp-footer { border-top: 1px solid var(--ex-border); padding: var(--ex-sp-6) var(--ex-sp-4); text-align: center; color: var(--ex-text-muted); font-size: var(--ex-fs-sm); }
+</style>
+</head>
+<body class="ex-root lp">
+
+  <nav class="lp-nav">
+    <div class="lp-logo">EDGE<span>X</span></div>
+    <div class="lp-links">
+      <a href="sports.html">Sports</a>
+      <a href="markets.html">Markets</a>
+      <a href="crypto.html">Crypto</a>
+      <a href="forex.html">Forex</a>
+    </div>
+    <div class="lp-nav-actions">
+      <button class="ex-btn ex-btn--secondary">Log in</button>
+      <button class="ex-btn ex-btn--primary" onclick="location.href='home.html'">Get Started</button>
+    </div>
+  </nav>
+
+  <div class="lp-ticker">
+    <div class="lp-ticker-track" id="lp-ticker-track">
+      <div class="lp-ticker-item"><span class="lp-live-dot"></span>Loading live markets…</div>
+    </div>
+  </div>
+
+  <section class="lp-hero ex-fade-in">
+    <span class="lp-eyebrow">● AI-Powered Predictions &amp; Live Intelligence</span>
+    <h1 class="lp-headline">Every market has<br>an <em>edge</em>. Find it first.</h1>
+    <p class="lp-sub ex-body">EdgeX applies AI-driven analysis across sports, prediction markets, crypto and forex — one intelligence layer, fully explainable, never a black box.</p>
+    <div class="lp-cta-row">
+      <button class="ex-btn ex-btn--primary" onclick="location.href='home.html'">Explore Predictions →</button>
+      <button class="ex-btn ex-btn--secondary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg> See How It Works</button>
+    </div>
+    <div class="lp-stats">
+      <div><div class="lp-stat-num">98.7%</div><div class="lp-stat-label">Model Accuracy (backtested)</div></div>
+      <div><div class="lp-stat-num">50K+</div><div class="lp-stat-label">Live Events Tracked</div></div>
+      <div><div class="lp-stat-num">250K+</div><div class="lp-stat-label">Active Users</div></div>
+      <div><div class="lp-stat-num">10+</div><div class="lp-stat-label">Markets Covered</div></div>
+    </div>
+  </section>
+
+  <section class="lp-section">
+    <h2 class="lp-section-title">What EdgeX covers</h2>
+    <p class="lp-section-sub">One AI intelligence layer, four market types.</p>
+    <div class="lp-grid-4">
+      <div class="ex-card">
+        <div class="lp-feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 6l4 3-1.5 5h-5L8 9z"/><path d="M12 3v3M4.5 8l2.5 1M19.5 8l-2.5 1M8 16l-2.5 3M16 16l2.5 3"/></svg></div>
+        <h3 class="ex-h3">Sports Intelligence</h3>
+        <p class="ex-caption">Live scores, AI match predictions, xG and momentum across football, basketball and more.</p>
+      </div>
+      <div class="ex-card">
+        <div class="lp-feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
+        <h3 class="ex-h3">Player Edge</h3>
+        <p class="ex-caption">AI analysis on real player lines from supported providers — never invented, never guessed.</p>
+      </div>
+      <div class="ex-card">
+        <div class="lp-feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg></div>
+        <h3 class="ex-h3">Financial Intelligence</h3>
+        <p class="ex-caption">Crypto and forex signals with technicals, sentiment and macro context.</p>
+      </div>
+      <div class="ex-card">
+        <div class="lp-feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z"/><path d="M19 3.5l.6 1.8 1.8.6-1.8.6-.6 1.8-.6-1.8-1.8-.6 1.8-.6z"/></svg></div>
+        <h3 class="ex-h3">AI Explanations</h3>
+        <p class="ex-caption">Every verdict ships with the reasons behind it and a transparent confidence score.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="lp-section">
+    <h2 class="lp-section-title">Today's AI Highlights</h2>
+    <p class="lp-section-sub">A sample of what the intelligence engine surfaced today.</p>
+    <div class="lp-scroll-row" id="lp-highlights">
+      <!-- populated by JS with placeholder data until wired to /api/edge -->
+    </div>
+  </section>
+
+  <section class="lp-section">
+    <div class="lp-cta-band ex-card">
+      <div>
+        <h2 class="ex-h2">Ready to gain the edge?</h2>
+        <p class="ex-body">Join thousands using AI to make sharper decisions daily.</p>
+      </div>
+      <button class="ex-btn ex-btn--primary" onclick="location.href='home.html'">Get Started Free →</button>
+    </div>
+  </section>
+
+  <footer class="lp-footer">
+    © 2026 EdgeX. AI intelligence platform. Not a sportsbook, exchange, or broker.
+  </footer>
+
+<script>
+  // Live football ticker — real data via existing api/sports.js (ESPN proxy).
+  // Crypto/forex remain placeholder until a live provider is wired (Prompt 5).
+  const HIGHLIGHTS = [
+    { title: "Man City to Win", sub: "vs West Ham · Premier League", confidence: 78 },
+    { title: "Over 2.5 Goals", sub: "Real Madrid vs Villarreal · La Liga", confidence: 72 },
+    { title: "Top Player Prop", sub: "Haaland Shots 4.5 · AI verdict OVER", confidence: 91 },
+  ];
+
+  function renderHighlights() {
+    const el = document.getElementById('lp-highlights');
+    el.innerHTML = HIGHLIGHTS.map(h => `
+      <div class="ex-card lp-highlight-card">
+        <div class="ex-caption">${h.sub}</div>
+        <div class="ex-h3" style="margin:4px 0 10px">${h.title}</div>
+        <div class="ex-confidence-bar"><div class="ex-confidence-fill" style="width:${h.confidence}%"></div></div>
+        <div class="ex-caption" style="margin-top:6px">${h.confidence}% confidence</div>
+      </div>
+    `).join('');
+  }
+
+  async function loadTicker() {
+    const track = document.getElementById('lp-ticker-track');
+    try {
+      const r = await fetch('/api/sports?sport=soccer&league=eng.1');
+      const data = await r.json();
+      const events = (data?.events || []).slice(0, 6);
+      if (!events.length) throw new Error('no events');
+      const items = events.map(ev => {
+        const comp = ev.competitions?.[0];
+        const home = comp?.competitors?.find(c => c.homeAway === 'home');
+        const away = comp?.competitors?.find(c => c.homeAway === 'away');
+        const live = ev.status?.type?.state === 'in';
+        return `<div class="lp-ticker-item">${live ? '<span class="lp-live-dot"></span>' : ''}${home?.team?.abbreviation || '—'} ${home?.score ?? ''} - ${away?.score ?? ''} ${away?.team?.abbreviation || '—'}</div>`;
+      }).join('');
+      track.innerHTML = items + items; // duplicate for seamless scroll
+    } catch (e) {
+      track.innerHTML = '<div class="lp-ticker-item">Live football data unavailable right now.</div>';
+    }
+  }
+
+  renderHighlights();
+  loadTicker();
+</script>
+</body>
+</html>
