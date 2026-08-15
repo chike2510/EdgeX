@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:opsz@8..60&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+
 :root {
   --edgex-bg: #07090d;
   --edgex-surface: #0f131a;
@@ -63,7 +66,71 @@
   .edgex-filter-panel label { justify-content: space-between; }
 }
 @media (prefers-reduced-motion: reduce) { .edgex-v2-card, .edgex-search-result { transition: none !important; } }
+.lp-headline, .lp-section-title, .lp-cta-band h2, .lp-logo { font-family: var(--edgex-font-display); font-weight: 400; }
+.lp-headline { letter-spacing: -.015em; }
 
 .edgex-v2-page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin:0 0 18px}.edgex-v2-page-head h1{margin:6px 0;color:var(--edgex-text);letter-spacing:-.05em}.edgex-v2-page-head p{max-width:650px;margin:0;color:var(--edgex-muted);font-size:12px;line-height:1.6}.edgex-v2-button{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 13px;border:1px solid rgba(48,242,139,.38);border-radius:10px;background:rgba(48,242,139,.12);color:var(--edgex-green);font:inherit;font-size:11px;font-weight:700;text-decoration:none;cursor:pointer}.edgex-v2-button:hover{background:rgba(48,242,139,.2)}.edgex-v2-toolbar{justify-content:flex-start;flex-wrap:wrap}.edgex-v2-toolbar input,.edgex-v2-toolbar select{min-height:38px;padding:0 11px;border:1px solid var(--edgex-border);border-radius:10px;background:var(--edgex-card);color:var(--edgex-subtle);font:inherit;font-size:11px}.edgex-v2-toolbar input{flex:1 1 250px}.edgex-v2-toolbar select{flex:0 1 190px}.edgex-v2-kicker{display:block;margin-bottom:7px;color:var(--edgex-green);font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.edgex-v2-muted{color:var(--edgex-muted);font-size:11px}.edgex-v2-state{display:grid;gap:6px;padding:15px;border:1px dashed var(--edgex-border);border-radius:12px;background:rgba(7,9,13,.35);color:var(--edgex-subtle);font-size:11px;line-height:1.5}.edgex-v2-state strong{color:var(--edgex-text);font-size:12px}.edgex-v2-state-error{border-color:rgba(255,92,115,.45)}.edgex-v2-state-error strong{color:var(--edgex-danger)}.edgex-v2-skeleton{min-height:220px;border-radius:var(--edgex-radius);background:linear-gradient(100deg,var(--edgex-card) 30%,rgba(255,255,255,.06) 45%,var(--edgex-card) 60%);background-size:200% 100%;animation:edgex-skeleton 1.3s infinite}.edgex-player-card,.edgex-market-card{display:flex;flex-direction:column;gap:13px}.edgex-player-card-head{display:flex;justify-content:space-between;gap:12px}.edgex-player-card-head h3,.edgex-market-card h3{margin:0;color:var(--edgex-text);font-size:16px}.edgex-player-card-head p{margin:4px 0 0}.edgex-player-card-grid,.edgex-market-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.edgex-market-stats{grid-template-columns:repeat(4,1fr)}.edgex-player-card-grid div,.edgex-market-stats div{min-width:0;padding:10px;border:1px solid var(--edgex-border);border-radius:10px;background:rgba(7,9,13,.3)}.edgex-player-card-grid small,.edgex-market-stats small{display:block;color:var(--edgex-muted);font-size:9px}.edgex-player-card-grid strong,.edgex-market-stats strong{display:block;margin-top:5px;overflow:hidden;color:var(--edgex-text);font-size:13px;text-overflow:ellipsis;white-space:nowrap}.edgex-player-evidence{margin-top:auto}.edgex-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.edgex-detail-grid section:last-child{grid-column:1/-1}.edgex-v2-dialog{max-width:620px;width:calc(100% - 28px);padding:0;border:1px solid var(--edgex-border);border-radius:18px;background:var(--edgex-surface);color:var(--edgex-text)}.edgex-v2-dialog::backdrop{background:rgba(0,0,0,.7)}.edgex-v2-dialog>.edgex-v2-card{border:0}.edgex-v2-dialog-close{float:right;border:1px solid var(--edgex-border);border-radius:8px;background:transparent;color:var(--edgex-subtle);padding:7px 10px;cursor:pointer}@keyframes edgex-skeleton{to{background-position:-200% 0}}
 @media(max-width:760px){.edgex-v2-page-head{flex-direction:column}.edgex-v2-page-head>.edgex-v2-button{width:100%}.edgex-player-card-grid,.edgex-market-stats,.edgex-detail-grid{grid-template-columns:1fr 1fr}.edgex-detail-grid section:last-child{grid-column:1/-1}.edgex-v2-toolbar input,.edgex-v2-toolbar select{flex:1 1 100%;width:100%}}
 @media(max-width:440px){.edgex-player-card-grid,.edgex-market-stats{grid-template-columns:1fr}.edgex-player-card-head{flex-direction:column}}
+
+/* EdgeX Mineral Green system: readable UI, expressive hierarchy, visible states. */
+:root {
+  --edgex-bg: #0b1512;
+  --edgex-surface: #12211c;
+  --edgex-card: #172923;
+  --edgex-border: #284139;
+  --edgex-green: #72d6b1;
+  --edgex-text: #f4f7f2;
+  --edgex-subtle: #c3d0c8;
+  --edgex-muted: #8fa39a;
+  --edgex-danger: #e58a7d;
+  --edgex-warning: #e7b866;
+  --edgex-blue: #8fc7d5;
+  --edgex-purple: #b7a3dc;
+  --edgex-radius: 16px;
+  --edgex-font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --edgex-font-display: 'Instrument Serif', Georgia, serif;
+}
+body,
+.edgex-v2-page,
+.edgex-v2-card,
+.edgex-v2-button,
+.edgex-v2-toolbar input,
+.edgex-v2-toolbar select,
+.edgex-v2-dialog {
+  font-family: var(--edgex-font-body);
+}
+.edgex-v2-page h1,
+.edgex-v2-page h2,
+.edgex-v2-page h3,
+.edgex-v2-page-head h1,
+.edgex-v2-page-head h2,
+.edgex-v2-card h2,
+.edgex-v2-card h3,
+.edgex-v2-dialog h2 {
+  font-family: var(--edgex-font-display);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+.edgex-v2-card,
+.edgex-v2-toolbar,
+.edgex-v2-state,
+.edgex-v2-dialog {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .16);
+}
+.edgex-v2-button {
+  border-radius: 10px;
+  transition: transform 160ms ease-out, background-color 160ms ease-out, border-color 160ms ease-out;
+}
+.edgex-v2-button:active { transform: scale(.97); }
+.edgex-v2-button:focus-visible,
+.edgex-v2-toolbar input:focus-visible,
+.edgex-v2-toolbar select:focus-visible,
+.edgex-v2-dialog-close:focus-visible {
+  outline: 3px solid rgba(114, 214, 177, .36);
+  outline-offset: 2px;
+}
+.edgex-v2-state-error {
+  border-color: rgba(229, 138, 125, .48);
+  background: rgba(229, 138, 125, .08);
+}

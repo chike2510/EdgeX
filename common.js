@@ -95,7 +95,7 @@ function injectNav() {
 
     <div class="nav-status">
       <div class="nav-dot"></div>
-      <span>Live · SportsAPIPro + Odds API</span>
+      <span>Live · Connected sports and market data</span>
     </div>`;
 
   // Mobile: hamburger + overlay

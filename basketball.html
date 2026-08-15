@@ -240,10 +240,10 @@ function setTab(t){tab=t;['all','live','pre','post'].forEach(id=>document.getEle
 function setLeague(l,el){league=l;document.querySelectorAll('.lg').forEach(b=>b.classList.remove('on'));el.classList.add('on');render()}
 (()=>{const bar=document.getElementById('league-bar');bar.innerHTML=`<div class="lg on" onclick="setLeague('all',this)">🌍 All</div>`+LEAGUES.map(l=>`<div class="lg" onclick="setLeague('${l.slug}',this)">${l.label}</div>`).join('')})();
 async function loadAll(){
-  ss('load','Fetching from ESPN…');
+  ss('load','Loading current fixtures…');
   document.getElementById('content').innerHTML='<div class="spc"><div class="sp"></div></div>';
   const ds=eD(date),res=[];
-  await Promise.allSettled(LEAGUES.map(async L=>{try{const r=await fetch(`${ESPN}/${L.slug}/scoreboard?dates=${ds}`);if(!r.ok)return;const d=await r.json();(d.events||[]).forEach(ev=>res.push({...ev,_l:L.slug,_ln:L.label}))}catch{}}));
+  await Promise.allSettled(LEAGUES.map(async L=>{try{const r=await fetch(`/api/sports?sport=basketball&league=${encodeURIComponent(L.slug)}&date=${ds}`);if(!r.ok)return;const d=await r.json();(d.events||[]).forEach(ev=>res.push({...ev,_l:L.slug,_ln:L.label}))}catch{}}));
   res.sort((a,b)=>new Date(a.date)-new Date(b.date));all=res;
   const lv=res.filter(m=>gS(m)==='in').length;
   document.getElementById('live-n').textContent=lv;

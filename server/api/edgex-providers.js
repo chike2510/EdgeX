@@ -127,7 +127,8 @@ export function normalizePlayerProps(payload) {
 export const PlayerPropsProvider = {
   async getProps(req, params = {}) {
     const base = process.env.SQUADS_API_BASE_URL || 'https://api.squads.game';
-    const qs = new URLSearchParams(params);
+    const filteredParams = Object.fromEntries(Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== ''));
+    const qs = new URLSearchParams(filteredParams);
     const payload = await requestJson(`${base}/bet/public-props?${qs}`, { headers: { Accept: 'application/json' } });
     return normalizePlayerProps(payload);
   }

@@ -55,10 +55,29 @@ export default async function handler(req, res) {
     'soccer/conmebol.copa':   `${ESPN}/soccer/conmebol.copa/scoreboard`,
     'soccer/caf.cl':          `${ESPN}/soccer/caf.cl/scoreboard`,
     'soccer/afc.cl':          `${ESPN}/soccer/afc.cl/scoreboard`,
+    'soccer/fifa.world':       `${ESPN}/soccer/fifa.world/scoreboard`,
+    'soccer/concacaf.nations.league': `${ESPN}/soccer/concacaf.nations.league/scoreboard`,
+    'soccer/conmebol.1':       `${ESPN}/soccer/conmebol.1/scoreboard`,
     // Basketball
     'basketball/nba':         `${ESPN}/basketball/nba/scoreboard`,
     'basketball/wnba':        `${ESPN}/basketball/wnba/scoreboard`,
     'basketball/ncaa':        `${ESPN}/basketball/mens-college-basketball/scoreboard`,
+    'basketball/nba-g-league': `${ESPN}/basketball/nba-g-league/scoreboard`,
+    'basketball/mens-college-basketball': `${ESPN}/basketball/mens-college-basketball/scoreboard`,
+    'basketball/womens-college-basketball': `${ESPN}/basketball/womens-college-basketball/scoreboard`,
+    'basketball/euroleague': `${ESPN}/basketball/euroleague/scoreboard`,
+    'basketball/eurocup': `${ESPN}/basketball/eurocup/scoreboard`,
+    'basketball/esp.acb': `${ESPN}/basketball/esp.acb/scoreboard`,
+    'basketball/ger.bbl': `${ESPN}/basketball/ger.bbl/scoreboard`,
+    'basketball/ita.lba': `${ESPN}/basketball/ita.lba/scoreboard`,
+    'basketball/fra.pro-a': `${ESPN}/basketball/fra.pro-a/scoreboard`,
+    'basketball/tur.bsl': `${ESPN}/basketball/tur.bsl/scoreboard`,
+    'basketball/gre.basket': `${ESPN}/basketball/gre.basket/scoreboard`,
+    'basketball/bra.nbb': `${ESPN}/basketball/bra.nbb/scoreboard`,
+    'basketball/ven.bcaa': `${ESPN}/basketball/ven.bcaa/scoreboard`,
+    'basketball/arg.la': `${ESPN}/basketball/arg.la/scoreboard`,
+    'basketball/pur.bsn': `${ESPN}/basketball/pur.bsn/scoreboard`,
+    'basketball/uru.lub': `${ESPN}/basketball/uru.lub/scoreboard`,
   };
 
   const key = `${sport}/${league}`;
@@ -85,6 +104,9 @@ export default async function handler(req, res) {
     });
 
     if (!upstream.ok) {
+      if (upstream.status === 400 || upstream.status === 404) {
+        return res.status(200).json({ leagues: [], events: [], provider: 'ESPN', dataQuality: 'unavailable', upstreamStatus: upstream.status });
+      }
       return res.status(upstream.status).json({ error: `ESPN returned ${upstream.status}` });
     }
 

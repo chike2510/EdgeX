@@ -72,8 +72,8 @@
         </div>
         <div class="hm-hero-grid">
           <div><div class="hm-hero-num ex-mono-num" id="hm-live-count">—</div><div class="hm-hero-label">Live matches</div></div>
-          <div><div class="hm-hero-num ex-mono-num">148</div><div class="hm-hero-label">Active markets</div></div>
-          <div><div class="hm-hero-num ex-mono-num" style="color:var(--ex-green)">91%</div><div class="hm-hero-label">Top confidence</div></div>
+          <div><div class="hm-hero-num ex-mono-num">—</div><div class="hm-hero-label">Current market rows</div></div>
+          <div><div class="hm-hero-num ex-mono-num" style="color:var(--ex-green)">—</div><div class="hm-hero-label">Confidence shown with evidence</div></div>
         </div>
       </div>
     </div>
@@ -109,13 +109,10 @@
     <!-- MARKET OVERVIEW -->
     <div class="hm-section">
       <div class="hm-section-head"><h2 class="ex-h3">Market Overview</h2><a class="hm-see-all" href="crypto.html">See all →</a></div>
-      <div class="ex-card">
-        <div class="hm-list-row"><span>BTC / USD</span><span class="ex-trend-chip ex-trend-chip--down ex-mono-num">$65,476 −0.78%</span></div>
-        <div class="hm-list-row"><span>ETH / USD</span><span class="ex-trend-chip ex-trend-chip--down ex-mono-num">$1,923 −0.20%</span></div>
-        <div class="hm-list-row"><span>Gold / USD</span><span class="ex-trend-chip ex-trend-chip--up ex-mono-num">$2,385.45 +0.32%</span></div>
-        <div class="hm-list-row"><span>EUR / USD</span><span class="ex-trend-chip ex-trend-chip--up ex-mono-num">1.0873 +0.23%</span></div>
+      <div class="ex-card" id="hm-market-list" aria-live="polite">
+        <div class="ex-state"><div class="ex-state-title">Loading market context</div><p class="ex-caption">Requesting current provider values.</p></div>
       </div>
-      <p class="ex-caption" style="margin-top:var(--ex-sp-2)">Live crypto/forex feed pending provider integration (Prompt 5).</p>
+      <p class="ex-caption" style="margin-top:var(--ex-sp-2)">Live crypto and forex context appears when current provider data is available.</p>
     </div>
 
     <div class="hm-promo ex-card">
@@ -131,24 +128,12 @@
     <a class="ex-nav-item" href="markets.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Markets</span></a>
     <a class="ex-nav-item" href="crypto.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 6v12M9 8h4.5a2 2 0 1 1 0 4H9m0 0h5a2 2 0 1 1 0 4H9"/></svg><span>Crypto</span></a>
     <a class="ex-nav-item" href="forex.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg><span>Forex</span></a>
-    <a class="ex-nav-item" href="squads.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg><span>Profile</span></a>
+    <a class="ex-nav-item" href="profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg><span>Profile</span></a>
   </nav>
 
 <script>
-  // AI Picks — placeholder structure until wired to lib/edgeScore.js output via an /api/edge endpoint.
-  const PICKS = [
-    { title: "Man City to Win", sub: "vs West Ham · Premier League", confidence: 78 },
-    { title: "Over 2.5 Goals", sub: "Real Madrid vs Villarreal", confidence: 72 },
-    { title: "BTC to Rise", sub: "Next 24h · Crypto", confidence: 65 },
-  ];
-  document.getElementById('hm-picks-row').innerHTML = PICKS.map(p => `
-    <div class="ex-card hm-pick-card">
-      <div class="ex-caption">${p.sub}</div>
-      <div class="ex-h3" style="margin:4px 0 10px">${p.title}</div>
-      <div class="ex-confidence-bar"><div class="ex-confidence-fill" style="width:${p.confidence}%"></div></div>
-      <div class="ex-caption" style="margin-top:6px">${p.confidence}% confidence</div>
-    </div>
-  `).join('');
+  // Do not render invented picks. The Home view only shows validated provider data.
+  document.getElementById('hm-picks-row').innerHTML = `<div class="ex-card hm-pick-card"><div class="ex-state"><div class="ex-state-title">Research snapshots appear here</div><p class="ex-caption">A validated signal will be shown when the required provider evidence is available.</p></div></div>`;
 
   // Live Now — real data via api/sports.js (ESPN proxy)
   async function loadLive() {
@@ -184,7 +169,40 @@
       card.innerHTML = `<div class="ex-state"><div class="ex-state-title">Live data unavailable</div><p class="ex-caption">Connection issue — try again shortly.</p></div>`;
     }
   }
+  async function loadMarketOverview() {
+    const root = document.getElementById('hm-market-list');
+    try {
+      const [cryptoResponse, forexResponse] = await Promise.all([
+        fetch('/api/edge-crypto?per_page=2'),
+        fetch('/api/edge-forex?symbols=EUR,GBP')
+      ]);
+      const cryptoBody = await cryptoResponse.json();
+      const forexBody = await forexResponse.json();
+      if (!cryptoResponse.ok || !forexResponse.ok) throw new Error('One or more market providers could not respond');
+      const cryptoRows = (cryptoBody.assets || []).slice(0, 2).map(asset => ({
+        label: `${String(asset.symbol || asset.id || '').toUpperCase()} / USD`,
+        value: asset.price == null ? 'Unavailable' : `$${Number(asset.price).toLocaleString(undefined, { maximumFractionDigits: 6 })}`,
+        change: asset.change24h
+      }));
+      const forexRows = (forexBody.pairs || []).slice(0, 2).map(pair => ({
+        label: pair.symbol || 'FX pair',
+        value: pair.price == null ? 'Unavailable' : Number(pair.price).toLocaleString(undefined, { maximumFractionDigits: 5 }),
+        change: pair.change
+      }));
+      const rows = [...cryptoRows, ...forexRows];
+      if (!rows.length) throw new Error('No current market values were returned');
+      root.innerHTML = rows.map(row => {
+        const change = Number.isFinite(Number(row.change)) ? Number(row.change) : null;
+        const cls = change == null ? '' : change >= 0 ? 'ex-trend-chip--up' : 'ex-trend-chip--down';
+        const suffix = change == null ? 'Provider value' : `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+        return `<div class="hm-list-row"><span>${row.label}</span><span class="ex-trend-chip ${cls} ex-mono-num">${row.value} ${suffix}</span></div>`;
+      }).join('');
+    } catch (error) {
+      root.innerHTML = `<div class="ex-state"><div class="ex-state-title">Market context unavailable</div><p class="ex-caption">Current provider values could not be loaded. Visit Crypto or Forex to try again.</p></div>`;
+    }
+  }
   loadLive();
+  loadMarketOverview();
 </script>
 </body>
 </html>
