@@ -14,3 +14,7 @@
 - [ ] Run syntax, route, provider-contract, browser, responsive, and regression checks.
 - [ ] Package only modified and newly added files into the final ZIP.
 - [ ] Deliver the final tested ZIP and a truthful completion summary.
+- [ ] Reproduce production Football fixture failure and correct current-date ESPN loading.
+- [ ] Repair production Markets provider routing and unavailable-state regression.
+- [ ] Consolidate mobile navigation, typography, and responsive shells across legacy and V2 pages.
+- [ ] Re-verify all reported pages and push the complete repair to GitHub.

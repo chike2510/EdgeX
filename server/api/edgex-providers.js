@@ -33,7 +33,10 @@ export const SportsProvider = {
 export const MarketProvider = {
   async getMarkets(req, params = {}) {
     const qs = new URLSearchParams(params);
-    const payload = await requestJson(`${baseUrl(req)}/api/bayse?${qs}`);
+    const bayseBase = process.env.BAYSE_API_BASE_URL || 'https://relay.bayse.markets';
+    const payload = await requestJson(`${bayseBase}/v1/pm/events${qs.toString() ? `?${qs}` : ''}`, {
+      headers: { Accept: 'application/json', 'User-Agent': 'EdgeX/2.0' },
+    });
     const markets = Array.isArray(payload?.events) ? payload.events : Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
     return markets.map(market => ({
       id: market.id || market.eventId || null,

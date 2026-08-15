@@ -134,3 +134,68 @@ body,
   border-color: rgba(229, 138, 125, .48);
   background: rgba(229, 138, 125, .08);
 }
+
+
+/* Unified mobile shell: keep every route legible and predictable at phone widths. */
+html, body { max-width: 100%; overflow-x: hidden; }
+body { font-family: var(--edgex-font-body); }
+@media (max-width: 768px) {
+  #side-nav { width: min(86vw, 300px); }
+  #page-wrap { min-width: 0; width: 100%; }
+  #page-main { min-width: 0; }
+  .mob-menu-btn { top: 12px; left: 16px; width: 42px; height: 42px; border-radius: 12px; background: rgba(18,33,28,.96); border-color: rgba(114,214,177,.36); color: var(--edgex-green); box-shadow: 0 8px 24px rgba(0,0,0,.24); }
+  #page-header { padding-left: 70px; min-height: 58px; }
+  .edgex-page { padding: 24px 16px 80px; }
+  .edgex-v2-page-head { gap: 12px; }
+  .edgex-v2-page-head h1 { font-size: clamp(32px, 9vw, 44px); line-height: .98; }
+  .edgex-v2-page-head p { font-size: 13px; }
+  .edgex-v2-toolbar { gap: 8px; }
+  .edgex-v2-toolbar input, .edgex-v2-toolbar select, .edgex-v2-button { min-height: 44px; font-size: 12px; }
+  .edgex-v2-grid { gap: 12px; }
+  .edgex-v2-card { padding: 16px; border-radius: 16px; }
+  .edgex-market-stats { gap: 6px; }
+  .edgex-market-stats div { padding: 9px; }
+}
+
+
+/* Legacy shell bridge: keep older routes visually consistent with the selected system. */
+:root {
+  --bg: #0b1512;
+  --bg2: #12211c;
+  --bg3: #172923;
+  --bg4: #1e342c;
+  --border: #284139;
+  --border2: #36564a;
+  --neon: #72d6b1;
+  --neon2: #8fc7d5;
+  --neon-dim: rgba(114,214,177,.12);
+  --neon2-dim: rgba(143,199,213,.12);
+  --red: #e58a7d;
+  --red-dim: rgba(229,138,125,.12);
+  --yellow: #e7b866;
+  --yellow-dim: rgba(231,184,102,.12);
+  --purple: #b7a3dc;
+  --purple-dim: rgba(183,163,220,.12);
+  --text: #f4f7f2;
+  --text-muted: #8fa39a;
+  --text-dim: #617970;
+  --font-mono: var(--edgex-font-body);
+  --font-sans: var(--edgex-font-body);
+  --radius: 10px;
+  --radius2: 16px;
+  --glow: 0 0 24px rgba(114,214,177,.12), 0 0 48px rgba(114,214,177,.04);
+  --glow2: 0 0 20px rgba(143,199,213,.12);
+}
+body { font-family: var(--edgex-font-body); }
+#side-nav, #page-header, #page-main, .mob-bottom-bar, .mob-menu-btn, .nav-item, .page-title, .page-subtitle, .status, .srfr, .empty, .filter-panel, input, select, button { font-family: var(--edgex-font-body); }
+.page-title, .page-title h1, .empty-t, .hub-title, .mp-title, .fb-subnav-title { font-family: var(--edgex-font-display); font-weight: 400; }
+@media (max-width: 768px) {
+  #side-nav { width: min(86vw, 300px); }
+  #page-wrap { width: 100%; min-width: 0; }
+  #page-main { padding: 16px 12px 76px; }
+  #page-header { padding-left: 68px; }
+  .mob-menu-btn { width: 42px; height: 42px; border-radius: 12px; background: rgba(18,33,28,.96); border-color: rgba(114,214,177,.36); color: var(--neon); box-shadow: 0 8px 24px rgba(0,0,0,.24); }
+  .mob-bottom-bar { height: 62px; }
+  .mob-tab { font-family: var(--edgex-font-body); font-size: 10px; }
+  .mob-tab .mt-label { font-size: 9px; }
+}

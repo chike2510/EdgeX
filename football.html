@@ -1093,7 +1093,7 @@ const fmtDL = d => {
   const di=Math.round((c-t)/86400000);
   return di===0?'TODAY':di===1?'TOMORROW':di===-1?'YESTERDAY':d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
 };
-const espnD = d => d.toISOString().slice(0,10).replace(/-/g,'');
+const espnD = d => [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('');
 const gC = ev => ev.competitions?.[0];
 const gH = ev => gC(ev)?.competitors?.find(c=>c.homeAway==='home');
 const gA = ev => gC(ev)?.competitors?.find(c=>c.homeAway==='away');

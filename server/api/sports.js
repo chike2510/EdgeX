@@ -11,7 +11,8 @@ export default async function handler(req, res) {
 
   const { sport, league, date, event_id } = req.query;
 
-  const ESPN = 'https://site.api.espn.com/apis/site/v2/sports';
+  // The site.api host returns Akamai 403s from Vercel; the public web API host serves the same scoreboard payloads.
+  const ESPN = 'https://site.web.api.espn.com/apis/site/v2/sports';
 
   const ROUTES = {
     // Football / Soccer
