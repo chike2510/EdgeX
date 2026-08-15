@@ -42,9 +42,15 @@ export const MarketProvider = {
       id: market.id || market.eventId || null,
       question: market.question || market.title || null,
       category: market.category || null,
-      probability: safeNumber(market.probability || market.yesPrice || market.outcome1Price),
+      probability: safeNumber(market.probability || market.yesPrice || market.outcome1Price || market.markets?.[0]?.outcome1Price),
       movement24h: safeNumber(market.movement24h || market.change24h),
-      volume: safeNumber(market.volume || market.totalVolume),
+      volume: safeNumber(market.volume || market.totalVolume || market.totalOrders),
+      liquidity: safeNumber(market.liquidity),
+      threshold: safeNumber(market.eventThreshold || market.markets?.[0]?.marketThreshold),
+      outcomes: (market.outcomes || market.markets?.slice(0, 1).flatMap(item => [
+        { id: item.outcome1Id || null, label: item.outcome1Label || null, probability: safeNumber(item.outcome1Price) },
+        { id: item.outcome2Id || null, label: item.outcome2Label || null, probability: safeNumber(item.outcome2Price) },
+      ]) || []).filter(item => item.label),
       resolutionDate: market.resolutionDate || market.closingDate || null,
       sourceTimestamp: new Date().toISOString(),
       metadata: market

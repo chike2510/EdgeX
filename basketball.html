@@ -239,11 +239,14 @@ function changeDay(d){date.setDate(date.getDate()+d);document.getElementById('dl
 function setTab(t){tab=t;['all','live','pre','post'].forEach(id=>document.getElementById('t-'+id)?.classList.toggle('on',id===t));render()}
 function setLeague(l,el){league=l;document.querySelectorAll('.lg').forEach(b=>b.classList.remove('on'));el.classList.add('on');render()}
 (()=>{const bar=document.getElementById('league-bar');bar.innerHTML=`<div class="lg on" onclick="setLeague('all',this)">🌍 All</div>`+LEAGUES.map(l=>`<div class="lg" onclick="setLeague('${l.slug}',this)">${l.label}</div>`).join('')})();
+let loadVersion = 0;
 async function loadAll(){
-  ss('load','Loading current fixtures…');
-  document.getElementById('content').innerHTML='<div class="spc"><div class="sp"></div></div>';
+  const version = ++loadVersion;
+  ss('load', all.length ? 'Refreshing fixtures…' : 'Loading current fixtures…');
+  if (!all.length) document.getElementById('content').innerHTML='<div class="spc"><div class="sp"></div></div>';
   const ds=eD(date),res=[];
   await Promise.allSettled(LEAGUES.map(async L=>{try{const r=await fetch(`/api/sports?sport=basketball&league=${encodeURIComponent(L.slug)}&date=${ds}`);if(!r.ok)return;const d=await r.json();(d.events||[]).forEach(ev=>res.push({...ev,_l:L.slug,_ln:L.label}))}catch{}}));
+  if (version !== loadVersion) return;
   res.sort((a,b)=>new Date(a.date)-new Date(b.date));all=res;
   const lv=res.filter(m=>gS(m)==='in').length;
   document.getElementById('live-n').textContent=lv;
@@ -666,3 +669,9 @@ setInterval(loadAll,90000);
 </script>
 </body>
 </html>
+
+<style>
+/* Stable fixture rendering: loading feedback should not move the cards themselves. */
+.mcard, .sdot.load, .cpill.live, .gp-status.live { animation: none !important; }
+.mcard { transition: border-color .16s ease, background-color .16s ease; }
+</style>
