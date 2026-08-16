@@ -10,6 +10,8 @@
 // ── AI APEX INTEGRATION ─────────────────────────────────────
 let _currentAPEX = null;
 let _currentMatchNames = { home: '', away: '', comp: '' };
+let _currentFixtureContext = null;
+let _fixtureH2HLoaded = false;
 
 // Store APEX data when match detail opens
 const _origBuildMatchDetail = buildMatchDetail;
@@ -21,6 +23,8 @@ function buildMatchDetail(ev, comp, h, a, s, live, ft, L, clock, hS, aS, hRec, a
     away: a?.team?.displayName || a?.team?.shortDisplayName || 'Away',
     comp: L?.n || 'Football',
   };
+  _currentFixtureContext = { home: _currentMatchNames.home, away: _currentMatchNames.away, date: ev?.date, espnId: ev?.id };
+  _fixtureH2HLoaded = false;
   return result;
 }
 
@@ -1289,13 +1293,68 @@ function buildMatchDetail(ev,comp,h,a,s,live,ft,L,clock,hS,aS,hRec,aRec,venue,hF
   const apexBlock = hasUsableApex ? `<div class="section edgex-detail-card pred-section"><div class="sec-title"><span>◌</span>${state === 'upcoming' ? 'PRE-MATCH APEX CONTEXT' : 'APEX MATCH CONTEXT'}<span style="margin-left:auto;font-size:8px;color:var(--muted);font-weight:400">${hFormData && aFormData ? 'Recent form included' : 'Season evidence only'}</span></div><div class="pred-summary">${state === 'upcoming' ? 'A measured pre-match view built from provider-backed form and season evidence.' : state === 'live' ? 'A live context view that updates only when validated match evidence is available.' : 'A post-match comparison of the pre-match context against the confirmed result.'}</div><div class="pred-goals-row"><span class="pred-xg-val">${esc(ap.hXG ?? '—')}</span><span class="pred-xg-lbl">Expected goals</span><span class="pred-xg-val">${esc(ap.aXG ?? '—')}</span></div><div class="pred-probs"><div class="pred-prob-item"><div class="pred-prob-val">${esc(ap.hWin)}%</div><div class="pred-prob-lbl">${esc(hShort)}</div></div><div class="pred-prob-item"><div class="pred-prob-val">${esc(ap.draw)}%</div><div class="pred-prob-lbl">Draw</div></div><div class="pred-prob-item"><div class="pred-prob-val">${esc(ap.aWin)}%</div><div class="pred-prob-lbl">${esc(aShort)}</div></div></div><div class="pred-scoreline">APEX read: <strong>${esc(ap.edge || 'NO EDGE')}</strong><button onclick="triggerAPEXAI()" id="apex-ai-btn" class="edgex-v2-button" type="button">Analyze with EdgeX</button></div></div>` : `<div class="section edgex-detail-card"><div class="sec-title">MATCH INTELLIGENCE</div><div class="edgex-v2-state"><strong>INSUFFICIENT DATA</strong><span>APEX context will appear only when the provider returns enough validated evidence for both teams.</span></div></div>`;
   const stateBody = state === 'upcoming' ? `<div class="section edgex-detail-card"><div class="sec-title">UPCOMING FIXTURE</div><div class="edgex-detail-grid"><div><small>Kick-off</small><strong>${esc(dateLabel)} · ${esc(timeLabel)}</strong></div><div><small>Venue</small><strong>${esc(venue || 'Venue unavailable')}</strong></div><div><small>Lineups</small><strong>Available when provider confirms</strong></div><div><small>Context</small><strong>Pre-match analysis only</strong></div></div></div>` : state === 'live' ? `<div class="section edgex-detail-card"><div class="sec-title">LIVE MATCH FEED</div>${liveMeta}<div class="edgex-detail-grid"><div><small>Score</small><strong>${score}</strong></div><div><small>Clock</small><strong>${esc(clock || 'Live')}</strong></div><div><small>Incidents</small><strong>${eventDetails.length ? `${eventDetails.length} reported` : 'Unavailable'}</strong></div><div><small>Refresh</small><strong>Provider-backed</strong></div></div></div><div class="section edgex-detail-card"><div class="sec-title">CURRENT INCIDENTS</div><div class="edgex-event-list">${incidents}</div></div>` : `<div class="section edgex-detail-card"><div class="sec-title">POST-MATCH REVIEW</div><div class="edgex-detail-grid"><div><small>Final score</small><strong>${score}</strong></div><div><small>Result status</small><strong>Confirmed by provider</strong></div><div><small>Goal events</small><strong>${eventDetails.length ? `${eventDetails.length} reported` : 'Unavailable'}</strong></div><div><small>Review mode</small><strong>Evidence comparison</strong></div></div></div><div class="section edgex-detail-card"><div class="sec-title">MATCH EVENTS</div><div class="edgex-event-list">${incidents}</div></div>`;
   const formBlock = `<div class="section edgex-detail-card"><div class="sec-title">RECENT FORM</div><div class="edgex-form-columns">${formStats(hShort, hStats, hFormData)}${formStats(aShort, aStats, aFormData)}</div></div>`;
-  const tabs = `<div class="edgex-detail-tabs"><span class="active">Overview</span><span>Lineups</span><span>Stats</span><span>Insights</span></div>`;
-  return `<div class="mp-hero edgex-fixture-hero ${state}"><div class="mp-comp">${esc(L.f || '⚽')} ${esc(L.n || 'Football')} <span class="edgex-state-badge ${state}">${stateLabel}</span></div><div class="mp-sb"><div class="mp-team"><div class="mp-logo">${h?.team?.logo ? `<img src="${esc(h.team.logo)}" alt="" onerror="this.parentElement.textContent='⚽'">` : '⚽'}</div><div class="mp-tname">${esc(hName)}</div><div class="mp-trec">${esc(hRec || 'Record unavailable')}</div></div><div class="mp-scores"><div class="mp-score ${state === 'upcoming' ? 'pre' : ''}">${score}</div><div class="mp-clock">${live ? `● ${esc(clock || 'LIVE')}` : ft ? 'Full Time' : `${esc(dateLabel)} · ${esc(timeLabel)}`}</div></div><div class="mp-team"><div class="mp-logo">${a?.team?.logo ? `<img src="${esc(a.team.logo)}" alt="" onerror="this.parentElement.textContent='⚽'">` : '⚽'}</div><div class="mp-tname">${esc(aName)}</div><div class="mp-trec">${esc(aRec || 'Record unavailable')}</div></div></div>${venue ? `<div class="mp-venue">${esc(venue)}</div>` : ''}</div>${tabs}<div class="mp-body">${stateBody}${apexBlock}${formBlock}<div class="section edgex-detail-card"><div class="sec-title">MATCH INFORMATION</div><div class="apex-row"><span class="apex-lbl">Competition</span><span class="apex-val">${esc(L.n || 'Football')}</span></div><div class="apex-row"><span class="apex-lbl">Date</span><span class="apex-val">${esc(dateLabel)}</span></div><div class="apex-row"><span class="apex-lbl">Kick-off</span><span class="apex-val">${esc(timeLabel)}</span></div><div class="apex-row"><span class="apex-lbl">Venue</span><span class="apex-val">${esc(venue || 'Unavailable')}</span></div></div><div class="section edgex-detail-card" id="ai-apex-section" style="display:none"><div class="sec-title">EDGE X ANALYSIS<span id="ai-provider-badge" style="margin-left:auto;font-size:8px;color:var(--muted)"></span></div><div id="ai-apex-text" class="pred-summary">Analysis will appear after a structured request.</div></div><div class="sf-section" id="sf-stats-wrap"><div class="sf-loading"><div class="sf-spinner"></div>Loading validated context from Sofascore…</div></div></div>`;
+  const insights = window.getAllMarketInsights ? window.getAllMarketInsights(ap || {}) : [];
+  const insightGroups = [...new Set(insights.map(item => item.group))];
+  const insightsBlock = `<div class="section edgex-detail-card"><div class="sec-title">APEX INSIGHTS <span class="edgex-insights-count">${insights.length} markets</span></div><div class="edgex-insights-note">Every market is shown. A market is marked insufficient when evidence, sample size, or provider coverage is not strong enough.</div>${insightGroups.map(group => `<div class="edgex-market-group"><div class="edgex-market-group-title">${esc(group)}</div>${insights.filter(item => item.group === group).map(item => `<article class="pred-cat edgex-insight-card ${item.status === 'SUPPORTED' ? 'supported' : 'insufficient'}"><div class="pred-cat-head"><span class="pred-cat-name">${esc(item.label)}</span><span class="edgex-market-status ${item.status === 'SUPPORTED' ? 'supported' : 'insufficient'}">${esc(item.status)}</span></div><div class="pred-cat-label">${item.probability != null ? `${esc(item.probability)}% model probability` : 'No projection returned'}</div><div class="pred-cat-reason">${esc(item.reason)}</div>${item.probability != null ? `<div class="pred-bar-cat"><div class="pred-bar-cat-fill" style="width:${Math.max(0, Math.min(100, item.probability))}%"></div></div>` : ''}</article>`).join('')}</div>`).join('')}</div>`;
+  const tabs = `<div class="edgex-detail-tabs"><button class="active" type="button" data-fixture-tab="overview" onclick="setFixtureTab('overview',this)">Overview</button><button type="button" data-fixture-tab="lineups" onclick="setFixtureTab('lineups',this)">Lineups</button><button type="button" data-fixture-tab="stats" onclick="setFixtureTab('stats',this)">Stats</button><button type="button" data-fixture-tab="insights" onclick="setFixtureTab('insights',this)">Insights</button><button type="button" data-fixture-tab="h2h" onclick="setFixtureTab('h2h',this)">H2H</button></div>`;
+  return `<div class="mp-hero edgex-fixture-hero ${state}"><div class="mp-comp">${esc(L.f || '⚽')} ${esc(L.n || 'Football')} <span class="edgex-state-badge ${state}">${stateLabel}</span></div><div class="mp-sb"><div class="mp-team"><div class="mp-logo">${h?.team?.logo ? `<img src="${esc(h.team.logo)}" alt="" onerror="this.parentElement.textContent='⚽'">` : '⚽'}</div><div class="mp-tname">${esc(hName)}</div><div class="mp-trec">${esc(hRec || 'Record unavailable')}</div></div><div class="mp-scores"><div class="mp-score ${state === 'upcoming' ? 'pre' : ''}">${score}</div><div class="mp-clock">${live ? `● ${esc(clock || 'LIVE')}` : ft ? 'Full Time' : `${esc(dateLabel)} · ${esc(timeLabel)}`}</div></div><div class="mp-team"><div class="mp-logo">${a?.team?.logo ? `<img src="${esc(a.team.logo)}" alt="" onerror="this.parentElement.textContent='⚽'">` : '⚽'}</div><div class="mp-tname">${esc(aName)}</div><div class="mp-trec">${esc(aRec || 'Record unavailable')}</div></div></div>${venue ? `<div class="mp-venue">${esc(venue)}</div>` : ''}</div>${tabs}<div class="mp-body"><div id="fixture-panel-overview" class="edgex-fixture-panel">${stateBody}${apexBlock}</div><div id="fixture-panel-insights" class="edgex-fixture-panel" hidden>${insightsBlock}</div><div id="fixture-panel-stats" class="edgex-fixture-panel" hidden>${formBlock}<div class="section edgex-detail-card"><div class="sec-title">MATCH INFORMATION</div><div class="apex-row"><span class="apex-lbl">Competition</span><span class="apex-val">${esc(L.n || 'Football')}</span></div><div class="apex-row"><span class="apex-lbl">Date</span><span class="apex-val">${esc(dateLabel)}</span></div><div class="apex-row"><span class="apex-lbl">Kick-off</span><span class="apex-val">${esc(timeLabel)}</span></div><div class="apex-row"><span class="apex-lbl">Venue</span><span class="apex-val">${esc(venue || 'Unavailable')}</span></div></div><div class="section edgex-detail-card" id="ai-apex-section" style="display:none"><div class="sec-title">EDGE X ANALYSIS<span id="ai-provider-badge" style="margin-left:auto;font-size:8px;color:var(--muted)"></span></div><div id="ai-apex-text" class="pred-summary">Analysis will appear after a structured request.</div></div></div><div id="fixture-panel-h2h" class="edgex-fixture-panel" hidden><div class="section edgex-detail-card"><div class="sec-title">HEAD TO HEAD</div><div id="sf-h2h-wrap" class="sf-loading">Loading provider-backed H2H…</div></div></div><div id="fixture-panel-lineups" class="edgex-fixture-panel" hidden><div class="section edgex-detail-card"><div class="sec-title">LINEUPS</div><div class="edgex-v2-state"><strong>Lineups are provider-dependent</strong><span>Confirmed lineups will appear when the event provider supplies them.</span></div></div></div><div class="section edgex-detail-card"><div class="sec-title">ADDITIONAL PROVIDER CONTEXT</div><div class="sf-section" id="sf-stats-wrap"><div class="sf-loading"><div class="sf-spinner"></div>Loading validated context from Sofascore…</div></div></div></div>`;
 }
 
 function closeMatch(){
   document.getElementById('match-page').classList.remove('open');
   document.body.style.overflow='';
+}
+
+function setFixtureTab(tabName, button) {
+  const names = ['overview','lineups','stats','insights','h2h'];
+  names.forEach(name => {
+    const panel = document.getElementById(`fixture-panel-${name}`);
+    if (panel) panel.hidden = name !== tabName;
+  });
+  document.querySelectorAll('[data-fixture-tab]').forEach(tab => tab.classList.toggle('active', tab.dataset.fixtureTab === tabName));
+  if (tabName === 'h2h' && !_fixtureH2HLoaded) loadFixtureH2H();
+}
+
+async function loadFixtureH2H() {
+  const wrap = document.getElementById('sf-h2h-wrap');
+  const ctx = _currentFixtureContext;
+  if (!wrap || !ctx) return;
+  _fixtureH2HLoaded = true;
+  wrap.innerHTML = '<div class="sf-loading">Finding a provider-backed H2H record…</div>';
+  const normalize = value => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  try {
+    const dateStr = new Date(ctx.date).toISOString().slice(0, 10);
+    const scheduled = await sfFetch(`/sport/football/scheduled-events/${dateStr}`);
+    const homeKey = normalize(ctx.home);
+    const awayKey = normalize(ctx.away);
+    const matched = (scheduled?.events || []).find(event => {
+      const home = normalize(event.homeTeam?.name || event.homeTeam?.shortName);
+      const away = normalize(event.awayTeam?.name || event.awayTeam?.shortName);
+      return (home.includes(homeKey) || homeKey.includes(home)) && (away.includes(awayKey) || awayKey.includes(away));
+    });
+    if (!matched?.id) {
+      wrap.innerHTML = '<div class="edgex-v2-state"><strong>H2H unavailable</strong><span>The provider could not match this fixture to a historical event record.</span></div>';
+      return;
+    }
+    const response = await sfFetch(`/event/${matched.id}/h2h`);
+    const events = Array.isArray(response?.events) ? response.events.filter(event => event.status?.type !== 'canceled') : [];
+    if (!events.length) {
+      wrap.innerHTML = '<div class="edgex-v2-state"><strong>No provider-backed H2H fixtures</strong><span>EdgeX will not invent historical meetings when the provider returns none.</span></div>';
+      return;
+    }
+    const rows = events.slice(-10).reverse().map(event => {
+      const date = event.startTimestamp ? new Date(event.startTimestamp * 1000).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : 'Date unavailable';
+      const home = event.homeTeam?.shortName || event.homeTeam?.name || 'Home';
+      const away = event.awayTeam?.shortName || event.awayTeam?.name || 'Away';
+      const homeScore = event.homeScore?.current ?? '—';
+      const awayScore = event.awayScore?.current ?? '—';
+      return `<div class="edgex-h2h-row"><span>${date}</span><strong>${home} <b>${homeScore}–${awayScore}</b> ${away}</strong></div>`;
+    }).join('');
+    wrap.innerHTML = `<div class="edgex-h2h-meta">${events.length} provider-backed meeting${events.length === 1 ? '' : 's'} returned</div>${rows}`;
+  } catch (error) {
+    _fixtureH2HLoaded = false;
+    wrap.innerHTML = '<div class="edgex-v2-state edgex-v2-state-error"><strong>H2H provider unavailable</strong><span>Historical fixture data could not be loaded. The rest of the fixture detail remains available.</span></div>';
+  }
 }
 
 // Init

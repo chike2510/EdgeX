@@ -73,3 +73,13 @@
 - [x] Define distinct finished, live, and upcoming fixture-detail information states using provider-backed fields only.
 - [x] Add fixture-detail rendering as an additive route with safe loading, unavailable, and feed-error fallbacks.
 - [x] Verify fixture-list loading and 540px detail responsiveness before pushing.
+
+- [x] Restore interactive Overview, Lineups, Stats, and Insights tabs in Sports fixture details.
+- [x] Reintroduce the complete user-approved APEX market list under Insights with evidence-aware states.
+- [x] Verify the Insights tab, market cards, and fixture feed remain safe at 540px before pushing.
+
+- [x] Restore all 19 canonical analytical markets under the fixture Insights tab.
+- [x] Strengthen APEX market scoring with evidence weighting, calibration guards, and explicit insufficient-data thresholds.
+- [x] Add interactive Overview, Lineups, Stats, Insights, and H2H fixture-detail tabs.
+- [x] Add a provider-backed H2H route and render past fixtures without fabricated history.
+- [x] Verify all 19 markets, H2H loading, and fixture-list safety at 540px before pushing.

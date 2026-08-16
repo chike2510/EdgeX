@@ -588,3 +588,90 @@ window.renderEdgeBadge = function(modelProb, marketProb) {
 };
 
 console.log('[EdgeX] shared.js — AI APEX + Bayse Edge Scorer loaded');
+
+
+// ── FULL INSIGHTS MARKET LIBRARY ────────────────────────────────
+// The detail view shows every canonical market; no market is silently dropped.
+window.INSIGHTS_MARKET_LIBRARY = [
+  { id:'over15', label:'Over 1.5 Goals', group:'Goals' },
+  { id:'2h05', label:'2nd Half Over 0.5', group:'Goals' },
+  { id:'ho05', label:'Home Over 0.5', group:'Team goals' },
+  { id:'ho15', label:'Home Over 1.5', group:'Team goals' },
+  { id:'ao05', label:'Away Over 0.5', group:'Team goals' },
+  { id:'ao15', label:'Away Over 1.5', group:'Team goals' },
+  { id:'gg', label:'GG (Both Teams to Score)', group:'Goals' },
+  { id:'gg25', label:'GG + Over 2.5', group:'Goals' },
+  { id:'draw25', label:'Draw or Over 2.5', group:'Combination' },
+  { id:'home25', label:'Home or Over 2.5', group:'Combination' },
+  { id:'away25', label:'Away or Over 2.5', group:'Combination' },
+  { id:'dc15', label:'Double Chance + Over 1.5', group:'Combination' },
+  { id:'homegg', label:'Home or GG', group:'Combination' },
+  { id:'awaygg', label:'Away or GG', group:'Combination' },
+  { id:'eitherHomeHalf', label:'Home team to win either half', group:'Half-based' },
+  { id:'eitherAwayHalf', label:'Away team to win either half', group:'Half-based' },
+  { id:'bothHalvesUnder15', label:'Both halves under 1.5', group:'Half-based' },
+  { id:'corners', label:'Corners Over / Under 9.5', group:'Corners' },
+  { id:'oneUp', label:'1UP — either team leads by one', group:'1UP' },
+];
+
+window.getAllMarketInsights = function(apex) {
+  const library = window.INSIGHTS_MARKET_LIBRARY;
+  const n = value => Number.isFinite(Number(value)) ? Number(value) : null;
+  const hXG = n(apex?.hXG), aXG = n(apex?.aXG), totalXG = n(apex?.totalXG) ?? (hXG != null && aXG != null ? hXG + aXG : null);
+  const hWin = n(apex?.hWin), draw = n(apex?.draw), aWin = n(apex?.aWin), conf = n(apex?.conf);
+  const hCorners = n(apex?.hCornersEst), aCorners = n(apex?.aCornersEst), totalCorners = n(apex?.totalCornersEst);
+  const supported = hXG != null && aXG != null && totalXG != null && conf != null && apex?.dataQuality !== 'insufficient';
+  const poisson = (lambda, goals) => Math.exp(-lambda) * Math.pow(lambda, goals) / ([1,1,2,6,24,120,720,5040,40320][goals] || 1);
+  const grid = (homeLambda, awayLambda) => {
+    const cells = [];
+    for (let h=0; h<=8; h++) for (let a=0; a<=8; a++) cells.push({ h, a, p: poisson(homeLambda,h) * poisson(awayLambda,a) });
+    return cells;
+  };
+  const probability = (predicate, cells) => cells.reduce((sum, cell) => sum + (predicate(cell) ? cell.p : 0), 0);
+  const calibrated = raw => {
+    if (!supported || !Number.isFinite(raw)) return null;
+    const evidenceWeight = Math.max(.35, Math.min(.9, conf / 100));
+    return Math.round(50 + (raw * 100 - 50) * evidenceWeight);
+  };
+  const make = (market, raw, reason, evidenceRequired = true) => {
+    const rawPct = Number.isFinite(raw) ? Math.round(raw * 100) : null;
+    const prob = evidenceRequired ? calibrated(raw) : rawPct;
+    const valid = prob != null && conf >= 55 && rawPct >= 52;
+    return { ...market, rawProbability: rawPct, probability: valid ? Math.max(1, Math.min(99, prob)) : null, status: valid ? 'SUPPORTED' : 'INSUFFICIENT DATA', reason: valid ? reason : 'Provider evidence is not strong enough for a defensible market read.' };
+  };
+  if (!supported) return library.map(market => make(market, NaN, '', true));
+  const cells = grid(hXG, aXG);
+  const halfCells = grid(hXG * .5, aXG * .5);
+  const totalAtLeast = line => probability(c => c.h + c.a >= line, cells);
+  const homeAtLeast = line => probability(c => c.h >= line, cells);
+  const awayAtLeast = line => probability(c => c.a >= line, cells);
+  const drawProb = probability(c => c.h === c.a, cells);
+  const homeWinProb = probability(c => c.h > c.a, cells);
+  const awayWinProb = probability(c => c.a > c.h, cells);
+  const ggProb = probability(c => c.h > 0 && c.a > 0, cells);
+  const over15 = totalAtLeast(2), over25 = totalAtLeast(3);
+  const halfHomeWin = probability(c => c.h > c.a, halfCells), halfAwayWin = probability(c => c.a > c.h, halfCells);
+  const halfUnder15 = probability(c => c.h + c.a <= 1, halfCells) ** 2;
+  const outcomes = [
+    make(library[0], over15, `Poisson total-goal probability ${Math.round(over15*100)}%, adjusted by ${conf}% evidence confidence.`),
+    make(library[1], 1 - Math.exp(-totalXG * .5), `Second-half goal rate is derived from combined xG ${totalXG.toFixed(2)} and split across match periods.`),
+    make(library[2], homeAtLeast(1), `Home scoring probability is derived from home xG ${hXG.toFixed(2)}.`),
+    make(library[3], homeAtLeast(2), `Home multi-goal probability is derived from home xG ${hXG.toFixed(2)}.`),
+    make(library[4], awayAtLeast(1), `Away scoring probability is derived from away xG ${aXG.toFixed(2)}.`),
+    make(library[5], awayAtLeast(2), `Away multi-goal probability is derived from away xG ${aXG.toFixed(2)}.`),
+    make(library[6], ggProb, `Both-teams-to-score probability is derived from the joint score distribution.`),
+    make(library[7], probability(c => c.h > 0 && c.a > 0 && c.h + c.a >= 3, cells), 'Joint GG and 3+ goal probability from the same score distribution.'),
+    make(library[8], drawProb + over25 - probability(c => c.h === c.a && c.h + c.a >= 3, cells), 'Union of draw and 3+ goals, avoiding double-counting overlap.'),
+    make(library[9], homeWinProb + over25 - probability(c => c.h > c.a && c.h + c.a >= 3, cells), 'Union of a home win and 3+ goals, avoiding double-counting overlap.'),
+    make(library[10], awayWinProb + over25 - probability(c => c.a > c.h && c.h + c.a >= 3, cells), 'Union of an away win and 3+ goals, avoiding double-counting overlap.'),
+    make(library[11], probability(c => c.h >= c.a && c.h + c.a >= 2, cells), 'Home-or-draw with 2+ goals, calculated from the score distribution.'),
+    make(library[12], homeWinProb + ggProb - probability(c => c.h > c.a && c.h > 0 && c.a > 0, cells), 'Union of a home win and both teams scoring.'),
+    make(library[13], awayWinProb + ggProb - probability(c => c.a > c.h && c.h > 0 && c.a > 0, cells), 'Union of an away win and both teams scoring.'),
+    make(library[14], 1 - Math.pow(1 - halfHomeWin, 2), 'Probability of the home side winning at least one modeled half.'),
+    make(library[15], 1 - Math.pow(1 - halfAwayWin, 2), 'Probability of the away side winning at least one modeled half.'),
+    make(library[16], halfUnder15, 'Both modeled halves remain below two total goals.'),
+    make(library[17], totalCorners != null ? Math.max(0, Math.min(1, .5 + (totalCorners - 9.5) * .08)) : NaN, totalCorners != null ? `Provider-backed corner estimate ${totalCorners.toFixed(1)} versus a 9.5 reference line.` : ''),
+    make(library[18], 1 - Math.exp(-totalXG), 'At least one goal creates a one-goal lead at some point in the match model.'),
+  ];
+  return outcomes;
+};
