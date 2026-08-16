@@ -34,3 +34,10 @@
 - [x] Fix mobile drawer item collisions, oversized menu treatment, and inconsistent section spacing.
 - [x] Simplify the Football context toolbar so Back, Football/APEX, live state, Insights, and History do not crowd or overlap.
 - [x] Re-capture 540px mobile states for Landing, Home, Football, and the open drawer and verify visual hierarchy before pushing.
+- [x] Freeze implementation changes until the new Home, Landing, mobile shell, drawer, and Football context-bar mockups are approved.
+- [x] Create a fresh mockup direction using the actual EdgeX typography hierarchy, compact navigation controls, and one visual system across public and intelligence surfaces.
+- [x] Present the mockups for approval before rewriting production pages.
+- [x] Implement the approved mockup as the source of truth for the shared shell, typography, spacing, drawer, bottom navigation, and page context bars.
+- [x] Rewrite Landing and Home rather than wrapping their old layouts, preserving only real data flows and approved content domains.
+- [x] Apply the approved visual system to all intelligence pages and simplify Football context controls.
+- [x] Run full responsive, routing, syntax, and provider-data regression checks before pushing the approved redesign.
