@@ -195,7 +195,9 @@ window.computeAPEX = function(home, away, comp, hFormStats, aFormStats, hTeamSta
 
   // ── Confidence: higher when we have real recent form data ─────
   const hasData = hGP > 5 && aGP > 5;
-  const hasFormData = hFormStats && aFormStats && hFormStats.played >= 5 && aFormStats.played >= 5;
+  const hasFormData = Boolean(hFormStats && aFormStats && hFormStats.played >= 5 && aFormStats.played >= 5);
+  const minimumRecentSample = hasFormData ? Math.min(hFormStats.played, aFormStats.played) : 0;
+  const evidenceTier = hasFormData ? '15-GAME FORM' : hasData ? 'SEASON RECORD' : 'EARLY-SEASON LIMITED';
   const confBase = hasFormData ? 68 : hasData ? 55 : 42;
   const conf = Math.round(Math.min(90, Math.max(confBase, confBase + (hasFormData?hFormStats.played*0.5:hGP*0.3) - formDiff*6)));
   const edge = conf>=70?'HIGH':conf>=55?'MEDIUM':'LOW';
@@ -249,7 +251,8 @@ window.computeAPEX = function(home, away, comp, hFormStats, aFormStats, hTeamSta
   return { hWin, draw, aWin, hXG, aXG, totalXG, o25, o15, btts, hO05, aO05,
            conf, edge, top2, hInsight, aInsight, matchSummary,
            hMomentum, aMomentum, hCS, aCS,
-           hCornersEst, aCornersEst, totalCornersEst, dataQuality: hasFormData ? 'form-supported' : 'season-supported',
+           hCornersEst, aCornersEst, totalCornersEst, dataQuality: hasFormData ? 'form-supported' : hasData ? 'season-supported' : 'insufficient',
+           evidenceTier, minimumRecentSample,
            hRec: home?.records?.[0]?.summary||'—',
            aRec: away?.records?.[0]?.summary||'—' };
 };

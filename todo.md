@@ -113,3 +113,11 @@
 - [x] Remove fragile cross-script H2H context dependence and use ESPN team schedules as the primary H2H history source.
 - [x] Distinguish direct meetings, recent home history, recent away history, no history, and provider failure in H2H.
 - [x] Verify the corrected Stats and H2H views at 540px before pushing.
+
+- [x] Verify the latest live Football deployment renders up to 15 ESPN-backed H2H fixtures for both teams.
+
+- [x] Add evidence tiers for early-season fixtures so thin H2H/recent-form samples do not produce overconfident predictions.
+- [x] Replace short fixture commentary with detailed provider-backed analytical commentary and explicit uncertainty.
+- [x] Expand match statistics with meaningful provider fields and event context for live and finished matches.
+- [x] Implement provider-backed lineups with confirmed, projected, unavailable, and not-yet-published states.
+- [x] Verify early-season live/upcoming/finished fixture detail at 540px before pushing.

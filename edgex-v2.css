@@ -325,3 +325,24 @@ body.edgex-shell-page.ex-root .lp-nav,body.edgex-shell-page.ex-root .ex-header,b
   .edgex-match-stat-row { min-height: 40px; font-size: 10px; }
   .edgex-match-stat-row strong { font-size: 11px; }
 }
+
+/* Fixture intelligence detail modules. */
+.edgex-evidence-tier,
+.edgex-insights-count { margin-left: auto; color: var(--edgex-muted); font-size: 9px; font-weight: 700; letter-spacing: .06em; }
+.edgex-commentary { margin: 12px 0 16px; padding: 13px 14px; border: 1px solid rgba(114,214,177,.16); border-radius: 12px; background: linear-gradient(135deg, rgba(42,129,102,.16), rgba(8,20,17,.32)); }
+.edgex-commentary strong { color: var(--edgex-accent); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+.edgex-commentary p { margin: 8px 0 0; color: var(--edgex-text); font-size: 13px; line-height: 1.6; }
+.edgex-stat-note { margin-top: 12px; color: var(--edgex-muted); font-size: 10px; line-height: 1.45; }
+.edgex-lineup-columns { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+.edgex-lineup-column { min-width: 0; }
+.edgex-lineup-list { margin-top: 8px; border: 1px solid rgba(114,214,177,.12); border-radius: 12px; overflow: hidden; }
+.edgex-lineup-row { display: grid; grid-template-columns: 24px minmax(0,1fr) 34px; gap: 7px; align-items: center; min-height: 36px; padding: 7px 9px; border-bottom: 1px solid rgba(114,214,177,.08); color: var(--edgex-muted); font-size: 10px; }
+.edgex-lineup-row:last-child { border-bottom: 0; }
+.edgex-lineup-row strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--edgex-text); font-size: 11px; }
+.edgex-lineup-number { color: var(--edgex-accent); font-variant-numeric: tabular-nums; }
+.edgex-lineup-row > span:last-child { text-align: right; font-size: 9px; }
+@media (max-width: 540px) {
+  .edgex-evidence-tier { font-size: 8px; }
+  .edgex-commentary p { font-size: 12px; }
+  .edgex-lineup-columns { grid-template-columns: 1fr; gap: 16px; }
+}
