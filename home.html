@@ -23,9 +23,8 @@
   .hm-hero-label { font-size: var(--ex-fs-xs); color: var(--ex-text-muted); }
 
   /* Quick actions */
-  .hm-qa-row { display: flex; gap: var(--ex-sp-3); overflow-x: auto; scrollbar-width: none; }
-  .hm-qa-row::-webkit-scrollbar { display: none; }
-  .hm-qa { min-width: 84px; display: flex; flex-direction: column; align-items: center; gap: var(--ex-sp-2); padding: var(--ex-sp-3); text-decoration: none; }
+  .hm-qa-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--ex-sp-2); }
+  .hm-qa { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: var(--ex-sp-2); padding: var(--ex-sp-2) 2px; text-decoration: none; }
   .hm-qa-icon { width: 44px; height: 44px; border-radius: 14px; background: var(--ex-card); border: 1px solid var(--ex-border); display: flex; align-items: center; justify-content: center; font-size: 18px; }
   .hm-qa-label { font-size: var(--ex-fs-xs); color: var(--ex-text-secondary); }
 

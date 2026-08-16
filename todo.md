@@ -25,3 +25,8 @@
 - [x] Verify touch targets, sticky headers, scrolling, and mobile navigation on affected routes.
 - [x] Add provider-backed Bayse outcome labels, thresholds, and explicit no-estimate states to Markets cards and dialogs.
 - [x] Validate the structured analysis endpoint with real normalized Squads and Bayse-shaped payloads.
+- [x] Rebuild landing, home, and intelligence pages around one coherent responsive application shell.
+- [x] Remove duplicated or conflicting mobile sidebar/header shells and align the top-left brand/navigation treatment.
+- [x] Repair back behavior from Football, Basketball, Crypto, Forex, Squads, and detail routes so it returns to the correct in-app parent instead of the landing page.
+- [x] Stabilize Football fixture loading and header rendering using the same no-jitter lifecycle as Basketball.
+- [x] Verify responsive shell, navigation drawer, bottom navigation, and page headers on mobile and desktop.
