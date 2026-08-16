@@ -87,3 +87,8 @@
 - [x] Fix H2H provider loading so success and failure states resolve visibly instead of remaining stuck.
 - [x] Isolate H2H from the unrelated Sofascore context loader in the fixture detail panels.
 - [x] Verify H2H behavior at 540px and push the regression fix.
+
+- [x] Trace ESPN team schedule/history support for selected home and away teams.
+- [x] Add normalized ESPN-backed recent home and away histories with up to 15 fixtures each.
+- [x] Render direct H2H, home recent form, and away recent form as separate provider-backed sections.
+- [x] Verify ESPN history loading and fixture-feed safety at 540px before pushing.

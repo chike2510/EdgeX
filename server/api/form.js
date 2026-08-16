@@ -9,6 +9,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const { league, teamId, debug } = req.query;
+  const requestedLimit = Math.max(10, Math.min(15, Number.parseInt(req.query.limit || '15', 10) || 15));
   if (!league || !teamId) return res.status(400).json({ error: 'league and teamId required' });
 
   const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${league}/teams/${teamId}/schedule`;
@@ -140,7 +141,7 @@ export default async function handler(req, res) {
       };
     }).filter(Boolean)
       .sort((a, b) => new Date(a.date) - new Date(b.date)) // oldest → newest
-      .slice(-10); // last 10 = most recent 10
+      .slice(-requestedLimit); // most recent 10–15, bounded for mobile detail use
 
     const stats = computeFormStats(form);
 
@@ -184,7 +185,7 @@ export default async function handler(req, res) {
       stats,
       teamStats,
       teamId, league,
-      _debug: { totalEvents: events.length, completed: completed.length, formGames: form.length }
+      _debug: { totalEvents: events.length, completed: completed.length, formGames: form.length, requestedLimit }
     });
 
   } catch (err) {

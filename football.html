@@ -23,7 +23,7 @@ function buildMatchDetail(ev, comp, h, a, s, live, ft, L, clock, hS, aS, hRec, a
     away: a?.team?.displayName || a?.team?.shortDisplayName || 'Away',
     comp: L?.n || 'Football',
   };
-  _currentFixtureContext = { home: _currentMatchNames.home, away: _currentMatchNames.away, date: ev?.date, espnId: ev?.id };
+  _currentFixtureContext = { home: _currentMatchNames.home, away: _currentMatchNames.away, date: ev?.date, espnId: ev?.id, league: ev?._l, homeId: h?.team?.id, awayId: a?.team?.id, homeForm: Array.isArray(hForm?.form) ? hForm.form : [], awayForm: Array.isArray(aForm?.form) ? aForm.form : [] };
   _fixtureH2HLoaded = false;
   return result;
 }
@@ -1320,41 +1320,32 @@ async function loadFixtureH2H() {
   const ctx = _currentFixtureContext;
   if (!wrap || !ctx) return;
   _fixtureH2HLoaded = true;
-  wrap.innerHTML = '<div class="sf-loading">Finding a provider-backed H2H record…</div>';
-  const normalize = value => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-  try {
-    const withTimeout = promise => Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('H2H provider timeout')), 8000))]);
-    const dateStr = new Date(ctx.date).toISOString().slice(0, 10);
-    const scheduled = await withTimeout(sfFetch(`/sport/football/scheduled-events/${dateStr}`));
-    const homeKey = normalize(ctx.home);
-    const awayKey = normalize(ctx.away);
-    const matched = (scheduled?.events || []).find(event => {
-      const home = normalize(event.homeTeam?.name || event.homeTeam?.shortName);
-      const away = normalize(event.awayTeam?.name || event.awayTeam?.shortName);
-      return (home.includes(homeKey) || homeKey.includes(home)) && (away.includes(awayKey) || awayKey.includes(away));
-    });
-    if (!matched?.id) {
-      wrap.innerHTML = '<div class="edgex-v2-state"><strong>H2H unavailable</strong><span>The provider could not match this fixture to a historical event record.</span></div>';
-      return;
-    }
-    const response = await withTimeout(sfFetch(`/event/${matched.id}/h2h`));
-    const events = Array.isArray(response?.events) ? response.events.filter(event => event.status?.type !== 'canceled') : [];
-    if (!events.length) {
-      wrap.innerHTML = '<div class="edgex-v2-state"><strong>No provider-backed H2H fixtures</strong><span>EdgeX will not invent historical meetings when the provider returns none.</span></div>';
-      return;
-    }
-    const rows = events.slice(-10).reverse().map(event => {
-      const date = event.startTimestamp ? new Date(event.startTimestamp * 1000).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : 'Date unavailable';
-      const home = event.homeTeam?.shortName || event.homeTeam?.name || 'Home';
-      const away = event.awayTeam?.shortName || event.awayTeam?.name || 'Away';
-      const homeScore = event.homeScore?.current ?? '—';
-      const awayScore = event.awayScore?.current ?? '—';
-      return `<div class="edgex-h2h-row"><span>${date}</span><strong>${home} <b>${homeScore}–${awayScore}</b> ${away}</strong></div>`;
+  wrap.innerHTML = '<div class="sf-loading">Loading ESPN recent histories…</div>';
+  const escHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const historyRows = (form, emptyLabel) => {
+    if (!Array.isArray(form) || !form.length) return '<div class="edgex-v2-state"><strong>No recent fixtures returned</strong><span>' + escHtml(emptyLabel) + '</span></div>';
+    return form.slice(-15).reverse().map(game => {
+      const date = game.date ? new Date(game.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Date unavailable';
+      const resultClass = game.result === 'W' ? 'win' : game.result === 'L' ? 'loss' : 'draw';
+      return '<div class="edgex-h2h-row"><div><strong>' + escHtml(game.opponent || 'Opponent unavailable') + '</strong><span>' + escHtml(date) + ' · ' + (game.isHome ? 'Home' : 'Away') + '</span></div><div class="edgex-h2h-score"><b class="' + resultClass + '">' + escHtml(game.result || '—') + '</b><span>' + escHtml(game.score || '—') + '</span></div></div>';
     }).join('');
-    wrap.innerHTML = `<div class="edgex-h2h-meta">${events.length} provider-backed meeting${events.length === 1 ? '' : 's'} returned</div>${rows}`;
+  };
+  try {
+    let homeForm = Array.isArray(ctx.homeForm) ? ctx.homeForm : [];
+    let awayForm = Array.isArray(ctx.awayForm) ? ctx.awayForm : [];
+    if ((!homeForm.length || !awayForm.length) && ctx.league && ctx.homeId && ctx.awayId) {
+      const timeout = promise => Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('ESPN history timeout')), 8000))]);
+      const fetchForm = teamId => fetch('/api/form?league=' + encodeURIComponent(ctx.league) + '&teamId=' + encodeURIComponent(teamId) + '&limit=15').then(response => response.ok ? response.json() : null).catch(() => null);
+      const results = await timeout(Promise.all([fetchForm(ctx.homeId), fetchForm(ctx.awayId)]));
+      homeForm = Array.isArray(results[0]?.form) ? results[0].form : homeForm;
+      awayForm = Array.isArray(results[1]?.form) ? results[1].form : awayForm;
+    }
+    const direct = homeForm.filter(game => String(game.opponent || '').toLowerCase().replace(/[^a-z0-9]/g, '') === String(ctx.away || '').toLowerCase().replace(/[^a-z0-9]/g, '') || String(game.opponent || '').toLowerCase().includes(String(ctx.away || '').toLowerCase().split(' ')[0])).slice(-15).reverse();
+    const directRows = direct.length ? direct.map(game => '<div class="edgex-h2h-row"><div><strong>' + escHtml(ctx.home + ' vs ' + game.opponent) + '</strong><span>' + escHtml(game.date ? new Date(game.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Date unavailable') + '</span></div><div class="edgex-h2h-score"><b>' + escHtml(game.result || '—') + '</b><span>' + escHtml(game.score || '—') + '</span></div></div>').join('') : '<div class="edgex-v2-state"><strong>No direct meetings in the returned sample</strong><span>ESPN returned recent team histories, but no matching prior meeting was found in those samples.</span></div>';
+    wrap.innerHTML = '<div class="edgex-h2h-section"><div class="edgex-h2h-meta">ESPN recent history · up to 15 fixtures per team</div><h4>Direct H2H in returned sample</h4>' + directRows + '<h4>Recent ' + escHtml(ctx.home || 'home team') + ' fixtures</h4>' + historyRows(homeForm, 'ESPN returned no completed fixtures for the home team.') + '<h4>Recent ' + escHtml(ctx.away || 'away team') + ' fixtures</h4>' + historyRows(awayForm, 'ESPN returned no completed fixtures for the away team.') + '</div>';
   } catch (error) {
     _fixtureH2HLoaded = false;
-    wrap.innerHTML = `<div class="edgex-v2-state edgex-v2-state-error"><strong>H2H provider unavailable</strong><span>${error.message === 'H2H provider timeout' ? 'The provider did not respond within 8 seconds.' : 'Historical fixture data could not be loaded from the configured provider.'} The rest of the fixture detail remains available.</span></div>`;
+    wrap.innerHTML = '<div class="edgex-v2-state edgex-v2-state-error"><strong>ESPN history unavailable</strong><span>' + escHtml(error.message === 'ESPN history timeout' ? 'The provider did not respond within 8 seconds.' : 'Recent team history could not be loaded from ESPN. The rest of the fixture detail remains available.') + '</span></div>';
   }
 }
 
