@@ -108,3 +108,8 @@
 
 - [ ] Verify the redeployed live-match Stats tab contains provider-backed match statistics.
 - [ ] Verify the redeployed H2H tab resolves to history, no-history, or an explicit provider error without an indefinite spinner.
+
+- [x] Repair mobile match-statistics markup so labels, values, and team columns render as a readable grid at 540px.
+- [x] Remove fragile cross-script H2H context dependence and use ESPN team schedules as the primary H2H history source.
+- [x] Distinguish direct meetings, recent home history, recent away history, no history, and provider failure in H2H.
+- [x] Verify the corrected Stats and H2H views at 540px before pushing.
