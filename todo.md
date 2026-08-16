@@ -44,3 +44,6 @@
 - [x] Replace shell and domain placeholder glyphs with consistent inline SVG icons or restrained illustrations.
 - [x] Remove the ill-fitting Landing hero image asset and keep Landing free of the app bottom navigation.
 - [x] Re-capture Landing, Home, Football, and drawer mobile states after the icon and navigation refinement.
+- [x] Create a distinct EdgeX logo mark and wordmark direction for Landing and Home headers.
+- [x] Present the logo concept for approval before integrating it into production headers.
+- [x] Integrate the approved logo and verify it at mobile and desktop header sizes.

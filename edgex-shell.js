@@ -14,6 +14,8 @@
     { href: 'profile.html', label: 'Profile', icon: 'user' },
   ];
   const titleMap = { home: 'Overview', football: 'Football', basketball: 'Basketball', squads: 'Player Edge', events: 'Markets', crypto: 'Crypto', forex: 'Forex', weather: 'Weather', profile: 'Profile' };
+  const logoMark = '<svg class="edgex-logo-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 5 8 7 8-7M4 19l8-7 8 7"/><circle cx="12" cy="12" r="2.7"/></svg>';
+  const brand = () => `<span class="edgex-logo-lockup">${logoMark}<span class="edgex-logo-word">EDGE<span>X</span></span></span>`;
   const icons = {
     menu: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
     search: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>',
@@ -57,13 +59,13 @@
     shell.innerHTML = `
       <header class="edgex-shell-bar">
         <button class="edgex-shell-menu" id="edgex-shell-menu" type="button" aria-label="Open navigation" aria-expanded="false">${icons.menu}</button>
-        <a class="edgex-shell-brand" href="home.html"><b>EDGE</b><em>X</em></a>
+        <a class="edgex-shell-brand" href="home.html">${brand()}</a>
         <div class="edgex-shell-context"><span>INTELLIGENCE</span><strong>${titleMap[route] || 'EdgeX'}</strong></div>
         <div class="edgex-shell-actions"><a href="search.html" aria-label="Search">${icons.search}</a><a href="profile.html" aria-label="Profile">${icons.user}</a></div>
       </header>
       <div class="edgex-shell-scrim" id="edgex-shell-scrim"></div>
       <aside class="edgex-shell-drawer" id="edgex-shell-drawer" aria-label="Main navigation">
-        <div class="edgex-shell-drawer-head"><a class="edgex-shell-brand" href="home.html"><b>EDGE</b><em>X</em></a><button id="edgex-shell-close" type="button" aria-label="Close navigation">${icons.close}</button></div>
+        <div class="edgex-shell-drawer-head"><a class="edgex-shell-brand" href="home.html">${brand()}</a><button id="edgex-shell-close" type="button" aria-label="Close navigation">${icons.close}</button></div>
         <p class="edgex-shell-section-label">Workspace</p><nav>${routes.slice(0, 4).map(link).join('')}</nav>
         <p class="edgex-shell-section-label">Intelligence</p><nav>${routes.slice(4, 8).map(link).join('')}</nav>
         <p class="edgex-shell-section-label">Account</p><nav>${link(routes[8])}</nav>
