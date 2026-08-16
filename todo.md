@@ -68,3 +68,8 @@
 - [x] Trace the actual Forex, Crypto, and Squads provider response contracts causing unavailable or stale values.
 - [x] Repair server provider adapters and client feed mappings so real provider values reach detail views.
 - [x] Verify the application routes return usable provider-backed values and timestamps before pushing.
+
+- [x] Preserve the existing Sports fixture-list feed and route contract before adding fixture-detail navigation.
+- [x] Define distinct finished, live, and upcoming fixture-detail information states using provider-backed fields only.
+- [x] Add fixture-detail rendering as an additive route with safe loading, unavailable, and feed-error fallbacks.
+- [x] Verify fixture-list loading and 540px detail responsiveness before pushing.

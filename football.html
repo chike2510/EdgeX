@@ -1262,209 +1262,37 @@ function openMatch(eventId, leagueSlug){
 }
 
 function buildMatchDetail(ev,comp,h,a,s,live,ft,L,clock,hS,aS,hRec,aRec,venue,hForm,aForm){
-  // Use real form stats if available, else fall back to season record
+  const esc = value => window.EdgeXV2?.escape ? window.EdgeXV2.escape(value) : String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const state = live ? 'live' : ft ? 'finished' : 'upcoming';
+  const stateLabel = live ? 'LIVE NOW' : ft ? 'FINISHED' : 'UPCOMING';
+  const hName = h?.team?.displayName || h?.team?.shortDisplayName || 'Home';
+  const aName = a?.team?.displayName || a?.team?.shortDisplayName || 'Away';
+  const hShort = h?.team?.shortDisplayName || hName;
+  const aShort = a?.team?.shortDisplayName || aName;
   const hStats = hForm?.stats || null;
   const aStats = aForm?.stats || null;
   const hFormData = hForm?.form || null;
   const aFormData = aForm?.form || null;
-  const hasForm = hStats && aStats;
-
-  // Compute APEX — with real form if available
   const hTeamStats = hForm?.teamStats || null;
   const aTeamStats = aForm?.teamStats || null;
-  const ap = window.computeAPEX
-    ? window.computeAPEX(h, a, comp, hStats, aStats, hTeamStats, aTeamStats)
-    : null;
-  const picks = ap && window.pickPredictions ? window.pickPredictions(ap) : [];
-
-  const xgTotal = ap ? (parseFloat(ap.hXG)+parseFloat(ap.aXG)) : 0;
-  const hBarW = xgTotal>0 ? Math.round((parseFloat(ap.hXG)/xgTotal)*100) : 50;
-  const aBarW = 100-hBarW;
-
-  const formDots = arr => arr ? arr.slice(-5).map(g=>`<span class="fd ${g.result}">${g.result}</span>`).join('') : '';
-  const formRows = arr => arr ? arr.slice(-10).reverse().map(g=>`
-    <div class="form-row">
-      <div class="form-badge ${g.result}">${g.result}</div>
-      <span class="form-ha">${g.isHome?'H':'A'}</span>
-      <span class="form-opp">${g.opponent}</span>
-      <span class="form-score ${g.result}">${g.score&&g.score!=='NaN-NaN'?g.score:'—'}</span>
-    </div>`).join('') : '';
-
-  return `
-    <div class="mp-hero">
-      <div class="mp-comp">${L.f} ${L.n}</div>
-      <div class="mp-sb">
-        <div class="mp-team">
-          <div class="mp-logo">${h?.team?.logo?`<img src="${h.team.logo}" onerror="this.parentElement.textContent='⚽'">`:'⚽'}</div>
-          <div class="mp-tname">${h?.team?.displayName||'Home'}</div>
-          <div class="mp-trec">${hStats&&hStats.played>0?`${hStats.wins||0}W ${hStats.draws||0}D ${hStats.losses||0}L · Last ${hStats.played}`:hRec}</div>
-          ${hFormData?`<div class="form-dots">${formDots(hFormData)}</div>`:''}
-        </div>
-        <div class="mp-scores">
-          ${(live||ft)?`<div class="mp-score">${hS}–${aS}</div>`:`<div class="mp-score pre">vs</div>`}
-          <div class="mp-clock">${live?`● ${clock}'`:ft?'Full Time':new Date(ev.date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</div>
-        </div>
-        <div class="mp-team">
-          <div class="mp-logo">${a?.team?.logo?`<img src="${a.team.logo}" onerror="this.parentElement.textContent='⚽'">`:'⚽'}</div>
-          <div class="mp-tname">${a?.team?.displayName||'Away'}</div>
-          <div class="mp-trec">${aStats?`${aStats.wins}W ${aStats.draws}D ${aStats.losses}L · Last ${aStats.played}`:aRec}</div>
-          ${aFormData?`<div class="form-dots">${formDots(aFormData)}</div>`:''}
-        </div>
-      </div>
-      ${venue?`<div class="mp-venue">${venue}</div>`:''}
-    </div>
-
-    <div class="mp-body">
-
-      ${ap?`
-      <!-- MATCH PREDICTION -->
-      <div class="section pred-section">
-        <div class="sec-title">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          MATCH PREDICTION
-          <span style="margin-left:auto;font-size:8px;color:var(--muted);font-weight:400;letter-spacing:0">${hasForm?'Based on last 10 games':'Based on season record'}</span>
-        </div>
-
-        <div class="pred-goals-row">
-          <span class="pred-xg-val">${ap.hXG}</span>
-          <span class="pred-xg-lbl">Predicted Goals</span>
-          <span class="pred-xg-val">${ap.aXG}</span>
-        </div>
-        <div class="pred-bar-wrap">
-          <div class="pred-bar-h" style="width:${hBarW}%"></div>
-          <div class="pred-bar-a" style="width:${aBarW}%"></div>
-        </div>
-
-        <div class="pred-probs">
-          <div class="pred-prob-item">
-            <div class="pred-prob-val" style="color:${ap.hWin>=ap.aWin&&ap.hWin>=ap.draw?'var(--accent)':'var(--text)'}">${ap.hWin}%</div>
-            <div class="pred-prob-lbl">Home Win</div>
-          </div>
-          <div class="pred-prob-item">
-            <div class="pred-prob-val" style="color:${ap.draw>=ap.hWin&&ap.draw>=ap.aWin?'var(--gold)':'var(--text)'}">${ap.draw}%</div>
-            <div class="pred-prob-lbl">Draw</div>
-          </div>
-          <div class="pred-prob-item">
-            <div class="pred-prob-val" style="color:${ap.aWin>ap.hWin&&ap.aWin>=ap.draw?'var(--accent)':'var(--text)'}">${ap.aWin}%</div>
-            <div class="pred-prob-lbl">Away Win</div>
-          </div>
-        </div>
-
-        <div class="pred-scoreline">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
-          Most likely outcome: <strong>${ap.top2||'—'}</strong>
-        </div>
-
-        <div class="pred-insights">
-          <div class="pred-insight">
-            <div class="pred-insight-dot home"></div>
-            <span><strong>${h?.team?.shortDisplayName||'Home'}:</strong> ${ap.hInsight}</span>
-          </div>
-          <div class="pred-insight">
-            <div class="pred-insight-dot away"></div>
-            <span><strong>${a?.team?.shortDisplayName||'Away'}:</strong> ${ap.aInsight}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- CATEGORISED MARKET PICKS (Puntrr-style) -->
-      ${picks.length?`<div class="section">
-        <div class="sec-title">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-          APEX Market Analysis
-          <span style="margin-left:auto;display:flex;align-items:center;gap:8px">
-            <span style="font-size:8px;color:var(--muted);font-weight:400">${picks.length} categories</span>
-            <button onclick="triggerAPEXAI()" style="font-size:8px;padding:3px 8px;background:rgba(0,245,160,0.07);border:1px solid rgba(0,245,160,0.2);border-radius:4px;color:var(--accent);cursor:pointer;font-family:var(--font-mono)" id="apex-ai-btn">Groq AI ↗</button>
-          </span>
-        </div>
-        ${picks.map(p=>{
-          const riskClass = p.riskLabel==='Low Risk'?'low':p.riskLabel==='Medium Risk'?'med':'high';
-          const rCol = p.col||'var(--accent)';
-          return `<div class="pred-cat">
-            <div class="pred-cat-head">
-              <span class="pred-cat-name">${p.cat}</span>
-              <div style="display:flex;align-items:center;gap:7px">
-                <span class="risk-badge ${p.riskLabel==='Low Risk'?'low':p.riskLabel==='Medium Risk'?'med':'high'}">${p.riskLabel||''}</span>
-                <span class="pred-cat-prob" style="color:${rCol}">${p.prob}%</span>
-              </div>
-            </div>
-            <div class="pred-cat-body">
-              <div class="pred-cat-label">${p.label2||p.label}</div>
-              <div class="pred-cat-reason">${p.reason||''}</div>
-              <div class="pred-bar-cat"><div class="pred-bar-cat-fill" style="width:${p.prob}%;background:${rCol}"></div></div>
-              ${p.insight?`<div class="pred-cat-insight" style="margin-top:7px">${p.insight}</div>`:''}
-            </div>
-          </div>`;
-        }).join('')}
-      </div>`:''}
-      `:''}
-
-            <!-- AI APEX INSIGHT -->
-      <div class="section" id="ai-apex-section" style="display:none">
-        <div class="sec-title">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-          Groq AI Deep Read
-          <span id="ai-provider-badge" style="margin-left:auto;font-size:8px;color:var(--muted)"></span>
-        </div>
-        <div id="ai-apex-text" style="font-size:11.5px;line-height:1.75;color:var(--muted);padding:4px 0">Loading AI analysis…</div>
-      </div>
-
-      <!-- FORM TABLES -->
-      ${hFormData||aFormData?`<div class="section">
-        <div class="sec-title">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-          Last 10 Results
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div>
-            <div style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">${h?.team?.shortDisplayName||'Home'}</div>
-            ${hStats?`<div class="fstat-grid">
-              <div class="fstat"><div class="fstat-v" style="color:var(--accent)">${hStats.wins||0}</div><div class="fstat-l">Won</div></div>
-              <div class="fstat"><div class="fstat-v">${isNaN(hStats.gfpg)?'—':hStats.gfpg}</div><div class="fstat-l">GF/G</div></div>
-              <div class="fstat"><div class="fstat-v">${isNaN(hStats.gapg)?'—':hStats.gapg}</div><div class="fstat-l">GA/G</div></div>
-            </div>`:''}
-            <div class="form-results">${formRows(hFormData)}</div>
-          </div>
-          <div>
-            <div style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">${a?.team?.shortDisplayName||'Away'}</div>
-            ${aStats?`<div class="fstat-grid">
-              <div class="fstat"><div class="fstat-v" style="color:var(--accent)">${aStats.wins||0}</div><div class="fstat-l">Won</div></div>
-              <div class="fstat"><div class="fstat-v">${isNaN(aStats.gfpg)?'—':aStats.gfpg}</div><div class="fstat-l">GF/G</div></div>
-              <div class="fstat"><div class="fstat-v">${isNaN(aStats.gapg)?'—':aStats.gapg}</div><div class="fstat-l">GA/G</div></div>
-            </div>`:''}
-            <div class="form-results">${formRows(aFormData)}</div>
-          </div>
-        </div>
-      </div>`:`<div class="section"><div class="form-loading"><div class="form-spin"></div>Loading recent form…</div></div>`}
-
-      <!-- MATCH INFO -->
-      <div class="section">
-        <div class="sec-title">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          Match Info
-        </div>
-        <div class="apex-row"><span class="apex-lbl">Competition</span><span class="apex-val">${L.n}</span></div>
-        <div class="apex-row"><span class="apex-lbl">Date</span><span class="apex-val">${new Date(ev.date).toLocaleDateString('en-US',{weekday:'short',month:'long',day:'numeric'})}</span></div>
-        <div class="apex-row"><span class="apex-lbl">Kick-off</span><span class="apex-val">${new Date(ev.date).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}</span></div>
-        ${venue?`<div class="apex-row"><span class="apex-lbl">Venue</span><span class="apex-val">${venue}</span></div>`:''}
-        <div class="apex-row"><span class="apex-lbl">Season Record (H)</span><span class="apex-val">${hRec||'—'}</span></div>
-        <div class="apex-row"><span class="apex-lbl">Season Record (A)</span><span class="apex-val">${aRec||'—'}</span></div>
-      </div>
-
-      <a class="espn-link" href="https://www.espn.com/soccer/match/_/gameId/${ev.id}" target="_blank" rel="noopener">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
-        View full match on ESPN
-      </a>
-      <div class="inf">Live stats, lineups and commentary available on ESPN</div>
-
-      <!-- SOFASCORE STATS — loaded async after render -->
-      <div class="sf-section" id="sf-stats-wrap">
-        <div class="sf-loading"><div class="sf-spinner"></div>Loading live stats from Sofascore…</div>
-      </div>
-    </div>`;
-// Async: load Sofascore data for this match
-setTimeout(() => loadSofascoreStats(h?.team?.shortDisplayName||'', a?.team?.shortDisplayName||'', ev.date, ev.id), 200);
+  const ap = window.computeAPEX ? window.computeAPEX(h, a, comp, hStats, aStats, hTeamStats, aTeamStats) : null;
+  const hasUsableApex = ap && ap.dataQuality !== 'insufficient' && [ap.hWin, ap.draw, ap.aWin].every(value => Number.isFinite(Number(value)));
+  const providerDate = ev.date ? new Date(ev.date) : null;
+  const dateLabel = providerDate && !Number.isNaN(providerDate.getTime()) ? providerDate.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}) : 'Date unavailable';
+  const timeLabel = providerDate && !Number.isNaN(providerDate.getTime()) ? providerDate.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) : 'Kick-off unavailable';
+  const formRows = arr => arr?.length ? arr.slice(-5).reverse().map(g => `<div class="form-row"><div class="form-badge ${esc(g.result || '—')}">${esc(g.result || '—')}</div><span class="form-ha">${esc(g.isHome ? 'H' : 'A')}</span><span class="form-opp">${esc(g.opponent || 'Opponent unavailable')}</span><span class="form-score ${esc(g.result || '')}">${esc(g.score && g.score !== 'NaN-NaN' ? g.score : '—')}</span></div>`).join('') : '<div class="edgex-v2-state"><strong>Recent form unavailable</strong><span>The configured provider did not return enough completed matches.</span></div>';
+  const formStats = (name, stats, form) => `<div class="edgex-detail-column"><div class="edgex-detail-column-title">${esc(name)}</div>${stats ? `<div class="fstat-grid"><div class="fstat"><div class="fstat-v">${esc(stats.wins ?? '—')}</div><div class="fstat-l">Won</div></div><div class="fstat"><div class="fstat-v">${Number.isFinite(Number(stats.gfpg)) ? esc(stats.gfpg) : '—'}</div><div class="fstat-l">GF / G</div></div><div class="fstat"><div class="fstat-v">${Number.isFinite(Number(stats.gapg)) ? esc(stats.gapg) : '—'}</div><div class="fstat-l">GA / G</div></div></div>` : ''}<div class="form-results">${formRows(form)}</div></div>`;
+  const eventDetails = Array.isArray(comp?.details) ? comp.details : Array.isArray(ev?.details) ? ev.details : [];
+  const incidents = eventDetails.length ? eventDetails.map(detail => `<div class="edgex-event-row"><span>${esc(detail.clock?.displayValue || detail.clock?.value || '')}</span><strong>${esc(detail.team?.displayName || detail.text || 'Match event')}</strong></div>`).join('') : '<div class="edgex-v2-state"><strong>Event timeline unavailable</strong><span>The provider has not supplied a confirmed incident timeline for this fixture.</span></div>';
+  const score = (live || ft) ? `${esc(hS || '0')}–${esc(aS || '0')}` : 'vs';
+  const liveMeta = live ? `<div class="edgex-live-strip"><span class="edgex-live-dot"></span><strong>${esc(clock || 'Live')}</strong><span>Provider refresh active</span></div>` : '';
+  const apexBlock = hasUsableApex ? `<div class="section edgex-detail-card pred-section"><div class="sec-title"><span>◌</span>${state === 'upcoming' ? 'PRE-MATCH APEX CONTEXT' : 'APEX MATCH CONTEXT'}<span style="margin-left:auto;font-size:8px;color:var(--muted);font-weight:400">${hFormData && aFormData ? 'Recent form included' : 'Season evidence only'}</span></div><div class="pred-summary">${state === 'upcoming' ? 'A measured pre-match view built from provider-backed form and season evidence.' : state === 'live' ? 'A live context view that updates only when validated match evidence is available.' : 'A post-match comparison of the pre-match context against the confirmed result.'}</div><div class="pred-goals-row"><span class="pred-xg-val">${esc(ap.hXG ?? '—')}</span><span class="pred-xg-lbl">Expected goals</span><span class="pred-xg-val">${esc(ap.aXG ?? '—')}</span></div><div class="pred-probs"><div class="pred-prob-item"><div class="pred-prob-val">${esc(ap.hWin)}%</div><div class="pred-prob-lbl">${esc(hShort)}</div></div><div class="pred-prob-item"><div class="pred-prob-val">${esc(ap.draw)}%</div><div class="pred-prob-lbl">Draw</div></div><div class="pred-prob-item"><div class="pred-prob-val">${esc(ap.aWin)}%</div><div class="pred-prob-lbl">${esc(aShort)}</div></div></div><div class="pred-scoreline">APEX read: <strong>${esc(ap.edge || 'NO EDGE')}</strong><button onclick="triggerAPEXAI()" id="apex-ai-btn" class="edgex-v2-button" type="button">Analyze with EdgeX</button></div></div>` : `<div class="section edgex-detail-card"><div class="sec-title">MATCH INTELLIGENCE</div><div class="edgex-v2-state"><strong>INSUFFICIENT DATA</strong><span>APEX context will appear only when the provider returns enough validated evidence for both teams.</span></div></div>`;
+  const stateBody = state === 'upcoming' ? `<div class="section edgex-detail-card"><div class="sec-title">UPCOMING FIXTURE</div><div class="edgex-detail-grid"><div><small>Kick-off</small><strong>${esc(dateLabel)} · ${esc(timeLabel)}</strong></div><div><small>Venue</small><strong>${esc(venue || 'Venue unavailable')}</strong></div><div><small>Lineups</small><strong>Available when provider confirms</strong></div><div><small>Context</small><strong>Pre-match analysis only</strong></div></div></div>` : state === 'live' ? `<div class="section edgex-detail-card"><div class="sec-title">LIVE MATCH FEED</div>${liveMeta}<div class="edgex-detail-grid"><div><small>Score</small><strong>${score}</strong></div><div><small>Clock</small><strong>${esc(clock || 'Live')}</strong></div><div><small>Incidents</small><strong>${eventDetails.length ? `${eventDetails.length} reported` : 'Unavailable'}</strong></div><div><small>Refresh</small><strong>Provider-backed</strong></div></div></div><div class="section edgex-detail-card"><div class="sec-title">CURRENT INCIDENTS</div><div class="edgex-event-list">${incidents}</div></div>` : `<div class="section edgex-detail-card"><div class="sec-title">POST-MATCH REVIEW</div><div class="edgex-detail-grid"><div><small>Final score</small><strong>${score}</strong></div><div><small>Result status</small><strong>Confirmed by provider</strong></div><div><small>Goal events</small><strong>${eventDetails.length ? `${eventDetails.length} reported` : 'Unavailable'}</strong></div><div><small>Review mode</small><strong>Evidence comparison</strong></div></div></div><div class="section edgex-detail-card"><div class="sec-title">MATCH EVENTS</div><div class="edgex-event-list">${incidents}</div></div>`;
+  const formBlock = `<div class="section edgex-detail-card"><div class="sec-title">RECENT FORM</div><div class="edgex-form-columns">${formStats(hShort, hStats, hFormData)}${formStats(aShort, aStats, aFormData)}</div></div>`;
+  const tabs = `<div class="edgex-detail-tabs"><span class="active">Overview</span><span>Lineups</span><span>Stats</span><span>Insights</span></div>`;
+  return `<div class="mp-hero edgex-fixture-hero ${state}"><div class="mp-comp">${esc(L.f || '⚽')} ${esc(L.n || 'Football')} <span class="edgex-state-badge ${state}">${stateLabel}</span></div><div class="mp-sb"><div class="mp-team"><div class="mp-logo">${h?.team?.logo ? `<img src="${esc(h.team.logo)}" alt="" onerror="this.parentElement.textContent='⚽'">` : '⚽'}</div><div class="mp-tname">${esc(hName)}</div><div class="mp-trec">${esc(hRec || 'Record unavailable')}</div></div><div class="mp-scores"><div class="mp-score ${state === 'upcoming' ? 'pre' : ''}">${score}</div><div class="mp-clock">${live ? `● ${esc(clock || 'LIVE')}` : ft ? 'Full Time' : `${esc(dateLabel)} · ${esc(timeLabel)}`}</div></div><div class="mp-team"><div class="mp-logo">${a?.team?.logo ? `<img src="${esc(a.team.logo)}" alt="" onerror="this.parentElement.textContent='⚽'">` : '⚽'}</div><div class="mp-tname">${esc(aName)}</div><div class="mp-trec">${esc(aRec || 'Record unavailable')}</div></div></div>${venue ? `<div class="mp-venue">${esc(venue)}</div>` : ''}</div>${tabs}<div class="mp-body">${stateBody}${apexBlock}${formBlock}<div class="section edgex-detail-card"><div class="sec-title">MATCH INFORMATION</div><div class="apex-row"><span class="apex-lbl">Competition</span><span class="apex-val">${esc(L.n || 'Football')}</span></div><div class="apex-row"><span class="apex-lbl">Date</span><span class="apex-val">${esc(dateLabel)}</span></div><div class="apex-row"><span class="apex-lbl">Kick-off</span><span class="apex-val">${esc(timeLabel)}</span></div><div class="apex-row"><span class="apex-lbl">Venue</span><span class="apex-val">${esc(venue || 'Unavailable')}</span></div></div><div class="section edgex-detail-card" id="ai-apex-section" style="display:none"><div class="sec-title">EDGE X ANALYSIS<span id="ai-provider-badge" style="margin-left:auto;font-size:8px;color:var(--muted)"></span></div><div id="ai-apex-text" class="pred-summary">Analysis will appear after a structured request.</div></div><div class="sf-section" id="sf-stats-wrap"><div class="sf-loading"><div class="sf-spinner"></div>Loading validated context from Sofascore…</div></div></div>`;
 }
+
 function closeMatch(){
   document.getElementById('match-page').classList.remove('open');
   document.body.style.overflow='';
