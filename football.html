@@ -1090,6 +1090,8 @@ const ESPN_PROXY = '/api/sports';
 const PRIORITY_LEAGUES = ['eng.1','esp.1','ger.1','ita.1','fra.1','uefa.champions','uefa.europa','fifa.world','concacaf.nations.league','conmebol.1'];
 
 let date = new Date(), tab = 'live', league = 'all', all = [];
+const listFormCache = new Map();
+let listFormRun = 0;
 
 const fmtDL = d => {
   const t=new Date(); t.setHours(0,0,0,0);
@@ -1163,6 +1165,46 @@ async function loadAll(loadExtra=false){
   ss(res.length?'ok':'err', res.length?`${res.length} matches · ${lv} live · ${note}`:'No matches for this date');
   if(lv===0 && tab==='live'){ tab='fixtures'; document.getElementById('t-live').classList.remove('on'); document.getElementById('t-fixtures').classList.add('on'); }
   render();
+  enrichListForms(res);
+}
+
+async function enrichListForms(matches) {
+  const run = ++listFormRun;
+  const requests = [];
+  const seen = new Set();
+  matches.forEach(ev => {
+    const h = gH(ev), a = gA(ev);
+    [[h, 'home'], [a, 'away']].forEach(([team]) => {
+      const teamId = team?.team?.id;
+      if (!teamId) return;
+      const key = `${ev._l}:${teamId}`;
+      if (!seen.has(key) && !listFormCache.has(key)) {
+        seen.add(key);
+        requests.push({ ev, teamId, key });
+      }
+    });
+  });
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < requests.length) {
+      const item = requests[cursor++];
+      try {
+        const response = await fetch(`/api/form?league=${encodeURIComponent(item.ev._l)}&teamId=${encodeURIComponent(item.teamId)}&limit=15`);
+        const data = response.ok ? await response.json() : null;
+        listFormCache.set(item.key, data);
+      } catch {
+        listFormCache.set(item.key, null);
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(4, requests.length) }, worker));
+  if (run !== listFormRun) return;
+  matches.forEach(ev => {
+    const h = gH(ev), a = gA(ev);
+    ev._formH = h?.team?.id ? listFormCache.get(`${ev._l}:${h.team.id}`) || null : null;
+    ev._formA = a?.team?.id ? listFormCache.get(`${ev._l}:${a.team.id}`) || null : null;
+  });
+  render();
 }
 
 function render(){
@@ -1193,8 +1235,8 @@ function mcard(ev){
   const hS=h?.score||'', aS=a?.score||'';
   const hRec=h?.records?.[0]?.summary||'';
   const aRec=a?.records?.[0]?.summary||'';
-  // APEX from shared.js
-  const ap = window.computeAPEX ? window.computeAPEX(h,a,comp) : null;
+  // APEX uses the same 15-game form contract as fixture details when available.
+  const ap = window.computeAPEX ? window.computeAPEX(h, a, comp, ev._formH?.stats || null, ev._formA?.stats || null, ev._formH?.teamStats || null, ev._formA?.teamStats || null) : null;
 
   return `<div class="mcard ${live?'live':ft?'ft':''}" onclick="openMatch('${ev.id}','${ev._l}')">
     <div class="comp-row"><span>${L.f}</span><span style="flex:1">${L.n}</span><span class="cpill ${pillSt}">${pillTx}</span></div>
@@ -1217,7 +1259,7 @@ function mcard(ev){
       <div class="as"><div class="av">${ap.draw}%</div><div class="al">Draw</div></div>
       <div class="as"><div class="av">${ap.aWin}%</div><div class="al">A Win</div></div>
       <div class="as"><div class="av" style="color:var(--gold)">${ap.hXG||'—'} — ${ap.aXG||'—'}</div><div class="al">xG</div></div>
-      <div class="atail"><span class="epill ${ap.edge==='HIGH'?'H':ap.edge==='MEDIUM'?'M':'L'}">${ap.edge}</span></div>
+      <div class="atail"><span class="epill ${ap.edge==='HIGH'?'H':ap.edge==='MEDIUM'?'M':'L'}">${ap.edge}</span><span style="display:block;margin-top:3px;font-size:7px;color:var(--muted)">${ev._formH?.stats && ev._formA?.stats ? '15G FORM' : 'SEASON FALLBACK'}</span></div>
     </div>`:''}
     ${ap&&window.topPicks?`<div class="picks">
       ${window.topPicks(ap).slice(0,2).map((p,i)=>`<div class="pick">

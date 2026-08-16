@@ -92,3 +92,11 @@
 - [x] Add normalized ESPN-backed recent home and away histories with up to 15 fixtures each.
 - [x] Render direct H2H, home recent form, and away recent form as separate provider-backed sections.
 - [x] Verify ESPN history loading and fixture-feed safety at 540px before pushing.
+
+- [x] Verify the ESPN 15-game histories flow into APEX form and probability inputs rather than only the H2H display.
+- [x] Test probability sensitivity when recent-game evidence changes while season evidence remains constant.
+- [x] Document whether all 19 market probabilities use the recent-game sample and identify any gaps.
+
+- [x] Enrich main Sports fixture-list cards with bounded ESPN 15-game form data before APEX scoring.
+- [x] Keep list rendering responsive with cached or bounded-concurrency form requests and season-only fallback on provider failure.
+- [x] Verify list-card and detail-view APEX outputs use the same evidence contract without breaking fixture loading.
