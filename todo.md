@@ -59,3 +59,8 @@
 - [x] Rebuild deterministic APEX analytical context for Sports, Markets, Squads, Crypto, and Forex using only provider-backed evidence.
 - [x] Repair structured AI analysis contracts and graceful no-edge/insufficient-data handling across all analytical domains.
 - [x] Verify asset refresh, AI/APEX outputs, detail views, mobile states, and route behavior before pushing.
+
+- [x] Repair Forex detail missing-change presentation and align provider freshness with the analysis evidence.
+- [x] Repair Player Edge provider-line consistency and make the NO EDGE dialog explain evidence quality clearly.
+- [x] Replace Crypto detail zero-change fallback and align its legacy detail presentation with the shared shell/model states.
+- [x] Re-run 540px responsive regression checks and push the screenshot-driven repairs.

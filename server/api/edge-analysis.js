@@ -38,6 +38,7 @@ function normalizeAnalysis(raw) {
   };
   if (normalized.verdict === 'INSUFFICIENT DATA' && !normalized.uncertainties.length) normalized.uncertainties.push('The model did not receive enough provider evidence.');
   if (normalized.verdict === 'NO EDGE' && !normalized.uncertainties.length) normalized.uncertainties.push('The available evidence did not establish a defensible edge.');
+  if ((normalized.verdict === 'INSUFFICIENT DATA' || normalized.verdict === 'NO EDGE') && normalized.dataQuality === 'unknown') normalized.dataQuality = 'insufficient';
   if (normalized.verdict === 'INSUFFICIENT DATA' || normalized.verdict === 'NO EDGE') {
     normalized.confidence = null;
     normalized.probability = null;

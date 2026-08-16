@@ -79,6 +79,7 @@
       provider: source.provider == null ? 'configured-ai' : String(source.provider)
     };
     if (normalized.verdict === 'INSUFFICIENT DATA' && !normalized.uncertainties.length) normalized.uncertainties.push('No sufficient provider evidence was returned.');
+    if ((normalized.verdict === 'INSUFFICIENT DATA' || normalized.verdict === 'NO EDGE') && normalized.dataQuality === 'unknown') normalized.dataQuality = 'insufficient';
     return normalized;
   };
   const requestAnalysis = async ({ domain, subject, data }) => {
