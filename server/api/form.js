@@ -12,18 +12,26 @@ export default async function handler(req, res) {
   const requestedLimit = Math.max(10, Math.min(15, Number.parseInt(req.query.limit || '15', 10) || 15));
   if (!league || !teamId) return res.status(400).json({ error: 'league and teamId required' });
 
-  const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${league}/teams/${teamId}/schedule`;
+  const urls = [
+    `https://site.web.api.espn.com/apis/site/v2/sports/soccer/${league}/teams/${teamId}/schedule`,
+    `https://site.api.espn.com/apis/site/v2/sports/soccer/${league}/teams/${teamId}/schedule`,
+  ];
 
   try {
     const ctrl = new AbortController();
     const tid = setTimeout(() => ctrl.abort(), 10000);
-    const r = await fetch(url, {
-      headers: { 'User-Agent': 'EdgeX/2.0' },
-      signal: ctrl.signal,
-    });
+    let r = null;
+    for (const url of urls) {
+      const candidate = await fetch(url, {
+        headers: { 'User-Agent': 'EdgeX/2.0' },
+        signal: ctrl.signal,
+      });
+      if (candidate.ok) { r = candidate; break; }
+      r = candidate;
+    }
     clearTimeout(tid);
 
-    if (!r.ok) return res.status(200).json({ form: [], stats: null, teamId, league, _debug: { espnStatus: r.status } });
+    if (!r?.ok) return res.status(200).json({ form: [], stats: null, teamId, league, _debug: { espnStatus: r?.status ?? 502 } });
 
     const data = await r.json();
     const events = data.events || [];
@@ -148,7 +156,7 @@ export default async function handler(req, res) {
     // Step 3: Fetch team stats for corners + defensive data
     let teamStats = null;
     try {
-      const tsUrl = `https://site.api.espn.com/apis/site/v2/sports/soccer/${league}/teams/${teamId}`;
+      const tsUrl = `https://site.web.api.espn.com/apis/site/v2/sports/soccer/${league}/teams/${teamId}`;
       const tsCtrl = new AbortController();
       const tsTid = setTimeout(() => tsCtrl.abort(), 6000);
       const tsR = await fetch(tsUrl, { headers: { 'User-Agent': 'EdgeX/2.0' }, signal: tsCtrl.signal });

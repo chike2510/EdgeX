@@ -100,3 +100,8 @@
 - [x] Enrich main Sports fixture-list cards with bounded ESPN 15-game form data before APEX scoring.
 - [x] Keep list rendering responsive with cached or bounded-concurrency form requests and season-only fallback on provider failure.
 - [x] Verify list-card and detail-view APEX outputs use the same evidence contract without breaking fixture loading.
+
+- [x] Make the Stats tab render actual provider-backed in-game match statistics, not recent form or generic match metadata.
+- [x] Move recent-form evidence to the appropriate analytical context and repair its live loading contract for current fixtures.
+- [x] Ensure H2H resolves to ESPN history, no-history, or provider-error state instead of remaining on a spinner.
+- [x] Re-run 540px state regression checks and push the corrected fixture-detail experience.
