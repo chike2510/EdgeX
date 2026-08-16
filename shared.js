@@ -106,9 +106,12 @@ window.MARKET_LIBRARY = {
 // ── APEX ENGINE ──────────────────────────────────────────────
 window.computeAPEX = function(home, away, comp, hFormStats, aFormStats, hTeamStats, aTeamStats) {
   // ── Parse win records ───────────────────────────────────────
-  const parseRec = r => { const p=(r||'0-0-0').split('-').map(Number); return {w:p[0]||0,d:p[1]||0,l:p[2]||0}; };
-  const hR = parseRec(home?.records?.[0]?.summary);
-  const aR = parseRec(away?.records?.[0]?.summary);
+  const parseRec = r => { const p=(r||'').split('-').map(Number); return {w:p[0]||0,d:p[1]||0,l:p[2]||0}; };
+  const hRecord = home?.records?.[0]?.summary || '';
+  const aRecord = away?.records?.[0]?.summary || '';
+  const hR = parseRec(hRecord);
+  const aR = parseRec(aRecord);
+  if (!hRecord || !aRecord) return { hWin:null, draw:null, aWin:null, hXG:null, aXG:null, totalXG:null, o25:null, o15:null, btts:null, hO05:null, aO05:null, conf:null, edge:'NO EDGE', top2:null, hInsight:'Season record unavailable', aInsight:'Season record unavailable', matchSummary:'Insufficient provider evidence for a defensible APEX read.', hMomentum:null, aMomentum:null, hCS:null, aCS:null, hCornersEst:null, aCornersEst:null, totalCornersEst:null, hRec:hRecord||'—', aRec:aRecord||'—', dataQuality:'insufficient' };
   const hGP = hR.w+hR.d+hR.l||1, aGP = aR.w+aR.d+aR.l||1;
   const hWR = hR.w/hGP, aWR = aR.w/aGP;
   const hDR = hR.d/hGP, aDR = aR.d/aGP;
@@ -161,10 +164,11 @@ window.computeAPEX = function(home, away, comp, hFormStats, aFormStats, hTeamSta
   const aXGraw = aSOT > 0 ? aSOT*0.33 + aSh*0.04
     : calcXG(aGFpg, hGApg, aAwayWR, aRecentDR, aMomentum, false);
   // Final guard — if still NaN for any reason, use safe default
-  const hXG = isNaN(hXGraw) ? '0.85' : hXGraw.toFixed(2);
-  const aXG = isNaN(aXGraw) ? '0.75' : aXGraw.toFixed(2);
+  const hXG = isNaN(hXGraw) ? null : hXGraw.toFixed(2);
+  const aXG = isNaN(aXGraw) ? null : aXGraw.toFixed(2);
 
-  const hXGn = parseFloat(hXG)||0.85, aXGn = parseFloat(aXG)||0.75;
+  const hXGn = parseFloat(hXG), aXGn = parseFloat(aXG);
+  if (!Number.isFinite(hXGn) || !Number.isFinite(aXGn)) return { hWin:null, draw:null, aWin:null, hXG:null, aXG:null, totalXG:null, o25:null, o15:null, btts:null, hO05:null, aO05:null, conf:null, edge:'NO EDGE', top2:null, hInsight:'Expected-goal data unavailable', aInsight:'Expected-goal data unavailable', matchSummary:'Insufficient provider evidence for a defensible APEX read.', hMomentum:null, aMomentum:null, hCS:null, aCS:null, hCornersEst:null, aCornersEst:null, totalCornersEst:null, hRec:hRecord||'—', aRec:aRecord||'—', dataQuality:'insufficient' };
   const totalXG = +(hXGn + aXGn).toFixed(2);
 
   // ── Win probabilities ─────────────────────────────────────────
@@ -238,18 +242,14 @@ window.computeAPEX = function(home, away, comp, hFormStats, aFormStats, hTeamSta
   const matchSummary = `${fav}. ${goalsO.charAt(0).toUpperCase()+goalsO.slice(1)}. ${hMomStr2||aMomStr2} (${hFormStats&&aFormStats?'Last 10 games':'Season record'})`.trim();
 
   // ── Corner projections ────────────────────────────────────────
-  const hCornersEst = hTeamStats?.cornersForPG != null
-    ? hTeamStats.cornersForPG
-    : +(3.8 + hXGn2 * 1.6).toFixed(1);
-  const aCornersEst = aTeamStats?.cornersForPG != null
-    ? aTeamStats.cornersForPG
-    : +(2.9 + aXGn2 * 1.4).toFixed(1);
-  const totalCornersEst = +(parseFloat(hCornersEst) + parseFloat(aCornersEst)).toFixed(1);
+  const hCornersEst = hTeamStats?.cornersForPG != null ? hTeamStats.cornersForPG : null;
+  const aCornersEst = aTeamStats?.cornersForPG != null ? aTeamStats.cornersForPG : null;
+  const totalCornersEst = hCornersEst != null && aCornersEst != null ? +(parseFloat(hCornersEst) + parseFloat(aCornersEst)).toFixed(1) : null;
 
   return { hWin, draw, aWin, hXG, aXG, totalXG, o25, o15, btts, hO05, aO05,
            conf, edge, top2, hInsight, aInsight, matchSummary,
            hMomentum, aMomentum, hCS, aCS,
-           hCornersEst, aCornersEst, totalCornersEst,
+           hCornersEst, aCornersEst, totalCornersEst, dataQuality: hasFormData ? 'form-supported' : 'season-supported',
            hRec: home?.records?.[0]?.summary||'—',
            aRec: away?.records?.[0]?.summary||'—' };
 };
@@ -517,39 +517,32 @@ console.log('[EdgeX] shared.js loaded — ' + Object.keys(window.COMPETITIONS).l
 // Call this to enhance APEX with Groq AI narrative + deeper read
 // ═══════════════════════════════════════════════════════════════
 window.getAPEXAIInsight = async function(apex, homeName, awayName, competition) {
-  const prompt = `You are EdgeX APEX, a research-only sports intelligence analyst. Analyze this match and give a sharp, data-driven evidence summary.
-
-Match: ${homeName} vs ${awayName} (${competition || 'Football'})
-APEX Model Output:
-- Win probabilities: Home ${apex.hWin}% | Draw ${apex.draw}% | Away ${apex.aWin}%
-- xG: Home ${apex.hXG} | Away ${apex.aXG} | Total ${apex.totalXG}
-- Over 2.5 Goals: ${apex.o25}% | BTTS: ${apex.btts}% | Over 1.5: ${apex.o15}%
-- Home form: ${apex.hInsight}
-- Away form: ${apex.aInsight}
-- Likely scoreline: ${apex.top2}
-- Match summary: ${apex.matchSummary}
-
-Provide a 3-sentence research insight:
-1. The strongest supported signal and why (cite the data)
-2. One risk factor to watch
-3. Confidence verdict (HIGH/MEDIUM/LOW) with brief reason
-
-Be sharp and concise. No filler. Max 120 words.`;
-
+  const data = {
+    provider: 'ESPN + EdgeX APEX',
+    home: homeName,
+    away: awayName,
+    competition: competition || 'Football',
+    winProbabilities: { home: apex.hWin, draw: apex.draw, away: apex.aWin },
+    expectedGoals: { home: apex.hXG, away: apex.aXG, total: apex.totalXG },
+    markets: { over25: apex.o25, btts: apex.btts, over15: apex.o15 },
+    form: { home: apex.hInsight, away: apex.aInsight },
+    likelyScoreline: apex.top2,
+    summary: apex.matchSummary,
+    apexConfidence: apex.conf,
+    dataQuality: apex.conf >= 68 ? 'form-supported' : apex.conf >= 55 ? 'season-supported' : 'limited'
+  };
   try {
-    const r = await fetch('/api/ai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt,
-        system: 'You are a sharp, concise sports intelligence analyst. Respond in plain text, no markdown, no bullet points. Use only supplied data and say NO EDGE when evidence is incomplete.',
-        max_tokens: 300,
-      }),
-    });
-    const data = await r.json();
-    return { text: data.text || '', provider: data.provider || 'ai', error: data.error || null };
+    const result = window.EdgeXV2?.requestAnalysis
+      ? await window.EdgeXV2.requestAnalysis({ domain: 'sports', subject: { home: homeName, away: awayName, competition: competition || 'Football' }, data })
+      : { verdict: 'INSUFFICIENT DATA', confidence: null, reasons: [], uncertainties: ['Shared analysis helper unavailable.'], provider: 'data-only' };
+    const reasons = (result.reasons || []).join(' ');
+    const uncertainties = (result.uncertainties || []).join(' ');
+    const text = result.verdict === 'INSUFFICIENT DATA' || result.verdict === 'NO EDGE'
+      ? `${result.verdict}. ${uncertainties || 'The supplied fixture evidence did not establish a defensible edge.'}`
+      : `${result.verdict}. ${result.projection || reasons || 'The structured model returned a directional read from the supplied fixture evidence.'} ${uncertainties}`.trim();
+    return { text, provider: result.provider || 'structured-analysis', error: null, structured: result };
   } catch (e) {
-    return { text: '', provider: null, error: e.message };
+    return { text: 'Structured analysis unavailable. The deterministic APEX context remains visible.', provider: 'data-only', error: e.message, structured: null };
   }
 };
 

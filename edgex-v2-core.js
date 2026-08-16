@@ -59,7 +59,38 @@
     write(STORAGE.favorites, next); window.dispatchEvent(new CustomEvent('edgex:favorites-changed', { detail: next })); return next.includes(key);
   };
   const logActivity = (activity) => { const current = read(STORAGE.activity, []); const next = [{ ...activity, timestamp: activity.timestamp || Date.now() }, ...current].slice(0, 100); write(STORAGE.activity, next); return next; };
-  const requestAnalysis = async ({ domain, subject, data }) => { const response = await fetch('/api/edge-analysis', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ domain, subject, data }) }); const body = await response.json(); if (!response.ok) throw new Error(body.error || 'Analysis unavailable'); return body; };
+  const emptyAnalysis = (message = 'No sufficient provider evidence was returned.') => ({ verdict: 'INSUFFICIENT DATA', confidence: null, projection: null, probability: null, reasons: [], positiveFactors: [], negativeFactors: [], uncertainties: [message], risk: 'unknown', dataQuality: 'none', provider: 'data-only' });
+  const normalizeAnalysis = (body) => {
+    const source = body && typeof body === 'object' ? body : {};
+    const verdicts = new Set(['BULLISH', 'BEARISH', 'NEUTRAL', 'NO EDGE', 'INSUFFICIENT DATA']);
+    const numberOrNull = value => value == null || value === '' || !Number.isFinite(Number(value)) ? null : Number(value);
+    const list = value => Array.isArray(value) ? value.filter(Boolean).map(item => String(item)) : [];
+    const normalized = {
+      verdict: verdicts.has(String(source.verdict || '').toUpperCase()) ? String(source.verdict).toUpperCase() : 'INSUFFICIENT DATA',
+      confidence: numberOrNull(source.confidence),
+      projection: source.projection == null ? null : String(source.projection),
+      probability: numberOrNull(source.probability),
+      reasons: list(source.reasons),
+      positiveFactors: list(source.positiveFactors),
+      negativeFactors: list(source.negativeFactors),
+      uncertainties: list(source.uncertainties),
+      risk: source.risk == null ? 'unknown' : String(source.risk),
+      dataQuality: source.dataQuality == null ? 'unknown' : String(source.dataQuality),
+      provider: source.provider == null ? 'configured-ai' : String(source.provider)
+    };
+    if (normalized.verdict === 'INSUFFICIENT DATA' && !normalized.uncertainties.length) normalized.uncertainties.push('No sufficient provider evidence was returned.');
+    return normalized;
+  };
+  const requestAnalysis = async ({ domain, subject, data }) => {
+    try {
+      const response = await fetch('/api/edge-analysis', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ domain, subject, data }) });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) return normalizeAnalysis({ ...emptyAnalysis(body.error || 'Analysis service unavailable.'), provider: 'data-only' });
+      return normalizeAnalysis(body);
+    } catch (error) {
+      return normalizeAnalysis(emptyAnalysis(error?.message || 'Analysis service unavailable.'));
+    }
+  };
 
   const saveAnalysis = (analysis) => {
     const current = read(STORAGE.saved, []); const next = [analysis, ...current.filter(item => item.id !== analysis.id)].slice(0, 100);
@@ -92,5 +123,5 @@
     update();
   };
 
-  window.EdgeXV2 = { STORAGE, escape, debounce, normalize, filterItems, sortItems, stateCard, mountControls, mountSearch, favorites, isFavorite, toggleFavorite, logActivity, requestAnalysis, saveAnalysis };
+  window.EdgeXV2 = { STORAGE, escape, debounce, normalize, filterItems, sortItems, stateCard, mountControls, mountSearch, favorites, isFavorite, toggleFavorite, logActivity, requestAnalysis, normalizeAnalysis, emptyAnalysis, saveAnalysis };
 })(window);

@@ -239,3 +239,11 @@ body.edgex-shell-page.ex-root .lp-nav,body.edgex-shell-page.ex-root .ex-header,b
 
 /* Approved EdgeX Option B logo lockup. */
 .edgex-logo-lockup{display:inline-flex!important;align-items:center!important;gap:8px!important;text-decoration:none!important;color:var(--edgex-text)!important;line-height:1!important}.edgex-logo-mark{display:block;width:24px;height:24px;fill:none;stroke:var(--edgex-green);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}.edgex-logo-mark circle{fill:var(--edgex-text);stroke:var(--edgex-green);stroke-width:1.4}.edgex-logo-word{font-family:var(--edgex-font-body)!important;font-size:19px!important;font-weight:700!important;letter-spacing:.08em!important;color:var(--edgex-text)!important}.edgex-logo-word>span{color:var(--edgex-green)!important}.edgex-shell-brand .edgex-logo-mark{width:23px;height:23px}.edgex-shell-brand .edgex-logo-word{font-size:18px!important}.edgex-shell-drawer-head .edgex-logo-mark{width:24px;height:24px}.lp-nav .edgex-logo-mark,.hm-logo .edgex-logo-mark{width:24px;height:24px}.lp-nav .edgex-logo-word,.hm-logo .edgex-logo-word{font-size:19px!important}@media(max-width:520px){.edgex-shell-brand .edgex-logo-mark{width:22px;height:22px}.edgex-shell-brand .edgex-logo-word{font-size:17px!important}.lp-nav .edgex-logo-mark{width:23px;height:23px}.lp-nav .edgex-logo-word{font-size:18px!important}}
+
+/* Evidence-aware analysis action and result */
+.analysis-action{display:inline-flex;align-items:center;justify-content:center;min-height:40px;margin-top:12px;padding:0 14px;border:1px solid rgba(114,214,177,.38);border-radius:8px;background:rgba(114,214,177,.08);color:var(--edgex-green);font:600 11px/1 var(--edgex-font-body);cursor:pointer;transition:background .18s ease,border-color .18s ease,transform .18s ease}
+.analysis-action:hover{background:rgba(114,214,177,.15);border-color:rgba(114,214,177,.6)}
+.analysis-action:active{transform:scale(.98)}
+.analysis-result{display:grid;gap:4px;margin-top:10px;padding:10px 0 0;border-top:1px solid rgba(255,255,255,.07);font:11px/1.55 var(--edgex-font-body);color:var(--edgex-text)}
+.analysis-result strong{letter-spacing:.08em;color:var(--edgex-green);font-size:10px}
+.analysis-result small{color:var(--edgex-muted);font-size:10px}

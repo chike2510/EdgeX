@@ -54,3 +54,8 @@
 - [x] Diagnose the deployed Forex unavailable state against the actual API response and client renderer.
 - [x] Expand Crypto coverage with more provider-backed CoinGecko assets and broader Forex pair coverage from the configured rate provider.
 - [x] Verify expanded live payloads, mobile rendering, and explicit unavailable states before pushing.
+- [x] Trace why the 34 Crypto coins and 21 Forex pairs are not visibly updating in real time, including websocket, polling, and provider source states.
+- [x] Repair observable live refresh and asset coverage so every returned Crypto and Forex asset has a clear updated, unchanged, unavailable, or stale state.
+- [x] Rebuild deterministic APEX analytical context for Sports, Markets, Squads, Crypto, and Forex using only provider-backed evidence.
+- [x] Repair structured AI analysis contracts and graceful no-edge/insufficient-data handling across all analytical domains.
+- [x] Verify asset refresh, AI/APEX outputs, detail views, mobile states, and route behavior before pushing.

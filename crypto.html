@@ -232,7 +232,7 @@ const COINS=[
   {sym:'WIF', name:'dogwifhat',  id:'dogwifcoin',     ic:'W', color:'#c5a880',dec:6,rank:null,category:'memecoin'},
 ];
 
-const prices={},chg24={},mcap={},vol24={};
+const prices={},chg24={},mcap={},vol24={},coinFeedState={};
 let selCoin=null,coinTab='overview';
 
 function fmtP(coin,p){if(!p)return'—';if(coin.dec===0)return'$'+Math.round(p).toLocaleString();return'$'+p.toFixed(coin.dec);}
@@ -269,7 +269,7 @@ function buildGrid(){
 
 function updateCoin(sym,price,change24h){
   const c=COINS.find(x=>x.sym===sym);if(!c)return;
-  const pv=prices[sym];prices[sym]=price;if(change24h!=null)chg24[sym]=change24h;
+  const pv=prices[sym];prices[sym]=Number(price);chg24[sym]=change24h==null?null:Number(change24h);coinFeedState[sym]={updatedAt:Date.now(),provider:coinFeedState[sym]?.provider||'CoinGecko'};
   const el=document.getElementById('cp-'+sym);
   if(el){el.textContent=fmtP(c,price);if(pv){el.classList.remove('fup','fdn');void el.offsetWidth;el.classList.add(price>=pv?'fup':'fdn')}}
   const chgEl=document.getElementById('cc-chg-'+sym);
@@ -309,16 +309,19 @@ async function loadCoinGecko(){
     if(!r.ok)throw new Error(`${r.status}`);
     const body=await r.json();
     const d=Array.isArray(body.assets) ? body.assets : [];
+    let updatedCount=0;
     d.forEach(coin=>{
       const c=COINS.find(x=>x.id===coin.id);
-      if(c){
+      if(c&&coin.price!=null){
         updateCoin(c.sym,coin.price,coin.change24h);
+        coinFeedState[c.sym]={updatedAt:Date.now(),provider:'CoinGecko'};
         mcap[c.sym]=coin.marketCap;
         vol24[c.sym]=coin.volume24h;
+        updatedCount++;
       }
     });
-    if(!d.length)throw new Error('No crypto assets returned');
-    setWS('live',`CoinGecko · ${d.length} assets updated`,'EdgeX provider');
+    if(!d.length||!updatedCount)throw new Error('No mapped crypto assets returned');
+    setWS('live',`CoinGecko · ${updatedCount}/${COINS.length} assets updated`,'EdgeX provider');
     setTimeout(loadCoinGecko,60000);
   }catch(e){setWS('dead','Could not load prices — '+e.message,'');setTimeout(loadCoinGecko,20000)}
 }
@@ -376,7 +379,19 @@ function refreshCoinDetail(){
     <div class="ind-row"><span class="ind-name">MA200</span><span class="ind-val">Unavailable <span class="ind-sig NEUTRAL">UNAVAILABLE</span></span></div>
     <div class="ind-row"><span class="ind-name">24h Momentum</span><span class="ind-val">${ch!=null?(ch>=0?'+':'')+ch.toFixed(2)+'%':'Unavailable'} <span class="ind-sig ${ch>0?'BULLISH':ch<0?'BEARISH':'NEUTRAL'}">${ch>0?'BULLISH':ch<0?'BEARISH':'NEUTRAL'}</span></span></div>`;
   // Reason
-  document.getElementById('cp-reason').innerHTML=`<strong>Why ${sig.verdict}?</strong> ${sig.reason}.<br><span style="color:var(--muted);font-size:9.5px">This is a research context view only. EdgeX will not invent a confidence score or transaction levels.</span>`;
+  document.getElementById('cp-reason').innerHTML=`<strong>Why ${sig.verdict}?</strong> ${sig.reason}.<br><span style="color:var(--muted);font-size:9.5px">This is a research context view only. EdgeX will not invent a confidence score or transaction levels.</span><br><button type="button" class="analysis-action" onclick="runCryptoAnalysis()">Analyze with EdgeX</button><div id="cp-analysis" class="analysis-result" aria-live="polite"></div>`;
+}
+
+async function runCryptoAnalysis(){
+  const target=document.getElementById('cp-analysis'); if(!target||!selCoin)return;
+  const c=COINS.find(x=>x.sym===selCoin); const p=prices[selCoin], ch=chg24[selCoin];
+  target.textContent='EdgeX is checking provider evidence…';
+  try {
+    const result=await EdgeXV2.requestAnalysis({domain:'crypto',subject:{symbol:c.sym,name:c.name},data:{provider:'CoinGecko',price:p,change24h:ch,marketCap:mcap[selCoin],volume24h:vol24[selCoin],rank:c.rank,category:c.category||'asset'}});
+    target.innerHTML=`<strong>${result.verdict}</strong><span>${result.projection||'No projection returned'} · ${result.confidence==null?'Confidence not returned':result.confidence+'%'}</span><small>${(result.reasons||[]).join(' ')||'No supporting reasons returned.'} ${(result.uncertainties||[]).join(' ')}</small>`;
+  } catch (error) {
+    target.innerHTML=`<strong>Analysis unavailable</strong><span>EdgeX could not complete this read.</span><small>${error?.message||'The structured analysis service did not return a result.'}</small>`;
+  }
 }
 
 function setCoinTab(t,btn){coinTab=t;document.querySelectorAll('.cpt').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderCoinTab(t);}
@@ -404,23 +419,15 @@ function renderCoinTab(t){
   } else if(t==='technical'){
     const sig=computeSignal(selCoin);
     el.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px">
-      <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Oscillators</div>
-      <div class="drow"><span class="dl">RSI (14)</span><span class="dv">Unavailable from provider</span></div>
-      <div class="drow"><span class="dl">MACD</span><span class="dv">Unavailable from provider</span></div>
-      <div class="drow"><span class="dl">Stochastic RSI</span><span class="dv">Unavailable from provider</span></div>
-      <div class="drow"><span class="dl">CCI (20)</span><span class="dv">Unavailable from provider</span></div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px">
-      <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Moving Averages</div>
-      <div class="drow"><span class="dl">MA 50</span><span class="dv">Unavailable from provider</span></div>
-      <div class="drow"><span class="dl">MA 200</span><span class="dv">Unavailable from provider</span></div>
-      <div class="drow"><span class="dl">EMA 9</span><span class="dv">Unavailable from provider</span></div>
+      <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Technical data coverage</div>
+      <div class="drow"><span class="dl">Spot price</span><span class="dv">${p!=null?'Provider supplied':'Not supplied'}</span></div>
+      <div class="drow"><span class="dl">24h change</span><span class="dv">${ch!=null?'Provider supplied':'Not supplied'}</span></div>
+      <div class="drow"><span class="dl">Candle history</span><span class="dv">Not supplied by current feed</span></div>
+      <div class="drow"><span class="dl">Technical indicators</span><span class="dv">Not computed without candles</span></div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px">
-      <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Volatility</div>
-      <div class="drow"><span class="dl">ATR (14)</span><span class="dv">Unavailable from provider</span></div>
-      <div class="drow"><span class="dl">Bollinger Upper</span><span class="dv">Unavailable from provider</span></div>
-      <div class="drow"><span class="dl">Bollinger Lower</span><span class="dv">Unavailable from provider</span></div>
+      <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Model boundary</div>
+      <div style="font-size:11px;line-height:1.7;color:var(--muted)">The current CoinGecko contract provides spot market fields and 24h movement. APEX will not infer RSI, moving averages, volatility bands, targets, or risk levels until candle history is available.</div>
     </div>`;
   } else {
     const info={

@@ -215,6 +215,7 @@ const ASSETS = {
     {id:'AUDUSD', sym:'AUD/USD', desc:'Australian Dollar / USD',       ic:'🇦🇺', cat:'fx',  dec:4,  ref:0.6412,pre:'', bayse:null},
     {id:'USDCHF', sym:'USD/CHF', desc:'US Dollar / Swiss Franc',       ic:'🇨🇭', cat:'fx',  dec:4,  ref:0.9023,pre:'', bayse:null},
     {id:'EURGBP', sym:'EUR/GBP', desc:'Euro / British Pound',          ic:'🇪🇺', cat:'fx',  dec:4,  ref:0.857, pre:'', bayse:null},
+    {id:'EURJPY', sym:'EUR/JPY', desc:'Euro / Japanese Yen',            ic:'🇪🇺', cat:'fx',  dec:2,  ref:163.8, pre:'¥', bayse:null},
     {id:'NZDUSD', sym:'NZD/USD', desc:'New Zealand Dollar / USD',      ic:'🇳🇿', cat:'fx',  dec:4,  ref:0.591, pre:'', bayse:null},
     {id:'USDSEK', sym:'USD/SEK', desc:'US Dollar / Swedish Krona',      ic:'🇸🇪', cat:'fx',  dec:4,  ref:10.4, pre:'', bayse:null},
     {id:'USDNOK', sym:'USD/NOK', desc:'US Dollar / Norwegian Krone',    ic:'🇳🇴', cat:'fx',  dec:4,  ref:10.2, pre:'', bayse:null},
@@ -261,21 +262,19 @@ const ASSETS = {
 };
 const ALL_ASSETS=Object.values(ASSETS).flat();
 
-const prices={},chg={};
+const prices={},chg={},assetFeedState={};
 let selAsset=null,assetTab='details',currentCat='all';
-
-// Load reference prices immediately
-ALL_ASSETS.forEach(a=>{prices[a.id]=a.ref;chg[a.id]=0;});
 
 // ── SIGNAL ENGINE ──────────────────────────────────────────
 function computeSignal(asset){
-  const p=prices[asset.id]||asset.ref;
-  const c=chg[asset.id]||0;
-  const directionalContext = c > 0 ? 'BULLISH' : c < 0 ? 'BEARISH' : 'NEUTRAL';
-  const reasons = c === 0 ? ['Change unavailable from provider'] : [`Provider-reported change ${c > 0 ? '+' : ''}${c.toFixed(2)}%`];
+  const p=prices[asset.id];
+  const c=chg[asset.id];
+  if(p == null) return { verdict:'INSUFFICIENT DATA', conf:null, rsi:null, ma50:null, ma200:null, tp1:null, tp2:null, sl:null, reason:'Provider price unavailable', fmtL:v=>'Unavailable', pctFmt:()=>'' };
+  const directionalContext = c == null ? 'NO EDGE' : c > 0 ? 'BULLISH' : c < 0 ? 'BEARISH' : 'NEUTRAL';
+  const reasons = c == null ? ['Provider does not supply a comparable 24h change for this pair'] : [`Provider-reported change ${c > 0 ? '+' : ''}${c.toFixed(2)}%`];
   const fmtL=v=>{if(v===null||v===undefined)return 'Unavailable';if(asset.dec===0)return asset.pre+Math.round(v).toLocaleString();return asset.pre+v.toFixed(asset.dec);}
   const pctFmt=v=>v===null||v===undefined?'Unavailable':((v-p)/p*100).toFixed(1)+'%';
-  return{verdict:directionalContext,conf:null,rsi:null,ma50:null,ma200:null,tp1:null,tp2:null,sl:null,reason:reasons.join(' · '),fmtL,pctFmt};
+  return{verdict:directionalContext,conf:null,rsi:null,ma50:null,ma200:null,tp1:null,tp2:null,sl:null,reason:reasons.join(' · '),fmtL,pctFmt, dataQuality:c == null ? 'price-only' : 'price-and-change'};
 }
 
 function fmtP(asset,v){
@@ -295,13 +294,13 @@ function renderAll(){
     <div class="assets-table">
       <div class="atbl-head"><div>Asset</div><div>Price</div><div>Signal</div><div>Change</div><div></div></div>
       ${items.map(a=>{
-        const p=prices[a.id],c=chg[a.id]||0;
+        const p=prices[a.id],c=chg[a.id];
         const sig=computeSignal(a);
         return`<div class="arow" id="row-${a.id}" onclick="openAsset('${a.id}')">
           <div><div class="arow-name">${a.ic} ${a.sym}</div><div class="arow-desc">${a.desc}</div></div>
           <div class="arow-price">${fmtP(a,p)}</div>
           <div><span class="sig-badge ${sig.verdict}">${sig.verdict}</span></div>
-          <div class="arow-chg ${c>0?'up':c<0?'dn':'flat'}">${c!==0?(c>0?'▲':'▼')+' '+Math.abs(c).toFixed(2)+'%':'—'}</div>
+          <div class="arow-chg ${c>0?'up':c<0?'dn':'flat'}">${c!=null?(c>0?'▲':'▼')+' '+Math.abs(c).toFixed(2)+'%':'—'}</div>
           <div class="arow-chev"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>`;
       }).join('')}
@@ -338,11 +337,11 @@ function closeAsset(){document.getElementById('asset-page').classList.remove('op
 
 function refreshAssetDetail(){
   if(!selAsset)return;
-  const a=selAsset,p=prices[a.id],c=chg[a.id]||0;
+  const a=selAsset,p=prices[a.id],c=chg[a.id];
   document.getElementById('ap-price-big').textContent=fmtP(a,p);
   const chgEl=document.getElementById('ap-chg-big');
-  chgEl.className='ap-chg-big '+(c>=0?'up':'dn');
-  chgEl.textContent=(c>=0?'▲':'▼')+' '+Math.abs(c).toFixed(c<0.1?4:2)+'%'+(c===0?' (Approx.)':'');
+  chgEl.className='ap-chg-big '+(c==null?'flat':c>=0?'up':'dn');
+  chgEl.textContent=c==null?'Change unavailable':(c>=0?'▲':'▼')+' '+Math.abs(c).toFixed(c<0.1?4:2)+'%';
   const sig=computeSignal(a);
   document.getElementById('ap-verdict').textContent=sig.verdict;
   document.getElementById('ap-verdict').className='sm-v '+sig.verdict;
@@ -361,21 +360,33 @@ function refreshAssetDetail(){
     <div class="ir"><span class="ir-n">RSI (14)</span><span class="ir-v">Unavailable <span class="is NEUTRAL">UNAVAILABLE</span></span></div>
     <div class="ir"><span class="ir-n">MA 50 vs Price</span><span class="ir-v">Unavailable <span class="is NEUTRAL">UNAVAILABLE</span></span></div>
     <div class="ir"><span class="ir-n">MA 200</span><span class="ir-v">Unavailable <span class="is NEUTRAL">UNAVAILABLE</span></span></div>
-    <div class="ir"><span class="ir-n">24h Momentum</span><span class="ir-v">${c>=0?'+':''}${c.toFixed(2)}% <span class="is ${c>=0.5?'BULLISH':c<=-0.5?'BEARISH':'NEUTRAL'}">${c>=0.5?'BULLISH':c<=-0.5?'BEARISH':'NEUTRAL'}</span></span></div>`;
-  document.getElementById('ap-reason').innerHTML=`<strong>Why ${sig.verdict}?</strong> ${sig.reason}.<br><span style="color:var(--muted);font-size:9.5px">This is an analytical context view only. It is not a broker, order screen, or financial advice.</span>`;
+    <div class="ir"><span class="ir-n">24h Momentum</span><span class="ir-v">${c==null?'Unavailable from provider':(c>=0?'+':'')+c.toFixed(2)+'%'} <span class="is ${c==null?'NEUTRAL':c>=0.5?'BULLISH':c<=-0.5?'BEARISH':'NEUTRAL'}">${c==null?'UNAVAILABLE':c>=0.5?'BULLISH':c<=-0.5?'BEARISH':'NEUTRAL'}</span></span></div>`;
+  document.getElementById('ap-reason').innerHTML=`<strong>Why ${sig.verdict}?</strong> ${sig.reason}.<br><span style="color:var(--muted);font-size:9.5px">This is an analytical context view only. It is not a broker, order screen, or financial advice.</span><br><button type="button" class="analysis-action" onclick="runForexAnalysis()">Analyze with EdgeX</button><div id="ap-analysis" class="analysis-result" aria-live="polite"></div>`;
+}
+
+async function runForexAnalysis(){
+  const target=document.getElementById('ap-analysis'); if(!target||!selAsset)return;
+  const a=selAsset; const p=prices[a.id], c=chg[a.id];
+  target.textContent='EdgeX is checking provider evidence…';
+  try {
+    const result=await EdgeXV2.requestAnalysis({domain:'forex',subject:{symbol:a.sym,name:a.desc},data:{provider:assetFeedState[a.id]?.provider||'EdgeX forex provider',price:p,change24h:c,category:a.cat,updatedAt:assetFeedState[a.id]?.updatedAt||null}});
+    target.innerHTML=`<strong>${result.verdict}</strong><span>${result.projection||'No projection returned'} · ${result.confidence==null?'Confidence not returned':result.confidence+'%'}</span><small>${(result.reasons||[]).join(' ')||'No supporting reasons returned.'} ${(result.uncertainties||[]).join(' ')}</small>`;
+  } catch (error) {
+    target.innerHTML=`<strong>Analysis unavailable</strong><span>EdgeX could not complete this read.</span><small>${error?.message||'The structured analysis service did not return a result.'}</small>`;
+  }
 }
 
 function setAssetTab(t,btn){assetTab=t;document.querySelectorAll('.apt').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderAssetTab(t);}
 
 function renderAssetTab(t){
   if(!selAsset)return;
-  const a=selAsset,p=prices[a.id],c=chg[a.id]||0;
+  const a=selAsset,p=prices[a.id],c=chg[a.id];
   const sig=computeSignal(a);
   const el=document.getElementById('ap-body');
   if(t==='details'){
     el.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px">
       <div class="dr"><span class="dl">Current Price</span><span class="dv g">${fmtP(a,p)}</span></div>
-      <div class="dr"><span class="dl">24h Change</span><span class="dv ${c>=0?'a':'r'}">${c>=0?'+':''}${c.toFixed(4)}%</span></div>
+      <div class="dr"><span class="dl">24h Change</span><span class="dv ${c==null?'':c>=0?'a':'r'}">${c==null?'Unavailable from provider':(c>=0?'+':'')+c.toFixed(4)+'%'}</span></div>
       <div class="dr"><span class="dl">Category</span><span class="dv p">${a.cat.charAt(0).toUpperCase()+a.cat.slice(1)}</span></div>
       <div class="dr"><span class="dl">Instrument</span><span class="dv">${a.sym}</span></div>
       <div class="dr"><span class="dl">Description</span><span class="dv">${a.desc}</span></div>
@@ -389,24 +400,15 @@ function renderAssetTab(t){
     </div>`;
   } else if(t==='technical'){
     el.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px">
-      <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Oscillators</div>
-      <div class="dr"><span class="dl">RSI (14)</span><span class="dv">Unavailable from provider</span></div>
-      <div class="dr"><span class="dl">Stochastic</span><span class="dv">Unavailable from provider</span></div>
-      <div class="dr"><span class="dl">CCI (20)</span><span class="dv">Unavailable from provider</span></div>
-      <div class="dr"><span class="dl">Williams %R</span><span class="dv">Unavailable from provider</span></div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px">
-      <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Moving Averages</div>
-      <div class="dr"><span class="dl">MA 20</span><span class="dv">Unavailable from provider</span></div>
-      <div class="dr"><span class="dl">MA 50</span><span class="dv">Unavailable from provider</span></div>
-      <div class="dr"><span class="dl">MA 200</span><span class="dv">Unavailable from provider</span></div>
-      <div class="dr"><span class="dl">EMA 9</span><span class="dv">Unavailable from provider</span></div>
+      <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Technical data coverage</div>
+      <div class="ir"><span class="ir-n">Spot price</span><span class="ir-v">${p!=null?'Provider supplied':'Not supplied'}</span></div>
+      <div class="ir"><span class="ir-n">24h change</span><span class="ir-v">${c!=null?'Provider supplied':'Not supplied'}</span></div>
+      <div class="ir"><span class="ir-n">Candle history</span><span class="ir-v">Not supplied by current feed</span></div>
+      <div class="ir"><span class="ir-n">Technical indicators</span><span class="ir-v">Not computed without candles</span></div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px">
-      <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Volatility</div>
-      <div class="dr"><span class="dl">ATR (14)</span><span class="dv">Unavailable from provider</span></div>
-      <div class="dr"><span class="dl">Bollinger Upper</span><span class="dv">Unavailable from provider</span></div>
-      <div class="dr"><span class="dl">Bollinger Lower</span><span class="dv">Unavailable from provider</span></div>
+      <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Model boundary</div>
+      <div style="font-size:11px;line-height:1.7;color:var(--muted)">The current FX contract supplies spot rates and a provider timestamp. APEX can describe feed state and supplied movement, but it will not infer RSI, moving averages, volatility bands, targets, or stops without candle history.</div>
     </div>`;
   } else {
     const ctx={
@@ -424,10 +426,10 @@ function renderAssetTab(t){
 }
 
 // ── LIVE DATA ──────────────────────────────────────────────
-function updateAsset(id,price,change){
-  const a=ALL_ASSETS.find(x=>x.id===id);if(!a)return;
+function updateAsset(id,price,change,meta={}){
+  const a=ALL_ASSETS.find(x=>x.id===id);if(!a||price==null||!Number.isFinite(Number(price)))return;
   const pv=prices[a.id];
-  prices[a.id]=price;if(change!=null)chg[a.id]=change;
+  prices[a.id]=Number(price);chg[a.id]=change==null?null:Number(change);assetFeedState[id]={updatedAt:Date.now(),provider:meta.provider||assetFeedState[id]?.provider||'EdgeX provider'};
   const row=document.getElementById('row-'+id);
   if(row&&pv){row.classList.remove('fup','fdn');void row.offsetWidth;row.classList.add(price>=pv?'fup':'fdn')}
   if(selAsset?.id===id)refreshAssetDetail();
@@ -462,27 +464,13 @@ async function fetchERAPI(){
     const body=await r.json();
     const pairs=Array.isArray(body.pairs)?body.pairs:[];
     const rates=Object.fromEntries(pairs.map(pair=>[pair.symbol.split('/')[1],pair.price]));
-    if(rates.NGN)updateAsset('USDNGN',rates.NGN,null);
-    if(rates.EUR)updateAsset('EURUSD',1/rates.EUR,null);
-    if(rates.GBP)updateAsset('GBPUSD',1/rates.GBP,null);
-    if(rates.JPY)updateAsset('USDJPY',rates.JPY,null);
-    if(rates.CAD)updateAsset('USDCAD',rates.CAD,null);
-    if(rates.AUD)updateAsset('AUDUSD',1/rates.AUD,null);
-    if(rates.CHF)updateAsset('USDCHF',rates.CHF,null);
-    if(rates.NZD)updateAsset('NZDUSD',1/rates.NZD,null);
-    if(rates.SEK)updateAsset('USDSEK',rates.SEK,null);
-    if(rates.NOK)updateAsset('USDNOK',rates.NOK,null);
-    if(rates.DKK)updateAsset('USDDKK',rates.DKK,null);
-    if(rates.PLN)updateAsset('USDPLN',rates.PLN,null);
-    if(rates.ZAR)updateAsset('USDZAR',rates.ZAR,null);
-    if(rates.HKD)updateAsset('USDHKD',rates.HKD,null);
-    if(rates.SGD)updateAsset('USDSGD',rates.SGD,null);
-    if(rates.KRW)updateAsset('USDKRW',rates.KRW,null);
-    if(rates.MXN)updateAsset('USDMXN',rates.MXN,null);
-    if(rates.BRL)updateAsset('USDBRL',rates.BRL,null);
-    if(rates.INR)updateAsset('USDINR',rates.INR,null);
+    const idMap={NGN:'USDNGN',EUR:'EURUSD',GBP:'GBPUSD',JPY:'USDJPY',CAD:'USDCAD',AUD:'AUDUSD',CHF:'USDCHF',NZD:'NZDUSD',SEK:'USDSEK',NOK:'USDNOK',DKK:'USDDKK',PLN:'USDPLN',ZAR:'USDZAR',HKD:'USDHKD',SGD:'USDSGD',KRW:'USDKRW',MXN:'USDMXN',BRL:'USDBRL',INR:'USDINR'};
+    const inverse=new Set(['EUR','GBP','AUD','NZD']);
+    pairs.forEach(pair=>{ const currency=pair.symbol.split('/')[1]; const id=idMap[currency]; if(id) updateAsset(id, inverse.has(currency)?1/pair.price:pair.price, pair.change, {provider:body.provider}); });
+    if(rates.EUR && rates.JPY) updateAsset('EURJPY', rates.JPY / rates.EUR, null, {provider:body.provider});
     if(!pairs.length)throw new Error('No forex pairs returned');
-    setWS('live',`${body.provider || 'Forex provider'} · Updated`,'EdgeX provider');
+    const updatedPairCount=ALL_ASSETS.filter(asset=>asset.cat==='fx'&&assetFeedState[asset.id]).length;
+    setWS('live',`${body.provider || 'Forex provider'} · ${updatedPairCount}/${ALL_ASSETS.filter(asset=>asset.cat==='fx').length} pairs updated`,'EdgeX provider');
     document.getElementById('last-upd').textContent='Updated '+new Date().toLocaleTimeString();
     renderAll();
     setTimeout(fetchERAPI,60000);
