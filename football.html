@@ -8,23 +8,23 @@
 <link rel="stylesheet" href="edgex-v2.css"><script src="edgex-v2-core.js"></script><script src="edgex-feature-controls.js"></script><script src="shared.js"></script>
 <script>
 // ── AI APEX INTEGRATION ─────────────────────────────────────
-let _currentAPEX = null;
-let _currentMatchNames = { home: '', away: '', comp: '' };
-let _currentFixtureContext = null;
-let _fixtureH2HLoaded = false;
+window._currentAPEX = null;
+window._currentMatchNames = { home: '', away: '', comp: '' };
+window._currentFixtureContext = null;
+window._fixtureH2HLoaded = false;
 
 // Store APEX data when match detail opens
 const _origBuildMatchDetail = buildMatchDetail;
 function buildMatchDetail(ev, comp, h, a, s, live, ft, L, clock, hS, aS, hRec, aRec, venue, hForm, aForm) {
   const result = _origBuildMatchDetail(ev, comp, h, a, s, live, ft, L, clock, hS, aS, hRec, aRec, venue, hForm, aForm);
   // Store for AI
-  _currentMatchNames = {
+  window._currentMatchNames = {
     home: h?.team?.displayName || h?.team?.shortDisplayName || 'Home',
     away: a?.team?.displayName || a?.team?.shortDisplayName || 'Away',
     comp: L?.n || 'Football',
   };
-  _currentFixtureContext = { home: _currentMatchNames.home, away: _currentMatchNames.away, date: ev?.date, espnId: ev?.id, league: ev?._l, homeId: h?.team?.id, awayId: a?.team?.id, homeForm: Array.isArray(hForm?.form) ? hForm.form : [], awayForm: Array.isArray(aForm?.form) ? aForm.form : [] };
-  _fixtureH2HLoaded = false;
+  window._currentFixtureContext = { home: window._currentMatchNames.home, away: window._currentMatchNames.away, date: ev?.date, espnId: ev?.id, league: ev?._l, homeId: h?.team?.id, awayId: a?.team?.id, homeForm: Array.isArray(hForm?.form) ? hForm.form : [], awayForm: Array.isArray(aForm?.form) ? aForm.form : [] };
+  window._fixtureH2HLoaded = false;
   return result;
 }
 
@@ -47,7 +47,7 @@ async function triggerAPEXAI() {
   // Build prompt from visible APEX data in DOM
   const probs = Array.from(apexStats).map(el => el.textContent.trim());
   const xgs = Array.from(xgVals).map(el => el.textContent.trim());
-  const matchTitle = document.querySelector('.detail-teams')?.textContent?.trim() || _currentMatchNames.home + ' vs ' + _currentMatchNames.away;
+  const matchTitle = document.querySelector('.detail-teams')?.textContent?.trim() || window._currentMatchNames.home + ' vs ' + window._currentMatchNames.away;
   const summary = document.querySelector('.pred-summary')?.textContent?.trim() || '';
   const picks = Array.from(document.querySelectorAll('.pred-cat-label')).map(el => el.textContent.trim()).slice(0, 3).join(', ');
 
@@ -1368,18 +1368,18 @@ function setFixtureTab(tabName, button) {
     if (panel) panel.hidden = name !== tabName;
   });
   document.querySelectorAll('[data-fixture-tab]').forEach(tab => tab.classList.toggle('active', tab.dataset.fixtureTab === tabName));
-  if (tabName === 'h2h' && !_fixtureH2HLoaded) loadFixtureH2H();
+  if (tabName === 'h2h' && !window._fixtureH2HLoaded) loadFixtureH2H();
 }
 
 async function loadFixtureH2H() {
   const wrap = document.getElementById('sf-h2h-wrap');
-  const ctx = _currentFixtureContext;
+  const ctx = window._currentFixtureContext;
   if (!wrap) return;
   if (!ctx) {
     wrap.innerHTML = '<div class="edgex-v2-state edgex-v2-state-error"><strong>ESPN history unavailable</strong><span>The selected fixture context was not available for this request.</span></div>';
     return;
   }
-  _fixtureH2HLoaded = true;
+  window._fixtureH2HLoaded = true;
   wrap.innerHTML = '<div class="sf-loading">Loading ESPN recent histories…</div>';
   const escHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const historyRows = (form, emptyLabel) => {
@@ -1404,7 +1404,7 @@ async function loadFixtureH2H() {
     const directRows = direct.length ? direct.map(game => '<div class="edgex-h2h-row"><div><strong>' + escHtml(ctx.home + ' vs ' + game.opponent) + '</strong><span>' + escHtml(game.date ? new Date(game.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Date unavailable') + '</span></div><div class="edgex-h2h-score"><b>' + escHtml(game.result || '—') + '</b><span>' + escHtml(game.score || '—') + '</span></div></div>').join('') : '<div class="edgex-v2-state"><strong>No direct meetings in the returned sample</strong><span>ESPN returned recent team histories, but no matching prior meeting was found in those samples.</span></div>';
     wrap.innerHTML = '<div class="edgex-h2h-section"><div class="edgex-h2h-meta">ESPN recent history · up to 15 fixtures per team</div><h4>Direct H2H in returned sample</h4>' + directRows + '<h4>Recent ' + escHtml(ctx.home || 'home team') + ' fixtures</h4>' + historyRows(homeForm, 'ESPN returned no completed fixtures for the home team.') + '<h4>Recent ' + escHtml(ctx.away || 'away team') + ' fixtures</h4>' + historyRows(awayForm, 'ESPN returned no completed fixtures for the away team.') + '</div>';
   } catch (error) {
-    _fixtureH2HLoaded = false;
+    window._fixtureH2HLoaded = false;
     wrap.innerHTML = '<div class="edgex-v2-state edgex-v2-state-error"><strong>ESPN history unavailable</strong><span>' + escHtml(error.message === 'ESPN history timeout' ? 'The provider did not respond within 8 seconds.' : 'Recent team history could not be loaded from ESPN. The rest of the fixture detail remains available.') + '</span></div>';
   }
 }

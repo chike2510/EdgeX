@@ -105,3 +105,6 @@
 - [x] Move recent-form evidence to the appropriate analytical context and repair its live loading contract for current fixtures.
 - [x] Ensure H2H resolves to ESPN history, no-history, or provider-error state instead of remaining on a spinner.
 - [x] Re-run 540px state regression checks and push the corrected fixture-detail experience.
+
+- [ ] Verify the redeployed live-match Stats tab contains provider-backed match statistics.
+- [ ] Verify the redeployed H2H tab resolves to history, no-history, or an explicit provider error without an indefinite spinner.
