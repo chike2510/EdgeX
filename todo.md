@@ -41,3 +41,6 @@
 - [x] Rewrite Landing and Home rather than wrapping their old layouts, preserving only real data flows and approved content domains.
 - [x] Apply the approved visual system to all intelligence pages and simplify Football context controls.
 - [x] Run full responsive, routing, syntax, and provider-data regression checks before pushing the approved redesign.
+- [x] Replace shell and domain placeholder glyphs with consistent inline SVG icons or restrained illustrations.
+- [x] Remove the ill-fitting Landing hero image asset and keep Landing free of the app bottom navigation.
+- [x] Re-capture Landing, Home, Football, and drawer mobile states after the icon and navigation refinement.
