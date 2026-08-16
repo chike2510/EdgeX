@@ -83,3 +83,7 @@
 - [x] Add interactive Overview, Lineups, Stats, Insights, and H2H fixture-detail tabs.
 - [x] Add a provider-backed H2H route and render past fixtures without fabricated history.
 - [x] Verify all 19 markets, H2H loading, and fixture-list safety at 540px before pushing.
+
+- [x] Fix H2H provider loading so success and failure states resolve visibly instead of remaining stuck.
+- [x] Isolate H2H from the unrelated Sofascore context loader in the fixture detail panels.
+- [x] Verify H2H behavior at 540px and push the regression fix.
