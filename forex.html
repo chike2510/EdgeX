@@ -215,6 +215,18 @@ const ASSETS = {
     {id:'AUDUSD', sym:'AUD/USD', desc:'Australian Dollar / USD',       ic:'🇦🇺', cat:'fx',  dec:4,  ref:0.6412,pre:'', bayse:null},
     {id:'USDCHF', sym:'USD/CHF', desc:'US Dollar / Swiss Franc',       ic:'🇨🇭', cat:'fx',  dec:4,  ref:0.9023,pre:'', bayse:null},
     {id:'EURGBP', sym:'EUR/GBP', desc:'Euro / British Pound',          ic:'🇪🇺', cat:'fx',  dec:4,  ref:0.857, pre:'', bayse:null},
+    {id:'NZDUSD', sym:'NZD/USD', desc:'New Zealand Dollar / USD',      ic:'🇳🇿', cat:'fx',  dec:4,  ref:0.591, pre:'', bayse:null},
+    {id:'USDSEK', sym:'USD/SEK', desc:'US Dollar / Swedish Krona',      ic:'🇸🇪', cat:'fx',  dec:4,  ref:10.4, pre:'', bayse:null},
+    {id:'USDNOK', sym:'USD/NOK', desc:'US Dollar / Norwegian Krone',    ic:'🇳🇴', cat:'fx',  dec:4,  ref:10.2, pre:'', bayse:null},
+    {id:'USDDKK', sym:'USD/DKK', desc:'US Dollar / Danish Krone',       ic:'🇩🇰', cat:'fx',  dec:4,  ref:6.9, pre:'', bayse:null},
+    {id:'USDPLN', sym:'USD/PLN', desc:'US Dollar / Polish Zloty',       ic:'🇵🇱', cat:'fx',  dec:4,  ref:3.9, pre:'', bayse:null},
+    {id:'USDZAR', sym:'USD/ZAR', desc:'US Dollar / South African Rand', ic:'🇿🇦', cat:'fx',  dec:4,  ref:18.0, pre:'', bayse:null},
+    {id:'USDHKD', sym:'USD/HKD', desc:'US Dollar / Hong Kong Dollar',   ic:'🇭🇰', cat:'fx',  dec:4,  ref:7.8, pre:'', bayse:null},
+    {id:'USDSGD', sym:'USD/SGD', desc:'US Dollar / Singapore Dollar',   ic:'🇸🇬', cat:'fx',  dec:4,  ref:1.3, pre:'', bayse:null},
+    {id:'USDKRW', sym:'USD/KRW', desc:'US Dollar / Korean Won',         ic:'🇰🇷', cat:'fx',  dec:2,  ref:1350, pre:'₩', bayse:null},
+    {id:'USDMXN', sym:'USD/MXN', desc:'US Dollar / Mexican Peso',       ic:'🇲🇽', cat:'fx',  dec:4,  ref:18.7, pre:'', bayse:null},
+    {id:'USDBRL', sym:'USD/BRL', desc:'US Dollar / Brazilian Real',     ic:'🇧🇷', cat:'fx',  dec:4,  ref:5.5, pre:'', bayse:null},
+    {id:'USDINR', sym:'USD/INR', desc:'US Dollar / Indian Rupee',       ic:'🇮🇳', cat:'fx',  dec:2,  ref:86.5, pre:'₹', bayse:null},
   ],
   crypto: [
     {id:'BTCUSD', sym:'BTC/USD', desc:'Bitcoin',                       ic:'₿',  cat:'crypto',dec:0,  ref:83000,pre:'$', bayse:'BTCUSDT'},
@@ -445,7 +457,7 @@ function connectWS(){
 async function fetchERAPI(){
   setWS('conn','Loading via EdgeX forex provider…');
   try{
-    const r=await fetch('/api/edge-forex?symbols=EUR,GBP,JPY,CAD,AUD,CHF,NGN',{signal:AbortSignal.timeout(8000)});
+    const r=await fetch('/api/edge-forex?symbols=EUR,GBP,JPY,CAD,AUD,CHF,NGN,NZD,SEK,NOK,DKK,PLN,ZAR,HKD,SGD,KRW,MXN,BRL,INR',{signal:AbortSignal.timeout(8000)});
     if(!r.ok)throw new Error(`${r.status}`);
     const body=await r.json();
     const pairs=Array.isArray(body.pairs)?body.pairs:[];
@@ -457,8 +469,20 @@ async function fetchERAPI(){
     if(rates.CAD)updateAsset('USDCAD',rates.CAD,null);
     if(rates.AUD)updateAsset('AUDUSD',1/rates.AUD,null);
     if(rates.CHF)updateAsset('USDCHF',rates.CHF,null);
+    if(rates.NZD)updateAsset('NZDUSD',1/rates.NZD,null);
+    if(rates.SEK)updateAsset('USDSEK',rates.SEK,null);
+    if(rates.NOK)updateAsset('USDNOK',rates.NOK,null);
+    if(rates.DKK)updateAsset('USDDKK',rates.DKK,null);
+    if(rates.PLN)updateAsset('USDPLN',rates.PLN,null);
+    if(rates.ZAR)updateAsset('USDZAR',rates.ZAR,null);
+    if(rates.HKD)updateAsset('USDHKD',rates.HKD,null);
+    if(rates.SGD)updateAsset('USDSGD',rates.SGD,null);
+    if(rates.KRW)updateAsset('USDKRW',rates.KRW,null);
+    if(rates.MXN)updateAsset('USDMXN',rates.MXN,null);
+    if(rates.BRL)updateAsset('USDBRL',rates.BRL,null);
+    if(rates.INR)updateAsset('USDINR',rates.INR,null);
     if(!pairs.length)throw new Error('No forex pairs returned');
-    setWS('live','Frankfurter ECB · Updated','EdgeX provider');
+    setWS('live',`${body.provider || 'Forex provider'} · Updated`,'EdgeX provider');
     document.getElementById('last-upd').textContent='Updated '+new Date().toLocaleTimeString();
     renderAll();
     setTimeout(fetchERAPI,60000);

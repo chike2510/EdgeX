@@ -51,3 +51,6 @@
 - [x] Repair and normalize sports, crypto, forex, markets/events, player edge, weather, and home feed contracts without fabricated values.
 - [x] Complete core filters, sorting, date navigation, search, analysis dialogs, detail routes, and explicit loading/error/empty states.
 - [x] Run provider-contract, route, syntax, responsive, and data-integrity checks before pushing the functionality pass.
+- [x] Diagnose the deployed Forex unavailable state against the actual API response and client renderer.
+- [x] Expand Crypto coverage with more provider-backed CoinGecko assets and broader Forex pair coverage from the configured rate provider.
+- [x] Verify expanded live payloads, mobile rendering, and explicit unavailable states before pushing.
