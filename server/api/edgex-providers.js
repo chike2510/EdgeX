@@ -42,11 +42,11 @@ export const MarketProvider = {
       id: market.id || market.eventId || null,
       question: market.question || market.title || null,
       category: market.category || null,
-      probability: safeNumber(market.probability || market.yesPrice || market.outcome1Price || market.markets?.[0]?.outcome1Price),
-      movement24h: safeNumber(market.movement24h || market.change24h),
-      volume: safeNumber(market.volume || market.totalVolume || market.totalOrders),
+      probability: safeNumber(market.probability ?? market.yesPrice ?? market.outcome1Price ?? market.markets?.[0]?.outcome1Price),
+      movement24h: safeNumber(market.movement24h ?? market.change24h),
+      volume: safeNumber(market.volume ?? market.totalVolume ?? market.totalOrders),
       liquidity: safeNumber(market.liquidity),
-      threshold: safeNumber(market.eventThreshold || market.markets?.[0]?.marketThreshold),
+      threshold: safeNumber(market.eventThreshold ?? market.markets?.[0]?.marketThreshold),
       outcomes: (market.outcomes || market.markets?.slice(0, 1).flatMap(item => [
         { id: item.outcome1Id || null, label: item.outcome1Label || null, probability: safeNumber(item.outcome1Price) },
         { id: item.outcome2Id || null, label: item.outcome2Label || null, probability: safeNumber(item.outcome2Price) },
@@ -67,10 +67,10 @@ export const CryptoProvider = {
       id: asset.id || asset.symbol || null,
       name: asset.name || null,
       symbol: asset.symbol || null,
-      price: safeNumber(asset.current_price || asset.price),
-      change24h: safeNumber(asset.price_change_percentage_24h || asset.change24h),
-      marketCap: safeNumber(asset.market_cap || asset.marketCap),
-      volume24h: safeNumber(asset.total_volume || asset.volume24h),
+      price: safeNumber(asset.current_price ?? asset.price),
+      change24h: safeNumber(asset.price_change_percentage_24h ?? asset.change24h),
+      marketCap: safeNumber(asset.market_cap ?? asset.marketCap),
+      volume24h: safeNumber(asset.total_volume ?? asset.volume24h),
       image: asset.image || null,
       sourceTimestamp: new Date().toISOString(),
       metadata: asset
@@ -85,8 +85,8 @@ export const ForexProvider = {
     const pairs = Array.isArray(payload?.pairs) ? payload.pairs : Array.isArray(payload?.data) ? payload.data : [];
     return pairs.map(pair => ({
       symbol: pair.symbol || pair.pair || null,
-      price: safeNumber(pair.price || pair.rate),
-      change: safeNumber(pair.change || pair.changePercent),
+      price: safeNumber(pair.price ?? pair.rate),
+      change: safeNumber(pair.change ?? pair.changePercent),
       trend: pair.trend || null,
       sourceTimestamp: new Date().toISOString(),
       metadata: pair
@@ -98,14 +98,16 @@ export const WeatherProvider = {
   async getSnapshot(req, params = {}) {
     const qs = new URLSearchParams(params);
     const payload = await requestJson(`${baseUrl(req)}/api/weather?${qs}`);
+    const current = payload?.current || payload?.current_weather || {};
+    const today = Array.isArray(payload?.forecast) ? payload.forecast[0] || {} : {};
     return {
-      location: payload?.location || null,
-      temperature: safeNumber(payload?.current?.temperature || payload?.temperature),
-      rainProbability: safeNumber(payload?.current?.rainProbability || payload?.rainProbability),
-      wind: safeNumber(payload?.current?.wind || payload?.wind),
-      humidity: safeNumber(payload?.current?.humidity || payload?.humidity),
-      conditions: payload?.current?.conditions || payload?.conditions || null,
-      sourceTimestamp: new Date().toISOString(),
+      location: payload?.location || payload?.city || null,
+      temperature: safeNumber(current.temperature ?? payload?.temperature ?? today.tMid),
+      rainProbability: safeNumber(current.rainProbability ?? payload?.rainProbability ?? today.rainProb),
+      wind: safeNumber(current.wind ?? current.windspeed ?? payload?.wind ?? today.windMax),
+      humidity: safeNumber(current.humidity ?? payload?.humidity),
+      conditions: current.conditions || current.weather || payload?.conditions || today.condition || weatherCodeLabel(current.weathercode),
+      sourceTimestamp: payload?.generated || new Date().toISOString(),
       metadata: payload
     };
   }
@@ -142,5 +144,10 @@ export const PlayerPropsProvider = {
     return normalizePlayerProps(payload);
   }
 };
+
+function weatherCodeLabel(code) {
+  const labels = { 0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast', 45: 'Fog', 48: 'Rime fog', 51: 'Light drizzle', 53: 'Drizzle', 55: 'Heavy drizzle', 61: 'Light rain', 63: 'Rain', 65: 'Heavy rain', 71: 'Light snow', 73: 'Snow', 75: 'Heavy snow', 80: 'Rain showers', 81: 'Rain showers', 82: 'Heavy rain showers', 95: 'Thunderstorm', 96: 'Thunderstorm with hail', 99: 'Thunderstorm with hail' };
+  return labels[code] || null;
+}
 
 export const Providers = { SportsProvider, MarketProvider, CryptoProvider, ForexProvider, WeatherProvider, PlayerPropsProvider };

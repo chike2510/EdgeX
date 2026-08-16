@@ -443,23 +443,27 @@ function connectWS(){
 }
 
 async function fetchERAPI(){
-  setWS('conn','Loading via ExchangeRate-API…');
+  setWS('conn','Loading via EdgeX forex provider…');
   try{
-    const r=await fetch('https://open.er-api.com/v6/latest/USD',{signal:AbortSignal.timeout(8000)});
-    if(!r.ok)throw new Error();const d=await r.json();const rates=d.rates||{};
-    if(rates.NGN)updateAsset('USDNGN',rates.NGN,(rates.NGN-1620)/1620*100);
-    if(rates.EUR)updateAsset('EURUSD',1/rates.EUR,0);
-    if(rates.GBP)updateAsset('GBPUSD',1/rates.GBP,0);
-    if(rates.JPY)updateAsset('USDJPY',rates.JPY,0);
-    if(rates.CAD)updateAsset('USDCAD',rates.CAD,0);
-    if(rates.AUD)updateAsset('AUDUSD',1/rates.AUD,0);
-    if(rates.CHF)updateAsset('USDCHF',rates.CHF,0);
-    setWS('live','ExchangeRate-API · Updated');
+    const r=await fetch('/api/edge-forex?symbols=EUR,GBP,JPY,CAD,AUD,CHF,NGN',{signal:AbortSignal.timeout(8000)});
+    if(!r.ok)throw new Error(`${r.status}`);
+    const body=await r.json();
+    const pairs=Array.isArray(body.pairs)?body.pairs:[];
+    const rates=Object.fromEntries(pairs.map(pair=>[pair.symbol.split('/')[1],pair.price]));
+    if(rates.NGN)updateAsset('USDNGN',rates.NGN,null);
+    if(rates.EUR)updateAsset('EURUSD',1/rates.EUR,null);
+    if(rates.GBP)updateAsset('GBPUSD',1/rates.GBP,null);
+    if(rates.JPY)updateAsset('USDJPY',rates.JPY,null);
+    if(rates.CAD)updateAsset('USDCAD',rates.CAD,null);
+    if(rates.AUD)updateAsset('AUDUSD',1/rates.AUD,null);
+    if(rates.CHF)updateAsset('USDCHF',rates.CHF,null);
+    if(!pairs.length)throw new Error('No forex pairs returned');
+    setWS('live','Frankfurter ECB · Updated','EdgeX provider');
     document.getElementById('last-upd').textContent='Updated '+new Date().toLocaleTimeString();
     renderAll();
     setTimeout(fetchERAPI,60000);
   }catch{
-    setWS('dead','Using reference rates');
+    setWS('dead','Forex provider unavailable');
     renderAll();
     setTimeout(fetchERAPI,30000);
   }
@@ -468,10 +472,11 @@ async function fetchERAPI(){
 // CoinGecko for crypto
 async function fetchCryptoGecko(){
   try{
-    const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,binancecoin,ripple&vs_currencies=usd&include_24hr_change=true');
-    const d=await r.json();
+    const r=await fetch('/api/edge-crypto?ids=bitcoin,ethereum,solana,binancecoin,ripple&per_page=5');
+    if(!r.ok)throw new Error(`${r.status}`);
+    const body=await r.json();
     const map={bitcoin:'BTCUSD',ethereum:'ETHUSD',solana:'SOLUSD',binancecoin:'BNBUSD',ripple:'XRPUSD'};
-    Object.entries(d).forEach(([id,v])=>{const aid=map[id];if(aid)updateAsset(aid,v.usd,v.usd_24h_change)});
+    (body.assets||[]).forEach(asset=>{const aid=map[asset.id];if(aid)updateAsset(aid,asset.price,asset.change24h)});
     renderAll();
     setTimeout(fetchCryptoGecko,60000);
   }catch{setTimeout(fetchCryptoGecko,30000)}

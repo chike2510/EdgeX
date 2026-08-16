@@ -293,18 +293,20 @@ async function loadCoinGecko(){
   setWS('conn','Loading via CoinGecko…','');
   try{
     const ids=COINS.map(c=>c.id).join(',');
-    const r=await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&order=market_cap_desc&sparkline=false&price_change_percentage=24h`);
+    const r=await fetch(`/api/edge-crypto?ids=${encodeURIComponent(ids)}&per_page=${COINS.length}`);
     if(!r.ok)throw new Error(`${r.status}`);
-    const d=await r.json();
+    const body=await r.json();
+    const d=Array.isArray(body.assets) ? body.assets : [];
     d.forEach(coin=>{
       const c=COINS.find(x=>x.id===coin.id);
       if(c){
-        updateCoin(c.sym,coin.current_price,coin.price_change_percentage_24h);
-        mcap[c.sym]=coin.market_cap;
-        vol24[c.sym]=coin.total_volume;
+        updateCoin(c.sym,coin.price,coin.change24h);
+        mcap[c.sym]=coin.marketCap;
+        vol24[c.sym]=coin.volume24h;
       }
     });
-    setWS('live','CoinGecko · All 20 coins updated','CoinGecko');
+    if(!d.length)throw new Error('No crypto assets returned');
+    setWS('live',`CoinGecko · ${d.length} assets updated`,'EdgeX provider');
     setTimeout(loadCoinGecko,60000);
   }catch(e){setWS('dead','Could not load prices — '+e.message,'');setTimeout(loadCoinGecko,20000)}
 }
