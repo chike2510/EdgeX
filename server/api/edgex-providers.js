@@ -18,6 +18,15 @@ function baseUrl(req) {
   return `${protocol}://${req.headers?.host || 'localhost'}`;
 }
 
+function cryptoChange(asset) {
+  const price = Number(asset.current_price ?? asset.price);
+  const reported = Number(asset.price_change_percentage_24h ?? asset.price_change_percentage_24h_in_currency);
+  const absolute = Number(asset.price_change_24h);
+  const derived = Number.isFinite(absolute) && Number.isFinite(price) && price !== 0 ? (absolute / price) * 100 : null;
+  if (Number.isFinite(reported) && (reported !== 0 || !Number.isFinite(derived))) return reported;
+  return Number.isFinite(derived) ? derived : safeNumber(asset.change24h);
+}
+
 export const SportsProvider = {
   async getFixtures(req, params = {}) {
     const key = `sports:fixtures:${JSON.stringify(params)}`;
@@ -68,7 +77,7 @@ export const CryptoProvider = {
       name: asset.name || null,
       symbol: asset.symbol || null,
       price: safeNumber(asset.current_price ?? asset.price),
-      change24h: safeNumber(asset.price_change_percentage_24h ?? asset.change24h),
+      change24h: safeNumber(cryptoChange(asset)),
       marketCap: safeNumber(asset.market_cap ?? asset.marketCap),
       volume24h: safeNumber(asset.total_volume ?? asset.volume24h),
       image: asset.image || null,

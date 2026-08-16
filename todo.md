@@ -64,3 +64,7 @@
 - [x] Repair Player Edge provider-line consistency and make the NO EDGE dialog explain evidence quality clearly.
 - [x] Replace Crypto detail zero-change fallback and align its legacy detail presentation with the shared shell/model states.
 - [x] Re-run 540px responsive regression checks and push the screenshot-driven repairs.
+
+- [x] Trace the actual Forex, Crypto, and Squads provider response contracts causing unavailable or stale values.
+- [x] Repair server provider adapters and client feed mappings so real provider values reach detail views.
+- [x] Verify the application routes return usable provider-backed values and timestamps before pushing.

@@ -1,6 +1,9 @@
 // CoinGecko public markets proxy used by the EdgeX crypto intelligence page.
 // The endpoint returns provider-backed values only; it never fabricates prices.
 const COINGECKO = 'https://api.coingecko.com/api/v3/coins/markets';
+const SYMBOL_IDS = {
+  BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', BNB: 'binancecoin', XRP: 'ripple', ADA: 'cardano', DOGE: 'dogecoin', AVAX: 'avalanche-2', DOT: 'polkadot', MATIC: 'matic-network', LINK: 'chainlink', UNI: 'uniswap', ATOM: 'cosmos', LTC: 'litecoin', TON: 'the-open-network', SHIB: 'shiba-inu', PEPE: 'pepe', BONK: 'bonk', TRX: 'tron', XLM: 'stellar', BCH: 'bitcoin-cash', NEAR: 'near', SUI: 'sui', AAVE: 'aave', FIL: 'filecoin', ARB: 'arbitrum', OP: 'optimism', INJ: 'injective-protocol', FTM: 'fantom', RUNE: 'thorchain', SEI: 'sei-network', WIF: 'dogwifhat', FLOKI: 'floki'
+};
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,7 +14,8 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const query = req.query || {};
-  const requestedIds = typeof query.ids === 'string' ? query.ids : '';
+  const symbol = typeof query.symbol === 'string' ? query.symbol.trim().toUpperCase() : '';
+  const requestedIds = typeof query.ids === 'string' ? query.ids : (SYMBOL_IDS[symbol] || '');
   const isMemecoin = query.category === 'memecoins' || query.category === 'meme-token';
   const params = new URLSearchParams({
     vs_currency: 'usd',
