@@ -30,3 +30,7 @@
 - [x] Repair back behavior from Football, Basketball, Crypto, Forex, Squads, and detail routes so it returns to the correct in-app parent instead of the landing page.
 - [x] Stabilize Football fixture loading and header rendering using the same no-jitter lifecycle as Basketball.
 - [x] Verify responsive shell, navigation drawer, bottom navigation, and page headers on mobile and desktop.
+- [x] Make Landing, Home, and intelligence pages share the same compact shell language rather than separate header systems.
+- [x] Fix mobile drawer item collisions, oversized menu treatment, and inconsistent section spacing.
+- [x] Simplify the Football context toolbar so Back, Football/APEX, live state, Insights, and History do not crowd or overlap.
+- [x] Re-capture 540px mobile states for Landing, Home, Football, and the open drawer and verify visual hierarchy before pushing.

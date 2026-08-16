@@ -1,6 +1,6 @@
 (() => {
   const path = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
-  const isPublic = path === 'index.html' || path === 'landing.html' || path === '';
+  const isPublic = false;
   const route = path.replace('.html', '') || 'home';
   const routes = [
     { href: 'home.html', label: 'Home', icon: '⌂' },
@@ -69,6 +69,7 @@
     const setOpen = open => { drawer.classList.toggle('is-open', open); scrim.classList.toggle('is-open', open); menu.setAttribute('aria-expanded', String(open)); document.body.classList.toggle('shell-lock', open); };
     menu.onclick = () => setOpen(true); close.onclick = () => setOpen(false); scrim.onclick = () => setOpen(false);
     drawer.querySelectorAll('a').forEach(anchor => anchor.addEventListener('click', () => setOpen(false)));
+    if (new URLSearchParams(location.search).get('menu') === 'open') setOpen(true);
     document.querySelectorAll('.nav-back,.mp-back').forEach(button => { button.setAttribute('href', 'home.html'); button.setAttribute('onclick', "return window.edgexGoBack('home.html')"); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount); else mount();
