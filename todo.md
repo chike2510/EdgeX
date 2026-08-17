@@ -153,3 +153,7 @@
 
 - [x] Restore fixture loading after the Creativesdev fallback regression without breaking the existing ESPN fixture route.
 - [x] Add a regression guard ensuring optional fallback modules cannot prevent the ESPN fixture feed from initializing.
+
+- [x] Use SportAPI first, Creativesdev second, and ESPN third for upcoming/live commentary, statistics, and lineup enrichment.
+- [x] Keep ESPN authoritative for completed-match event data and use field-aware fallback when a provider response is incomplete.
+- [x] Add regression coverage for upcoming, live, and completed provider precedence.

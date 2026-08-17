@@ -15,8 +15,8 @@ window._fixtureH2HLoaded = false;
 
 // Store APEX data when match detail opens
 const _origBuildMatchDetail = buildMatchDetail;
-function buildMatchDetail(ev, comp, h, a, s, live, ft, L, clock, hS, aS, hRec, aRec, venue, hForm, aForm) {
-  const result = _origBuildMatchDetail(ev, comp, h, a, s, live, ft, L, clock, hS, aS, hRec, aRec, venue, hForm, aForm);
+function buildMatchDetail(ev, comp, h, a, s, live, ft, L, clock, hS, aS, hRec, aRec, venue, hForm, aForm, summary) {
+  const result = _origBuildMatchDetail(ev, comp, h, a, s, live, ft, L, clock, hS, aS, hRec, aRec, venue, hForm, aForm, summary);
   // Store for AI
   window._currentMatchNames = {
     home: h?.team?.displayName || h?.team?.shortDisplayName || 'Home',
@@ -1272,6 +1272,61 @@ function mcard(ev){
   </div>`;
 }
 
+function providerSummaryFromSportApi(eventPayload, statisticsPayload, lineupsPayload) {
+  const event = eventPayload?.data || null;
+  const stats = statisticsPayload?.data || {};
+  const lineups = lineupsPayload?.data || { home: [], away: [], published: false };
+  const statMap = [['possessionHome','possessionPct','Possession'],['shotsHome','shots','Shots'],['shotsOnTargetHome','shotsOnTarget','Shots on target'],['cornersHome','cornerKicks','Corners'],['foulsHome','foulsCommitted','Fouls'],['offsidesHome','offsides','Offsides'],['yellowCardsHome','yellowCards','Yellow cards']];
+  const teams = [{ homeAway: 'home', statistics: [] }, { homeAway: 'away', statistics: [] }];
+  statMap.forEach(([homeKey, name]) => {
+    const awayKey = homeKey.replace('Home', 'Away');
+    const homeValue = stats[homeKey], awayValue = stats[awayKey];
+    if (homeValue != null || awayValue != null) {
+      teams[0].statistics.push({ name, displayName: name, displayValue: homeValue });
+      teams[1].statistics.push({ name, displayName: name, displayValue: awayValue });
+    }
+  });
+  const roster = (players, side) => ({ homeAway: side, athletes: (Array.isArray(players) ? players : []).map(player => ({ displayName: player.name, jersey: player.jerseyNumber, position: { abbreviation: player.position || '' }, status: player.status })) });
+  return { providerLabel: 'SportAPI', boxscore: { teams }, rosters: [roster(lineups.home, 'home'), roster(lineups.away, 'away')], details: [], event, hasStatistics: teams.some(team => team.statistics.length > 0), hasLineups: Boolean(lineups.published) };
+}
+function providerSummaryFromCreativesDev(payload) {
+  const raw = payload?.data || {};
+  const source = raw.response || raw.data || raw;
+  const groups = Array.isArray(source) ? source : (source.statistics || source.groups || source.teams || []);
+  const rows = Array.isArray(groups) ? groups.flatMap(group => group?.statistics || group?.items || group?.stats || [group]) : [];
+  const home = [], away = [];
+  rows.forEach(row => {
+    const name = String(row?.name || row?.displayName || row?.statName || '').toLowerCase();
+    const label = name.includes('possession') ? 'Possession' : name.includes('shot') && name.includes('target') ? 'Shots on target' : name.includes('shot') ? 'Shots' : name.includes('corner') ? 'Corners' : name.includes('foul') ? 'Fouls' : name.includes('offside') ? 'Offsides' : name.includes('yellow') ? 'Yellow cards' : '';
+    if (!label) return;
+    const homeValue = row?.home ?? row?.homeValue ?? row?.value?.home;
+    const awayValue = row?.away ?? row?.awayValue ?? row?.value?.away;
+    home.push({ name: label, displayName: label, displayValue: homeValue });
+    away.push({ name: label, displayName: label, displayValue: awayValue });
+  });
+  return { providerLabel: 'Free Football API', boxscore: { teams: [{ homeAway: 'home', statistics: home }, { homeAway: 'away', statistics: away }] }, rosters: [], details: [], hasStatistics: home.length > 0 || away.length > 0, hasLineups: false };
+}
+async function fetchFixtureEnrichment(eventId, leagueSlug, state) {
+  const fetchJson = url => fetch(url).then(response => response.ok ? response.json() : null).catch(() => null);
+  const loadEspn = () => fetchJson(`/api/sports?sport=soccer&league=${encodeURIComponent(leagueSlug)}&event_id=${encodeURIComponent(eventId)}`);
+  if (state === 'finished') return loadEspn().then(summary => summary ? { ...summary, providerLabel: 'ESPN' } : null);
+  const sportApi = await Promise.all([
+    fetchJson(`/api/sportapi?action=event&eventId=${encodeURIComponent(eventId)}`),
+    fetchJson(`/api/sportapi?action=statistics&eventId=${encodeURIComponent(eventId)}`),
+    fetchJson(`/api/sportapi?action=lineups&eventId=${encodeURIComponent(eventId)}`),
+  ]);
+  let summary = providerSummaryFromSportApi(sportApi[0], sportApi[1], sportApi[2]);
+  if (!summary.hasStatistics) {
+    const creatives = await fetchJson(`/api/creativesdev?action=statistics&eventId=${encodeURIComponent(eventId)}`);
+    const creativeSummary = providerSummaryFromCreativesDev(creatives);
+    if (creativeSummary.hasStatistics) summary = { ...summary, providerLabel: `${summary.providerLabel} + ${creativeSummary.providerLabel}`, boxscore: creativeSummary.boxscore, hasStatistics: true };
+  }
+  if (!summary.hasStatistics || !summary.hasLineups) {
+    const espn = await loadEspn();
+    if (espn) summary = { ...espn, providerLabel: summary.hasStatistics || summary.hasLineups ? `${summary.providerLabel} + ESPN` : 'ESPN', boxscore: summary.hasStatistics ? summary.boxscore : espn.boxscore, rosters: summary.hasLineups ? summary.rosters : espn.rosters, details: Array.isArray(summary.details) && summary.details.length ? summary.details : espn.details };
+  }
+  return summary;
+}
 function openMatch(eventId, leagueSlug){
   const ev = all.find(m=>m.id===eventId); if(!ev) return;
   const comp=gC(ev), h=gH(ev), a=gA(ev), s=st(ev);
@@ -1296,7 +1351,7 @@ function openMatch(eventId, leagueSlug){
   document.body.style.overflow='hidden';
 
   // Fetch recent form and the selected event summary in parallel. The scoreboard snapshot remains the first render; summary data only enriches the detail view.
-  const summaryPromise = fetch(`/api/sports?sport=soccer&league=${encodeURIComponent(leagueSlug)}&event_id=${encodeURIComponent(ev.id)}`).then(r=>r.ok?r.json():null).catch(()=>null);
+  const summaryPromise = fetchFixtureEnrichment(ev.id, leagueSlug, ft ? 'finished' : live ? 'live' : 'upcoming');
   const formPromises = hId && aId ? Promise.all([
     fetch(`/api/form?league=${encodeURIComponent(leagueSlug)}&teamId=${hId}&limit=15`).then(r=>r.ok?r.json():null).catch(()=>null),
     fetch(`/api/form?league=${encodeURIComponent(leagueSlug)}&teamId=${aId}&limit=15`).then(r=>r.ok?r.json():null).catch(()=>null),
@@ -1355,16 +1410,16 @@ function buildMatchDetail(ev,comp,h,a,s,live,ft,L,clock,hS,aS,hRec,aRec,venue,hF
     const homeValue = statValue(providerHome, key), awayValue = statValue(providerAway, key);
     return `<div class="edgex-match-stat-row"><span>${esc(label)}</span><strong>${esc(homeValue ?? 'Unavailable')}</strong><span class="edgex-match-stat-divider">—</span><strong>${esc(awayValue ?? 'Unavailable')}</strong></div>`;
   }).join('');
-  const matchStatsBlock = `<div class="section edgex-detail-card"><div class="sec-title">MATCH STATISTICS <span class="edgex-insights-count">ESPN event data</span></div>${(live || ft) ? `<div class="edgex-match-stat-head"><span></span><span>${esc(hShort)}</span><span></span><span>${esc(aShort)}</span></div>${matchStatRowsHtml}<div class="edgex-stat-note">Values are shown only when ESPN supplies a confirmed event statistic. Unavailable fields are not estimated.</div>` : `<div class="edgex-v2-state"><strong>Match statistics not started</strong><span>In-game statistics will appear after the fixture begins and ESPN confirms event data.</span></div>`}</div>`;
+  const matchStatsBlock = `<div class="section edgex-detail-card"><div class="sec-title">MATCH STATISTICS <span class="edgex-insights-count">${esc(summary?.providerLabel || 'Provider')} data</span></div>${(live || ft) ? `<div class="edgex-match-stat-head"><span></span><span>${esc(hShort)}</span><span></span><span>${esc(aShort)}</span></div>${matchStatRowsHtml}<div class="edgex-stat-note">Values are shown only when the selected provider supplies a confirmed event statistic. ESPN event data remains the completed-match authority. Unavailable fields are not estimated.</div>` : `<div class="edgex-v2-state"><strong>Match statistics not started</strong><span>In-game statistics will appear after the fixture begins and ESPN confirms event data.</span></div>`}</div>`;
   const rosterPlayers = roster => (roster?.roster || roster?.athletes || []).map(player => player?.athlete || player?.player || player).filter(Boolean);
   const lineupColumn = (name, roster, side) => {
     const players = rosterPlayers(roster);
-    if (!players.length) return `<div class="edgex-lineup-column"><div class="edgex-detail-column-title">${esc(name)}</div><div class="edgex-v2-state"><strong>${state === 'upcoming' ? 'Lineup not published' : 'Lineup data unavailable'}</strong><span>ESPN has not supplied confirmed player entries for this fixture.</span></div></div>`;
+    if (!players.length) return `<div class="edgex-lineup-column"><div class="edgex-detail-column-title">${esc(name)}</div><div class="edgex-v2-state"><strong>${state === 'upcoming' ? 'Lineup not published' : 'Lineup data unavailable'}</strong><span>The selected providers have not supplied confirmed player entries for this fixture.</span></div></div>`;
     return `<div class="edgex-lineup-column"><div class="edgex-detail-column-title">${esc(name)}</div><div class="edgex-lineup-list">${players.slice(0, 18).map((player, index) => `<div class="edgex-lineup-row"><span class="edgex-lineup-number">${esc(player.jersey || player.uniformNumber || index + 1)}</span><strong>${esc(player.displayName || player.fullName || player.name || 'Player unavailable')}</strong><span>${esc(player.position?.abbreviation || player.position?.displayName || (index < 11 ? 'XI' : 'SUB'))}</span></div>`).join('')}</div></div>`;
   };
   const homeRoster = providerRosters.find(roster => roster.homeAway === 'home');
   const awayRoster = providerRosters.find(roster => roster.homeAway === 'away');
-  const lineupsBlock = `<div class="section edgex-detail-card"><div class="sec-title">LINEUPS <span class="edgex-insights-count">ESPN event summary</span></div><div class="edgex-lineup-columns">${lineupColumn(hShort, homeRoster, 'home')}${lineupColumn(aShort, awayRoster, 'away')}</div></div>`;
+  const lineupsBlock = `<div class="section edgex-detail-card"><div class="sec-title">LINEUPS <span class="edgex-insights-count">${esc(summary?.providerLabel || 'Provider')} detail</span></div><div class="edgex-lineup-columns">${lineupColumn(hShort, homeRoster, 'home')}${lineupColumn(aShort, awayRoster, 'away')}</div></div>`;
   const insights = window.getAllMarketInsights ? window.getAllMarketInsights(ap || {}) : [];
   const insightGroups = [...new Set(insights.map(item => item.group))];
   const insightsBlock = `<div class="section edgex-detail-card"><div class="sec-title">APEX INSIGHTS <span class="edgex-insights-count">${insights.length} markets</span></div><div class="edgex-insights-note">Every market is shown. A market is marked insufficient when evidence, sample size, or provider coverage is not strong enough.</div>${insightGroups.map(group => `<div class="edgex-market-group"><div class="edgex-market-group-title">${esc(group)}</div>${insights.filter(item => item.group === group).map(item => `<article class="pred-cat edgex-insight-card ${item.status === 'SUPPORTED' ? 'supported' : 'insufficient'}"><div class="pred-cat-head"><span class="pred-cat-name">${esc(item.label)}</span><span class="edgex-market-status ${item.status === 'SUPPORTED' ? 'supported' : 'insufficient'}">${esc(item.status)}</span></div><div class="pred-cat-label">${item.probability != null ? `${esc(item.probability)}% model probability` : 'No projection returned'}</div><div class="pred-cat-reason">${esc(item.reason)}</div>${item.probability != null ? `<div class="pred-bar-cat"><div class="pred-bar-cat-fill" style="width:${Math.max(0, Math.min(100, item.probability))}%"></div></div>` : ''}</article>`).join('')}</div>`).join('')}</div>`;
