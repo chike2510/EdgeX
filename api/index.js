@@ -13,6 +13,7 @@ import playerEdge from '../server/api/player-edge.js';
 import search from '../server/api/search.js';
 import sofascore from '../server/api/sofascore.js';
 import sports from '../server/api/sports.js';
+import sportapi from '../server/api/sportapi.js';
 import weather from '../server/api/weather.js';
 
 const handlers = {
@@ -31,6 +32,7 @@ const handlers = {
   search,
   sofascore,
   sports,
+  sportapi,
   weather,
 };
 

@@ -9,8 +9,11 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
-  const RAPID_KEY = process.env.SOFASCORE_API_KEY || '6dc7583663mshc015f73e7df2dc3p1993d6jsn00f888eddd34';
+  const RAPID_KEY = process.env.SOFASCORE_API_KEY;
   const BASE = 'https://sofascore.p.rapidapi.com/api/v1';
+  if (!RAPID_KEY) {
+    return res.status(503).json({ error: 'Legacy SofaScore provider is not configured' });
+  }
 
   // Allowed endpoint patterns (security whitelist)
   const ALLOWED = [

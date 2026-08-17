@@ -121,3 +121,28 @@
 - [x] Expand match statistics with meaningful provider fields and event context for live and finished matches.
 - [x] Implement provider-backed lineups with confirmed, projected, unavailable, and not-yet-published states.
 - [x] Verify early-season live/upcoming/finished fixture detail at 540px before pushing.
+
+- [ ] Define a season-aware historical fixture contract that separates current, prior-season, and H2H records.
+- [ ] Specify recency, competition-strength, venue, and direct-H2H weighting rules for backfilled evidence.
+- [ ] Design caching, provenance, deduplication, and no-fabrication safeguards for historical backfill.
+
+- [ ] Separate a large historical archive from the strict 15-match analytical window.
+- [ ] Assess SofaScore as a supplemental historical and H2H provider, including access stability and provenance requirements.
+- [ ] Define cross-provider deduplication, caching, and fallback rules for ESPN plus SofaScore historical data.
+
+- [x] Evaluate RapidAPI SofaScore-related providers for historical and H2H coverage, quotas, pricing, licensing, and production suitability.
+
+- [ ] Design the server-side HistoricalProvider interface and canonical ESPN/SofaSport normalization schema.
+- [ ] Define provider fallback, provenance, deduplication, cache, and strict 15-match analytical-window contracts.
+
+- [ ] Implement the server-side TypeScript SofaSport RapidAPI adapter and canonical response mappings.
+- [ ] Add RapidAPI secret/configuration handling without exposing credentials to the client.
+- [ ] Add deterministic adapter tests for season events, team history, H2H, event details, errors, deduplication, and the 15-match guard.
+
+- [x] Retry RapidAPI validation against the correct subscribed SofaScore-related listing and host before continuing the adapter implementation.
+
+- [x] Switch historical-provider assumptions from SofaSport to the subscribed SportAPI RapidAPI host and `/api/v1` route family.
+- [ ] Rotate the RapidAPI credential exposed in chat/screenshot and validate the replacement key server-side.
+- [x] Map SportAPI event, team-history, H2H, statistics, lineups, and shotmap responses into the canonical HistoricalProvider schema.
+
+- [x] Select the alternate secure RapidAPI key from the key holder and validate it against `sportapi7.p.rapidapi.com` without using the exposed chat key.
