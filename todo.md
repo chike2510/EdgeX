@@ -150,3 +150,6 @@
 - [x] Identify and validate the Creativesdev Free API Live Football Data RapidAPI host and endpoint contract.
 - [x] Add the third football provider as a server-side fallback after ESPN and SportAPI with canonical normalization and provenance.
 - [x] Preserve cross-provider deduplication and the strict 15-match analytical window across all three providers.
+
+- [x] Restore fixture loading after the Creativesdev fallback regression without breaking the existing ESPN fixture route.
+- [x] Add a regression guard ensuring optional fallback modules cannot prevent the ESPN fixture feed from initializing.

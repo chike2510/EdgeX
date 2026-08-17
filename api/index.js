@@ -3,7 +3,6 @@ import bayse from '../server/api/bayse.js';
 import edgeAnalysis from '../server/api/edge-analysis.js';
 import edgeCrypto from '../server/api/edge-crypto.js';
 import crypto from '../server/api/crypto.js';
-import creativesdev from '../server/api/creativesdev.js';
 import edgeForex from '../server/api/edge-forex.js';
 import forex from '../server/api/forex.js';
 import edgeMarkets from '../server/api/edge-markets.js';
@@ -14,7 +13,6 @@ import playerEdge from '../server/api/player-edge.js';
 import search from '../server/api/search.js';
 import sofascore from '../server/api/sofascore.js';
 import sports from '../server/api/sports.js';
-import sportapi from '../server/api/sportapi.js';
 import weather from '../server/api/weather.js';
 
 const handlers = {
@@ -23,7 +21,6 @@ const handlers = {
   'edge-analysis': edgeAnalysis,
   'edge-crypto': edgeCrypto,
   crypto,
-  creativesdev,
   'edge-forex': edgeForex,
   forex,
   'edge-markets': edgeMarkets,
@@ -34,8 +31,12 @@ const handlers = {
   search,
   sofascore,
   sports,
-  sportapi,
   weather,
+};
+
+const lazyHandlers = {
+  sportapi: () => import('../server/api/sportapi.js'),
+  creativesdev: () => import('../server/api/creativesdev.js'),
 };
 
 function requestedPath(req) {
@@ -48,7 +49,16 @@ function requestedPath(req) {
 
 export default async function handler(req, res) {
   const path = requestedPath(req).split('/')[0];
-  const target = handlers[path];
+  let target = handlers[path];
+  if (!target && lazyHandlers[path]) {
+    try {
+      const loaded = await lazyHandlers[path]();
+      target = loaded.default ?? loaded;
+    } catch (error) {
+      console.error(`[EdgeX api] optional provider failed to load: ${path}`, error?.message || error);
+      return res.status(503).json({ error: 'Optional provider unavailable', path });
+    }
+  }
   if (!target) return res.status(404).json({ error: 'API route not found', path });
 
   const originalQuery = req.query || {};
