@@ -146,3 +146,7 @@
 - [x] Map SportAPI event, team-history, H2H, statistics, lineups, and shotmap responses into the canonical HistoricalProvider schema.
 
 - [x] Select the alternate secure RapidAPI key from the key holder and validate it against `sportapi7.p.rapidapi.com` without using the exposed chat key.
+
+- [x] Identify and validate the Creativesdev Free API Live Football Data RapidAPI host and endpoint contract.
+- [x] Add the third football provider as a server-side fallback after ESPN and SportAPI with canonical normalization and provenance.
+- [x] Preserve cross-provider deduplication and the strict 15-match analytical window across all three providers.

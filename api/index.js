@@ -3,6 +3,7 @@ import bayse from '../server/api/bayse.js';
 import edgeAnalysis from '../server/api/edge-analysis.js';
 import edgeCrypto from '../server/api/edge-crypto.js';
 import crypto from '../server/api/crypto.js';
+import creativesdev from '../server/api/creativesdev.js';
 import edgeForex from '../server/api/edge-forex.js';
 import forex from '../server/api/forex.js';
 import edgeMarkets from '../server/api/edge-markets.js';
@@ -22,6 +23,7 @@ const handlers = {
   'edge-analysis': edgeAnalysis,
   'edge-crypto': edgeCrypto,
   crypto,
+  creativesdev,
   'edge-forex': edgeForex,
   forex,
   'edge-markets': edgeMarkets,
