@@ -1,6 +1,46 @@
 // api/form.js — EdgeX Team Form Fetcher v4
 // Fix: ESPN soccer returns scores via $ref links OR in linescores/displayValue
 // Solution: extract score from competition displayValue or linescores
+import { sportApiProvider } from '../historical/sportapi.ts';
+
+function normalizeSportApiForm(fixtures, teamId, league, requestedLimit) {
+  const completed = (Array.isArray(fixtures) ? fixtures : []).filter(fixture => fixture?.completed && fixture?.score?.verified);
+  const form = completed.map(fixture => {
+    const home = fixture.homeTeam || {};
+    const away = fixture.awayTeam || {};
+    const isHome = String(home.id) === String(teamId);
+    const team = isHome ? home : away;
+    const opponent = isHome ? away : home;
+    if (!team?.id || !opponent?.id || String(team.id) !== String(teamId)) return null;
+    const goalsFor = isHome ? fixture.score.home : fixture.score.away;
+    const goalsAgainst = isHome ? fixture.score.away : fixture.score.home;
+    if (!Number.isFinite(Number(goalsFor)) || !Number.isFinite(Number(goalsAgainst))) return null;
+    const result = Number(goalsFor) > Number(goalsAgainst) ? 'W' : Number(goalsFor) < Number(goalsAgainst) ? 'L' : 'D';
+    return {
+      date: fixture.kickoff,
+      opponent: opponent.name || 'Opponent unavailable',
+      opponentLogo: opponent.logoUrl || '',
+      score: `${goalsFor}-${goalsAgainst}`,
+      result,
+      isHome,
+      goalsFor: Number(goalsFor),
+      goalsAgainst: Number(goalsAgainst),
+      provider: 'sportapi',
+      evidenceClass: fixture.evidenceClass,
+      provenance: fixture.provenance,
+    };
+  }).filter(Boolean).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-requestedLimit);
+  return {
+    provider: 'sportapi',
+    providerLabel: 'SportAPI',
+    form,
+    stats: computeFormStats(form),
+    teamStats: null,
+    teamId,
+    league,
+    _debug: { source: 'sportapi', completed: completed.length, formGames: form.length, requestedLimit },
+  };
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,6 +51,15 @@ export default async function handler(req, res) {
   const { league, teamId, debug } = req.query;
   const requestedLimit = Math.max(10, Math.min(15, Number.parseInt(req.query.limit || '15', 10) || 15));
   if (!league || !teamId) return res.status(400).json({ error: 'league and teamId required' });
+
+  // SportAPI is preferred for upcoming/live context. ESPN remains the tertiary fallback.
+  try {
+    const sportHistory = await sportApiProvider.getTeamHistory(String(teamId), { page: 0 });
+    const sportForm = normalizeSportApiForm(sportHistory.data, String(teamId), league, requestedLimit);
+    if (sportForm.form.length > 0) return res.status(200).json(sportForm);
+  } catch (error) {
+    // Continue to ESPN without blocking the form route.
+  }
 
   const urls = [
     `https://site.web.api.espn.com/apis/site/v2/sports/soccer/${league}/teams/${teamId}/schedule`,
@@ -31,7 +80,7 @@ export default async function handler(req, res) {
     }
     clearTimeout(tid);
 
-    if (!r?.ok) return res.status(200).json({ form: [], stats: null, teamId, league, _debug: { espnStatus: r?.status ?? 502 } });
+    if (!r?.ok) return res.status(200).json({ provider: 'espn', providerLabel: 'ESPN', form: [], stats: null, teamId, league, _debug: { source: 'espn', espnStatus: r?.status ?? 502 } });
 
     const data = await r.json();
     const events = data.events || [];
@@ -189,15 +238,17 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json({
+      provider: 'espn',
+      providerLabel: 'ESPN',
       form,
       stats,
       teamStats,
       teamId, league,
-      _debug: { totalEvents: events.length, completed: completed.length, formGames: form.length, requestedLimit }
+      _debug: { source: 'espn', totalEvents: events.length, completed: completed.length, formGames: form.length, requestedLimit }
     });
 
   } catch (err) {
-    return res.status(200).json({ error: err.message, form: [], stats: null });
+    return res.status(200).json({ provider: 'espn', providerLabel: 'ESPN', error: err.message, form: [], stats: null });
   }
 }
 

@@ -17,7 +17,7 @@ export interface ProviderBatch<T extends ProviderChainRecord> {
 
 export const ANALYTICAL_WINDOW_LIMIT = 15;
 
-const PROVIDER_PRIORITY: ProviderChainName[] = ["espn", "sportapi", "creativesdev"];
+const PROVIDER_PRIORITY: ProviderChainName[] = ["sportapi", "creativesdev", "espn"];
 
 export function mergeProviderHistory<T extends ProviderChainRecord>(batches: ProviderBatch<T>[]): T[] {
   const priority = new Map(PROVIDER_PRIORITY.map((provider, index) => [provider, index]));

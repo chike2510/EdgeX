@@ -157,3 +157,7 @@
 - [x] Use SportAPI first, Creativesdev second, and ESPN third for upcoming/live commentary, statistics, and lineup enrichment.
 - [x] Keep ESPN authoritative for completed-match event data and use field-aware fallback when a provider response is incomplete.
 - [x] Add regression coverage for upcoming, live, and completed provider precedence.
+
+- [x] Remove ESPN-first behavior from upcoming/live form, H2H, commentary, and detail-context loaders.
+- [x] Make SportAPI primary, Creativesdev secondary, and ESPN tertiary for non-completed detail context.
+- [x] Add deployed-view regression checks proving provider labels and evidence sources are not ESPN-first.
