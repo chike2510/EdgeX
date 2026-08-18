@@ -161,3 +161,8 @@
 - [x] Remove ESPN-first behavior from upcoming/live form, H2H, commentary, and detail-context loaders.
 - [x] Make SportAPI primary, Creativesdev secondary, and ESPN tertiary for non-completed detail context.
 - [x] Add deployed-view regression checks proving provider labels and evidence sources are not ESPN-first.
+
+- [x] Investigate and repair the latest fixture-loading regression without weakening ESPN fixture-route isolation.
+- [ ] Define a real-data player-props model using player availability, minutes, usage, recent performance, opponent context, and uncertainty.
+- [ ] Implement evidence-gated player-props predictions with transparent source labels and insufficient-data states.
+- [ ] Add regression coverage for fixture loading and player-props probability behavior.

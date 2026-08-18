@@ -1,7 +1,7 @@
 // api/form.js — EdgeX Team Form Fetcher v4
 // Fix: ESPN soccer returns scores via $ref links OR in linescores/displayValue
 // Solution: extract score from competition displayValue or linescores
-import { sportApiProvider } from '../historical/sportapi.ts';
+import { sportApiProvider } from '../historical/sportapi-runtime.js';
 
 function normalizeSportApiForm(fixtures, teamId, league, requestedLimit) {
   const completed = (Array.isArray(fixtures) ? fixtures : []).filter(fixture => fixture?.completed && fixture?.score?.verified);

@@ -1,4 +1,4 @@
-import { sportApiProvider } from '../historical/sportapi.ts';
+import { sportApiProvider } from '../historical/sportapi-runtime.js';
 
 const MAX_ARCHIVE_PAGE = 8;
 
