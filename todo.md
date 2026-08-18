@@ -170,3 +170,7 @@
 - [x] Add Player Edge card badges for SUPPORTED, LINEUP_PENDING, and INSUFFICIENT_DATA.
 - [x] Add state-specific card copy, disabled analysis behavior, and accessible status semantics.
 - [x] Add responsive Player Edge state-card styling and deterministic UI regression coverage.
+
+- [x] Remove visible ESPN, SportAPI, Creativesdev, and other provider names from user-facing Football, H2H, stats, lineup, commentary, and Player Edge copy.
+- [x] Preserve provider names only in internal provenance, server diagnostics, and non-user-facing debug data.
+- [x] Add regression coverage proving internal provider names do not appear in rendered product copy.
