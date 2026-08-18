@@ -166,3 +166,7 @@
 - [ ] Define a real-data player-props model using player availability, minutes, usage, recent performance, opponent context, and uncertainty.
 - [ ] Implement evidence-gated player-props predictions with transparent source labels and insufficient-data states.
 - [ ] Add regression coverage for fixture loading and player-props probability behavior.
+
+- [x] Add Player Edge card badges for SUPPORTED, LINEUP_PENDING, and INSUFFICIENT_DATA.
+- [x] Add state-specific card copy, disabled analysis behavior, and accessible status semantics.
+- [x] Add responsive Player Edge state-card styling and deterministic UI regression coverage.

@@ -30,12 +30,36 @@
     });
   }
 
+  function propState(item) {
+    const explicit = String(item.analysisState || item.propState || item.evidenceState || '').toUpperCase();
+    if (['SUPPORTED', 'LINEUP_PENDING', 'INSUFFICIENT_DATA'].includes(explicit)) return explicit;
+    const availability = String(item.lineupStatus || item.availability || '').toLowerCase();
+    if (availability.includes('pending') || availability.includes('questionable') || availability.includes('unknown')) return 'LINEUP_PENDING';
+    const line = Number.isFinite(Number(item.line)) ? Number(item.line) : null;
+    const sample = Number(item.sampleSize ?? item.evidence?.sampleSize ?? item.recentAppearances ?? 0);
+    return line !== null && Boolean(item.selection) && sample >= 8 ? 'SUPPORTED' : 'INSUFFICIENT_DATA';
+  }
+
+  function propStateMeta(stateName) {
+    const meta = {
+      SUPPORTED: { label: 'SUPPORTED', title: 'Evidence supports a player-props read', copy: 'The provider supplied a usable line and enough validated player context for a deterministic projection.', action: 'View analysis' },
+      LINEUP_PENDING: { label: 'LINEUP PENDING', title: 'Waiting for lineup confirmation', copy: 'No projection is shown until the provider confirms the player’s availability or expected role.', action: 'Lineup required' },
+      INSUFFICIENT_DATA: { label: 'INSUFFICIENT DATA', title: 'Not enough validated evidence', copy: 'A line may be available, but the recent minutes or event-level sample is not strong enough for a defensible projection.', action: 'Evidence required' },
+    };
+    return meta[stateName] || meta.INSUFFICIENT_DATA;
+  }
+
   function card(item) {
     const line = Number.isFinite(Number(item.line)) ? item.line : null;
-    return `<article class="edgex-v2-card edgex-player-card">
+    const stateName = propState(item);
+    const stateMeta = propStateMeta(stateName);
+    const canAnalyze = stateName === 'SUPPORTED';
+    const cardId = `player-evidence-${itemKey(item)}`;
+    return `<article class="edgex-v2-card edgex-player-card edgex-player-card--${stateName.toLowerCase()}" data-prop-state="${stateName}">
       <div class="edgex-player-card-head"><div><span class="edgex-v2-kicker">${esc(item.provider || 'Provider')} · ${esc(item.sport || 'Sport')}</span><h3>${esc(item.playerName || 'Player unavailable')}</h3><p>${esc(item.team || 'Team unavailable')} ${item.opponent ? `vs ${esc(item.opponent)}` : ''}</p></div><span class="edgex-v2-chip">${esc(item.status || 'Timing unavailable')}</span></div>
+      <div class="edgex-player-state-row"><span class="edgex-player-state-badge edgex-player-state-badge--${stateName.toLowerCase()}" role="status" aria-label="Player prop state: ${esc(stateMeta.label)}">${stateMeta.label}</span><span class="edgex-player-state-title">${stateMeta.title}</span></div>
       <div class="edgex-player-card-grid"><div><small>Market</small><strong>${esc(item.marketType || 'Market unavailable')}</strong></div><div><small>Selection</small><strong>${esc(item.selection || 'Unavailable')}</strong></div><div><small>Line</small><strong>${line === null ? unavailable('Unavailable') : esc(line)}</strong></div><div><small>Fixture</small><strong>${item.fixtureTime ? esc(new Date(item.fixtureTime).toLocaleString()) : unavailable('Unavailable')}</strong></div></div>
-      <div class="edgex-v2-state edgex-player-evidence"><strong>${item.selection && line !== null ? 'Provider context ready' : 'Provider context incomplete'}</strong><span>${item.selection && line !== null ? 'The market option and line came directly from Squads.' : 'Squads returned this record without a complete market option or line.'}</span><small>AI projection and confidence appear only after a structured analysis request; unavailable AI output does not replace the provider data.</small></div><button class="edgex-v2-button player-analysis-button" data-player-id="${esc(itemKey(item))}" type="button">View analysis</button>
+      <div class="edgex-v2-state edgex-player-evidence" id="${esc(cardId)}"><strong>${stateMeta.label === 'SUPPORTED' ? 'Provider context ready' : stateMeta.label === 'LINEUP PENDING' ? 'Projection paused' : 'Projection withheld'}</strong><span>${stateMeta.copy}</span><small>${esc(item.provider || 'Provider')} data is shown as returned; EdgeX does not replace missing player evidence with an estimate.</small></div><button class="edgex-v2-button player-analysis-button" data-player-id="${esc(itemKey(item))}" aria-describedby="${esc(cardId)}" type="button" ${canAnalyze ? '' : 'disabled'}>${stateMeta.action}</button>
     </article>`;
   }
 
@@ -50,7 +74,7 @@
     document.getElementById('player-edge-refresh')?.addEventListener('click', load);
     document.getElementById('player-edge-retry')?.addEventListener('click', load);
     ['player-edge-sport','player-edge-status','player-edge-provider','player-edge-market'].forEach(id => { const element = document.getElementById(id); if (element) element.value = state[id.replace('player-edge-','')] || (id.endsWith('provider') ? 'all' : ''); });
-    document.querySelectorAll('.player-analysis-button').forEach(button => button.addEventListener('click', () => { const item = state.props.find(candidate => itemKey(candidate) === button.dataset.playerId); if (item) showAnalysis(item); }));
+    document.querySelectorAll('.player-analysis-button').forEach(button => button.addEventListener('click', () => { if (button.disabled) return; const item = state.props.find(candidate => itemKey(candidate) === button.dataset.playerId); if (item) showAnalysis(item); }));
   }
 
   async function showAnalysis(item) { const line = Number.isFinite(Number(item.line)) ? Number(item.line) : null; const selection = item.selection || 'Unavailable'; const dialog = document.createElement('dialog'); dialog.className = 'edgex-v2-dialog'; dialog.innerHTML = `<div class="edgex-v2-card"><button class="edgex-v2-dialog-close" type="button">Close</button><span class="edgex-v2-eyebrow">Player Edge analysis</span><h2>${esc(item.playerName || item.displayName || 'Player unavailable')}</h2><p>${esc(item.team || 'Team unavailable')} ${item.opponent ? `vs ${esc(item.opponent)}` : ''} · ${esc(item.displayName || item.marketType || 'Market unavailable')}</p><div class="edgex-market-stats"><div><small>Selection</small><strong>${esc(selection)}</strong></div><div><small>Provider line</small><strong>${line == null ? 'Unavailable' : esc(line)}</strong></div><div><small>Projection</small><strong id="player-ai-projection">Loading…</strong></div><div><small>Confidence</small><strong id="player-ai-confidence">Loading…</strong></div></div><div class="edgex-v2-state" id="player-ai-state"><strong>Generating a structured read</strong><span>EdgeX will use only the provider-backed player context supplied here.</span></div><div id="player-ai-detail"></div></div>`; document.body.appendChild(dialog); dialog.querySelector('.edgex-v2-dialog-close').onclick = () => dialog.remove(); dialog.showModal(); try { const response = await fetch('/api/edge-analysis', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ domain: 'player-edge', subject: item.playerName || item.displayName || 'Player', data: { id: item.id, playerId: item.playerId, playerName: item.playerName, team: item.team, opponent: item.opponent, sport: item.sport, marketType: item.marketType, displayName: item.displayName, line, selection, status: item.status, fixtureTime: item.fixtureTime, provider: item.provider, providerData: item } }) }); const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Analysis unavailable'); dialog.querySelector('#player-ai-projection').textContent = result.projection || 'No projection returned'; dialog.querySelector('#player-ai-confidence').textContent = result.confidence == null ? 'Not returned' : `${result.confidence}%`; dialog.querySelector('#player-ai-state').innerHTML = `<strong>${esc(result.verdict || 'Analysis returned')}</strong><span>${esc(result.dataQuality || 'Data quality unavailable')}</span>`; dialog.querySelector('#player-ai-detail').innerHTML = `<div class="edgex-v2-state"><strong>Why this read</strong><span>${esc((result.reasons || []).join(' ') || 'No supporting reasons returned.')}</span><small>${esc((result.uncertainties || []).join(' ') || 'No additional uncertainty returned.')}</small></div>`; } catch (error) { dialog.querySelector('#player-ai-state').innerHTML = `<strong>Analysis unavailable</strong><span>${esc(error.message || 'The structured analysis service could not respond.')}</span>`; dialog.querySelector('#player-ai-projection').textContent = 'No projection returned'; dialog.querySelector('#player-ai-confidence').textContent = 'Not returned'; } }
