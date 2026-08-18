@@ -174,3 +174,7 @@
 - [x] Remove visible ESPN, SportAPI, Creativesdev, and other provider names from user-facing Football, H2H, stats, lineup, commentary, and Player Edge copy.
 - [x] Preserve provider names only in internal provenance, server diagnostics, and non-user-facing debug data.
 - [x] Add regression coverage proving internal provider names do not appear in rendered product copy.
+
+- [x] Enrich the Football Stats tab with additional confirmed match metrics, periods, incidents, and event context.
+- [x] Replace event-only commentary with exact contextual narratives using minute, team, player, score-state, and event metadata.
+- [x] Add regression coverage for richer statistics, contextual commentary, unavailable fields, and 540px layout.
