@@ -178,3 +178,11 @@
 - [x] Enrich the Football Stats tab with additional confirmed match metrics, periods, incidents, and event context.
 - [x] Replace event-only commentary with exact contextual narratives using minute, team, player, score-state, and event metadata.
 - [x] Add regression coverage for richer statistics, contextual commentary, unavailable fields, and 540px layout.
+
+- [ ] Audit the Squad page and current player-data routes for real identity, availability, minutes, event statistics, and role fields.
+- [ ] Define a provider-neutral Squad player profile and historical event contract for analysis.
+- [ ] Specify evidence gates for player analysis based on lineup status, minutes, recent appearances, and event-level sample quality.
+
+- [x] Update squads.html with a roster overview layer and selected-player detail layer.
+- [x] Add SUPPORTED, LINEUP_PENDING, and INSUFFICIENT_DATA states to the player-detail experience.
+- [x] Preserve the existing Player Edge feed and add responsive roster/player-detail interaction coverage.

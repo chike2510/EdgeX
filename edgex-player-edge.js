@@ -86,5 +86,14 @@
     finally { state.loading = false; render(); }
   }
 
+  window.addEventListener('edgex:squad-focus', event => {
+    const player = event.detail?.player;
+    if (!player) return;
+    state.query = player.playerName || player.displayName || '';
+    state.sport = '';
+    state.market = '';
+    render();
+  });
+
   render(); load();
 })();
