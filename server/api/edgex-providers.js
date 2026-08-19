@@ -136,6 +136,7 @@ export function normalizePlayerProps(payload) {
     return entries.flatMap(entry => (Array.isArray(entry.lines) ? entry.lines : []).map(line => ({
       provider: 'squads', providerMarketId: line.id || market.id || group.groupId || null, eventId: game.id || null,
       playerId: player.id || null, playerName: player.name || null, playerImage: player.imageUrl128 || player.imageUrl || null,
+      teamId: player.team?.id || null, opponentId: player.team?.id === away.id ? home.id || null : away.id || null,
       team: team || null, opponent: opponent || null, sport: group.sport || null, marketType: market.name || market.id || null,
       displayName: `${market.name || 'Player market'} · ${entry.type || 'Line'}`, line: safeNumber(entry.betPoints),
       selection: line.selectionLine || null, fixtureTime: game.startDate || null, status: game.isLive ? 'live' : game.status || null,

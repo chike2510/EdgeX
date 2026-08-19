@@ -51,13 +51,31 @@
     rosterGrid.innerHTML = items.length ? items.map(rosterCard).join('') : `<div class="edgex-v2-state"><strong>No players match this view</strong><span>Try another search or evidence filter.</span></div>`;
     rosterGrid.querySelectorAll('.edgex-squad-open-player').forEach(button => button.addEventListener('click', () => openPlayer(button.dataset.playerKey)));
   };
-  const openPlayer = playerKey => {
+  const openPlayer = async playerKey => {
     const item = state.players.find(candidate => keyOf(candidate) === playerKey);
     if (!item) return;
     rosterLayer.hidden = true; detailLayer.hidden = false;
-    selectedSummary.innerHTML = `<span class="edgex-v2-eyebrow">Selected player</span><h1>${esc(item.playerName || 'Player unavailable')}</h1><p>${esc(item.team || 'Team unavailable')} · ${esc(item.marketType || 'Market context')}</p>`;
+    selectedSummary.innerHTML = `<span class="edgex-v2-eyebrow">Selected player</span><h1>${esc(item.playerName || 'Player unavailable')}</h1><p>${esc(item.team || 'Team unavailable')} · ${esc(item.marketType || 'Market context')}</p><div class="edgex-squad-history-loading">Loading recent player evidence…</div>`;
     window.dispatchEvent(new CustomEvent('edgex:squad-focus', { detail: { player: item } }));
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (!item.teamId || (!item.playerId && !item.playerName)) return;
+    const metric = String(item.marketType || '').toLowerCase().includes('save') ? 'saves' : String(item.marketType || '').toLowerCase().includes('shot') ? 'shots' : String(item.marketType || '').toLowerCase().includes('tackle') ? 'tackles' : 'passes';
+    try {
+      const params = new URLSearchParams({ teamId: item.teamId, metric });
+      if (item.playerId) params.set('playerId', item.playerId);
+      if (item.playerName) params.set('playerName', item.playerName);
+      if (item.eventId) params.set('eventId', item.eventId);
+      const response = await fetch(`/api/player-history?${params}`);
+      const body = await response.json();
+      if (!response.ok || !body.data) throw new Error(body.detail || body.error || 'Recent player evidence unavailable');
+      const history = body.data;
+      const meta = history.evidenceState === 'SUPPORTED' ? 'SUPPORTED' : history.evidenceState === 'LINEUP_PENDING' ? 'LINEUP PENDING' : 'INSUFFICIENT DATA';
+      const distribution = history.distribution || {};
+      const appearances = history.appearances || [];
+      selectedSummary.innerHTML = `<span class="edgex-v2-eyebrow">Selected player</span><h1>${esc(item.playerName || 'Player unavailable')}</h1><p>${esc(item.team || 'Team unavailable')} · ${esc(item.marketType || 'Market context')}</p><div class="edgex-squad-history-summary"><div class="edgex-squad-history-status"><span class="edgex-player-state-badge edgex-player-state-badge--${String(history.evidenceState || 'INSUFFICIENT_DATA').toLowerCase()}">${meta}</span><span>${history.evidence?.sampleSize || 0} recent appearances</span></div><div class="edgex-squad-history-stats"><span><strong>${distribution.averageMinutes ?? '—'}</strong> avg minutes</span><span><strong>${distribution.average ?? '—'}</strong> avg ${esc(metric)}</span><span><strong>${distribution.count || 0}</strong> usable matches</span></div><p class="edgex-squad-history-note">${history.evidenceState === 'SUPPORTED' ? 'Recent player evidence is sufficient for a structured analysis.' : history.evidenceState === 'LINEUP_PENDING' ? 'Analysis is waiting for confirmed availability or role.' : 'The recent sample is not strong enough for a defensible projection.'}</p><div class="edgex-squad-history-recent">${appearances.slice(0, 5).map(game => `<span>${esc(game.date ? new Date(game.date).toLocaleDateString() : 'Recent match')} · ${esc(game.minutes ?? '—')} min · ${esc(game.value ?? '—')} ${esc(metric)}</span>`).join('')}</div></div>`;
+    } catch (error) {
+      selectedSummary.innerHTML += `<div class="edgex-squad-history-summary"><span class="edgex-player-state-badge edgex-player-state-badge--insufficient_data">INSUFFICIENT DATA</span><p class="edgex-squad-history-note">Recent player evidence is unavailable. No projection was generated.</p></div>`;
+    }
   };
   const closePlayer = () => { detailLayer.hidden = true; rosterLayer.hidden = false; window.scrollTo({ top: 0, behavior: 'smooth' }); };
   const load = async () => {

@@ -145,15 +145,25 @@ function normalizeSportApiLineups(payload) {
   const data = unwrap(payload);
   const groups = data?.teams ?? data?.lineups ?? data?.players ?? data ?? [];
   const list = Array.isArray(groups) ? groups : [];
-  const players = (raw) => ({
-    id: text(first(raw?.player?.id, raw?.id)),
-    name: text(first(raw?.player?.name, raw?.name, raw?.playerName)) ?? "Unknown player",
-    jerseyNumber: text(first(raw?.shirtNumber, raw?.jerseyNumber, raw?.number)),
-    position: text(first(raw?.position?.name, raw?.position, raw?.role)),
-    starter: raw?.starter === true || raw?.substitute === false,
-    substitute: raw?.substitute === true,
-    status: text(first(raw?.status, raw?.reason))
-  });
+  const players = (raw) => {
+    const source = raw?.statistics ?? raw?.stats ?? raw?.playerStatistics ?? {};
+    const statistics = {};
+    for (const [key, value] of Object.entries(source)) {
+      const parsed = numberValue(value);
+      if (parsed !== void 0) statistics[key] = parsed;
+    }
+    return {
+      id: text(first(raw?.player?.id, raw?.id)),
+      name: text(first(raw?.player?.name, raw?.name, raw?.playerName)) ?? "Unknown player",
+      jerseyNumber: text(first(raw?.shirtNumber, raw?.jerseyNumber, raw?.number)),
+      position: text(first(raw?.position?.name, raw?.position, raw?.role)),
+      starter: raw?.starter === true || raw?.substitute === false,
+      substitute: raw?.substitute === true,
+      status: text(first(raw?.status, raw?.reason)),
+      minutes: numberValue(first(raw?.minutesPlayed, raw?.minutes, source?.minutesPlayed, source?.minutes)),
+      statistics
+    };
+  };
   const homeRows = list.find((group) => group?.team?.homeAway === "home" || group?.homeAway === "home")?.players ?? data?.home?.players ?? data?.home ?? [];
   const awayRows = list.find((group) => group?.team?.homeAway === "away" || group?.homeAway === "away")?.players ?? data?.away?.players ?? data?.away ?? [];
   return {

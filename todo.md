@@ -186,3 +186,10 @@
 - [x] Update squads.html with a roster overview layer and selected-player detail layer.
 - [x] Add SUPPORTED, LINEUP_PENDING, and INSUFFICIENT_DATA states to the player-detail experience.
 - [x] Preserve the existing Player Edge feed and add responsive roster/player-detail interaction coverage.
+
+- [x] Verify the deployed Squads roster and selected-player detail layer show actual analysis output, not only market rows or evidence badges.
+
+- [x] Add a server-side player-history route for canonical player identity, recent appearances, minutes, saves, and event distributions.
+- [x] Add provider fallback and explicit evidence states for player-history responses.
+- [x] Wire player-history summaries into Squad cards without exposing provider names.
+- [x] Add deterministic route, normalization, and Squad-card regression coverage.
