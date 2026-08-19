@@ -11,6 +11,7 @@ import edgeWeather from '../server/api/edge-weather.js';
 import form from '../server/api/form.js';
 import playerEdge from '../server/api/player-edge.js';
 import playerHistory from '../server/api/player-history.js';
+import memecoins from '../server/api/memecoins.js';
 import search from '../server/api/search.js';
 import sofascore from '../server/api/sofascore.js';
 import sports from '../server/api/sports.js';
@@ -30,6 +31,7 @@ const handlers = {
   form,
   'player-edge': playerEdge,
   'player-history': playerHistory,
+  memecoins,
   search,
   sofascore,
   sports,

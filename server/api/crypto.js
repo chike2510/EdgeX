@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     per_page: String(Math.min(Math.max(Number(query.per_page) || 30, 1), 100)),
     page: String(Math.max(Number(query.page) || 1, 1)),
     sparkline: 'false',
-    price_change_percentage: '24h'
+    price_change_percentage: '1h,24h,7d,30d'
   });
   if (requestedIds) params.set('ids', requestedIds.split(',').map(value => value.trim()).filter(Boolean).slice(0, 100).join(','));
   if (isMemecoin) params.set('category', 'meme-token');

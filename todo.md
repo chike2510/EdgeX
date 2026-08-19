@@ -193,3 +193,13 @@
 - [x] Add provider fallback and explicit evidence states for player-history responses.
 - [x] Wire player-history summaries into Squad cards without exposing provider names.
 - [x] Add deterministic route, normalization, and Squad-card regression coverage.
+
+- [ ] Audit existing crypto routes, feeds, and UI shell for a Memecoin Finder insertion point.
+- [ ] Define real-data memecoin discovery filters, liquidity/market-risk fields, and neutral risk states.
+- [ ] Implement a server-side Memecoin Finder route and responsive finder UI without fabricated token data.
+- [ ] Add deterministic data-integrity and crypto-analysis regression coverage, including no-data and high-risk states.
+
+- [x] Add a real-data Memecoin Finder route using provider-reported meme-token market fields only.
+- [x] Add transparent discovery-context scoring, observable market-risk flags, filter controls, and explicit unavailable/empty states.
+- [x] Add the responsive Memecoin Finder page and link it from the Crypto page.
+- [x] Add deterministic memecoin normalization and no-fabrication regression tests.
