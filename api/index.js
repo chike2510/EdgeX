@@ -13,7 +13,6 @@ import playerEdge from '../server/api/player-edge.js';
 import playerHistory from '../server/api/player-history.js';
 import memecoins from '../server/api/memecoins.js';
 import dexscreener from '../server/api/dexscreener.js';
-import sportmonks from '../server/api/sportmonks.js';
 import search from '../server/api/search.js';
 import sofascore from '../server/api/sofascore.js';
 import sports from '../server/api/sports.js';
@@ -35,7 +34,6 @@ const handlers = {
   'player-history': playerHistory,
   memecoins,
   dexscreener,
-  sportmonks,
   search,
   sofascore,
   sports,

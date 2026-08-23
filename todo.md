@@ -207,3 +207,7 @@
 - [x] Integrate Sportmonks as an optional player-statistics provider with scoped coverage, provenance, caching, and explicit unavailable states.
 - [x] Add server-side DEX Screener pair enrichment for Memecoin Finder with chain/address normalization, throttling-aware caching, and licensing-aware attribution.
 - [x] Wire both integrations into the existing fallback contracts and add deterministic regression tests for provider failure and missing fields.
+
+- [x] Remove Sportmonks from football and Squads provider paths after confirming its permanent free-plan coverage is not suitable for EdgeX’s target competitions.
+- [x] Preserve SportAPI → Creativesdev → ESPN for broad football coverage and keep DEX Screener enrichment active for Memecoin Finder.
+- [x] Re-run provider, football, Squads, and Memecoin Finder regression checks after the Sportmonks removal.

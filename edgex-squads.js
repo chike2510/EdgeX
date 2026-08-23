@@ -51,19 +51,6 @@
     rosterGrid.innerHTML = items.length ? items.map(rosterCard).join('') : `<div class="edgex-v2-state"><strong>No players match this view</strong><span>Try another search or evidence filter.</span></div>`;
     rosterGrid.querySelectorAll('.edgex-squad-open-player').forEach(button => button.addEventListener('click', () => openPlayer(button.dataset.playerKey)));
   };
-  const loadSeasonContext = async item => {
-    if (!item.playerId) return;
-    try {
-      const response = await fetch(`/api/sportmonks?playerId=${encodeURIComponent(item.sportmonksPlayerId || item.playerId)}`);
-      const body = await response.json();
-      if (!response.ok || !body.data?.stats?.length) return;
-      const stats = body.data.stats.slice(0, 8).map(row => `<span>${esc(row.name || `Metric ${row.typeId}`)} · ${esc(row.value ?? '—')}</span>`).join('');
-      const block = document.createElement('div');
-      block.className = 'edgex-squad-season-context';
-      block.innerHTML = `<span class="edgex-v2-eyebrow">Extended season context</span><div class="edgex-squad-history-recent">${stats}</div>`;
-      selectedSummary.appendChild(block);
-    } catch { /* Optional enrichment remains invisible when unavailable. */ }
-  };
   const openPlayer = async playerKey => {
     const item = state.players.find(candidate => keyOf(candidate) === playerKey);
     if (!item) return;
@@ -86,7 +73,6 @@
       const distribution = history.distribution || {};
       const appearances = history.appearances || [];
       selectedSummary.innerHTML = `<span class="edgex-v2-eyebrow">Selected player</span><h1>${esc(item.playerName || 'Player unavailable')}</h1><p>${esc(item.team || 'Team unavailable')} · ${esc(item.marketType || 'Market context')}</p><div class="edgex-squad-history-summary"><div class="edgex-squad-history-status"><span class="edgex-player-state-badge edgex-player-state-badge--${String(history.evidenceState || 'INSUFFICIENT_DATA').toLowerCase()}">${meta}</span><span>${history.evidence?.sampleSize || 0} recent appearances</span></div><div class="edgex-squad-history-stats"><span><strong>${distribution.averageMinutes ?? '—'}</strong> avg minutes</span><span><strong>${distribution.average ?? '—'}</strong> avg ${esc(metric)}</span><span><strong>${distribution.count || 0}</strong> usable matches</span></div><p class="edgex-squad-history-note">${history.evidenceState === 'SUPPORTED' ? 'Recent player evidence is sufficient for a structured analysis.' : history.evidenceState === 'LINEUP_PENDING' ? 'Analysis is waiting for confirmed availability or role.' : 'The recent sample is not strong enough for a defensible projection.'}</p><div class="edgex-squad-history-recent">${appearances.slice(0, 5).map(game => `<span>${esc(game.date ? new Date(game.date).toLocaleDateString() : 'Recent match')} · ${esc(game.minutes ?? '—')} min · ${esc(game.value ?? '—')} ${esc(metric)}</span>`).join('')}</div></div>`;
-      loadSeasonContext(item);
     } catch (error) {
       selectedSummary.innerHTML += `<div class="edgex-squad-history-summary"><span class="edgex-player-state-badge edgex-player-state-badge--insufficient_data">INSUFFICIENT DATA</span><p class="edgex-squad-history-note">Recent player evidence is unavailable. No projection was generated.</p></div>`;
     }
