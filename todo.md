@@ -203,3 +203,7 @@
 - [x] Add transparent discovery-context scoring, observable market-risk flags, filter controls, and explicit unavailable/empty states.
 - [x] Add the responsive Memecoin Finder page and link it from the Crypto page.
 - [x] Add deterministic memecoin normalization and no-fabrication regression tests.
+
+- [x] Integrate Sportmonks as an optional player-statistics provider with scoped coverage, provenance, caching, and explicit unavailable states.
+- [x] Add server-side DEX Screener pair enrichment for Memecoin Finder with chain/address normalization, throttling-aware caching, and licensing-aware attribution.
+- [x] Wire both integrations into the existing fallback contracts and add deterministic regression tests for provider failure and missing fields.
