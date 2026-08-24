@@ -39,6 +39,25 @@ export const SportsProvider = {
   }
 };
 
+function marketPrompt(market) {
+  const explicit = market.question || market.marketQuestion || market.eventQuestion || market.parentTitle || market.groupTitle;
+  if (explicit) return explicit;
+  const rules = String(market.rules || '');
+  const match = rules.match(/declares\s+.+?\s+as the winner of\s+(.+?)(?:\.|\r?\n|$)/i);
+  return match?.[1] ? `Who will win ${match[1].replace(/[.]+$/, '')}?` : null;
+}
+
+function marketOutcomes(market) {
+  const supplied = Array.isArray(market.outcomes) ? market.outcomes : Array.isArray(market.markets) ? market.markets.slice(0, 1).flatMap(item => [
+    { id: item.outcome1Id || null, label: item.outcome1Label || null, probability: safeNumber(item.outcome1Price) },
+    { id: item.outcome2Id || null, label: item.outcome2Label || null, probability: safeNumber(item.outcome2Price) },
+  ]) : [
+    { id: market.outcome1Id || null, label: market.outcome1Label || null, probability: safeNumber(market.outcome1Price ?? market.yesPriceForEstimate ?? market.yesPrice) },
+    { id: market.outcome2Id || null, label: market.outcome2Label || null, probability: safeNumber(market.outcome2Price ?? market.noPriceForEstimate ?? market.noPrice) },
+  ];
+  return supplied.filter(item => item.label).map(item => ({ ...item, probability: safeNumber(item.probability ?? item.price) }));
+}
+
 export const MarketProvider = {
   async getMarkets(req, params = {}) {
     const qs = new URLSearchParams(params);
@@ -49,17 +68,16 @@ export const MarketProvider = {
     const markets = Array.isArray(payload?.events) ? payload.events : Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
     return markets.map(market => ({
       id: market.id || market.eventId || null,
-      question: market.question || market.title || null,
-      category: market.category || null,
-      probability: safeNumber(market.probability ?? market.yesPrice ?? market.outcome1Price ?? market.markets?.[0]?.outcome1Price),
+      question: marketPrompt(market) || market.title || market.name || null,
+      subject: market.subject || market.candidate || ((market.title || market.name) && marketPrompt(market) ? (market.title || market.name) : null),
+      category: market.category || market.tags?.[0] || null,
+      probability: safeNumber(market.probability ?? market.outcome1Price ?? market.yesPriceForEstimate ?? market.yesPrice),
       movement24h: safeNumber(market.movement24h ?? market.change24h),
       volume: safeNumber(market.volume ?? market.totalVolume ?? market.totalOrders),
       liquidity: safeNumber(market.liquidity),
       threshold: safeNumber(market.eventThreshold ?? market.markets?.[0]?.marketThreshold),
-      outcomes: (market.outcomes || market.markets?.slice(0, 1).flatMap(item => [
-        { id: item.outcome1Id || null, label: item.outcome1Label || null, probability: safeNumber(item.outcome1Price) },
-        { id: item.outcome2Id || null, label: item.outcome2Label || null, probability: safeNumber(item.outcome2Price) },
-      ]) || []).filter(item => item.label),
+      outcomes: marketOutcomes(market),
+      rules: market.rules || null,
       resolutionDate: market.resolutionDate || market.closingDate || null,
       sourceTimestamp: new Date().toISOString(),
       metadata: market

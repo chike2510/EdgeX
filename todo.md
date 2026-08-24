@@ -222,3 +222,9 @@
 - [ ] Improve Player Edge evidence presentation so insufficient data is clear but not visually repetitive or misleading.
 - [ ] Improve Markets mobile cards so analysis, source state, and unavailable movement are visually distinct and less crowded.
 - [x] Verify shared shell spacing, bottom navigation overlap, typography contrast, and 540px responsive behavior across the affected screens.
+
+- [x] Audit Forex price-history/indicator inputs and prevent APEX from rendering as actionable when required evidence is absent.
+- [x] Audit Player Edge lineup, minutes, and event-history inputs and suppress unsupported props from appearing as usable lines.
+- [x] Replace detached Markets percentages with named outcomes, source context, and evidence-based reasons.
+- [x] Replace incorrect Markets “read-only analysis” wording with the actual supported interaction state and clear limitations.
+- [x] Add regression tests for outcome labels, probability integrity, missing evidence, and no-fabrication behavior.

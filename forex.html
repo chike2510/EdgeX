@@ -270,11 +270,11 @@ function computeSignal(asset){
   const p=prices[asset.id];
   const c=chg[asset.id];
   if(p == null) return { verdict:'INSUFFICIENT DATA', conf:null, rsi:null, ma50:null, ma200:null, tp1:null, tp2:null, sl:null, reason:'Provider price unavailable', fmtL:v=>'Unavailable', pctFmt:()=>'' };
-  const directionalContext = c == null ? 'NO EDGE' : c > 0 ? 'BULLISH' : c < 0 ? 'BEARISH' : 'NEUTRAL';
-  const reasons = c == null ? ['Provider does not supply a comparable 24h change for this pair'] : [`Provider-reported change ${c > 0 ? '+' : ''}${c.toFixed(2)}%`];
+  const directionalContext = 'INSUFFICIENT DATA';
+  const reasons = c == null ? ['A comparable 24h change is not available for this pair'] : ['Candle history is not available, so RSI, moving averages, volatility, and directional confidence cannot be calculated'];
   const fmtL=v=>{if(v===null||v===undefined)return 'Unavailable';if(asset.dec===0)return asset.pre+Math.round(v).toLocaleString();return asset.pre+v.toFixed(asset.dec);}
   const pctFmt=v=>v===null||v===undefined?'Unavailable':((v-p)/p*100).toFixed(1)+'%';
-  return{verdict:directionalContext,conf:null,rsi:null,ma50:null,ma200:null,tp1:null,tp2:null,sl:null,reason:reasons.join(' · '),fmtL,pctFmt, dataQuality:c == null ? 'price-only' : 'price-and-change'};
+  return{verdict:directionalContext,conf:null,rsi:null,ma50:null,ma200:null,tp1:null,tp2:null,sl:null,reason:reasons.join(' · '),fmtL,pctFmt,dataQuality:'insufficient-candle-history',analysisReady:false};
 }
 
 function fmtP(asset,v){
@@ -361,12 +361,13 @@ function refreshAssetDetail(){
     <div class="ir"><span class="ir-n">MA 50 vs Price</span><span class="ir-v">Unavailable <span class="is NEUTRAL">UNAVAILABLE</span></span></div>
     <div class="ir"><span class="ir-n">MA 200</span><span class="ir-v">Unavailable <span class="is NEUTRAL">UNAVAILABLE</span></span></div>
     <div class="ir"><span class="ir-n">24h Momentum</span><span class="ir-v">${c==null?'Unavailable from provider':(c>=0?'+':'')+c.toFixed(2)+'%'} <span class="is ${c==null?'NEUTRAL':c>=0.5?'BULLISH':c<=-0.5?'BEARISH':'NEUTRAL'}">${c==null?'UNAVAILABLE':c>=0.5?'BULLISH':c<=-0.5?'BEARISH':'NEUTRAL'}</span></span></div>`;
-  document.getElementById('ap-reason').innerHTML=`<strong>Why ${sig.verdict}?</strong> ${sig.reason}.<br><span style="color:var(--muted);font-size:9.5px">This is an analytical context view only. It is not a broker, order screen, or financial advice.</span><br><button type="button" class="analysis-action" onclick="runForexAnalysis()">Analyze with EdgeX</button><div id="ap-analysis" class="analysis-result" aria-live="polite"></div>`;
+  document.getElementById('ap-reason').innerHTML=`<strong>Why ${sig.verdict}?</strong> ${sig.reason}.<br><span style="color:var(--muted);font-size:9.5px">No directional read is generated until comparable candle history is available. This is not a broker or order screen.</span><br><button type="button" class="analysis-action" disabled>Awaiting candle history</button><div id="ap-analysis" class="analysis-result" aria-live="polite"></div>`;
 }
 
 async function runForexAnalysis(){
   const target=document.getElementById('ap-analysis'); if(!target||!selAsset)return;
   const a=selAsset; const p=prices[a.id], c=chg[a.id];
+  if (computeSignal(a).analysisReady !== true) { target.textContent='Analysis is paused until comparable candle history is available for this instrument.'; return; }
   target.textContent='EdgeX is checking provider evidence…';
   try {
     const result=await EdgeXV2.requestAnalysis({domain:'forex',subject:{symbol:a.sym,name:a.desc},data:{provider:assetFeedState[a.id]?.provider||'EdgeX forex provider',price:p,change24h:c,category:a.cat,updatedAt:assetFeedState[a.id]?.updatedAt||null}});
