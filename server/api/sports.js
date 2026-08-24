@@ -1,6 +1,63 @@
 // api/sports.js — EdgeX v2.0 Sports Proxy
 // Proxies ESPN API calls to avoid CORS issues on client
 // Free, no API key needed — ESPN public endpoints
+import { sportApiProvider } from '../historical/sportapi-runtime.js';
+import { creativesDevProvider } from '../historical/creativesdev-runtime.js';
+
+function compactDate(value) {
+  const raw = String(value || '').trim();
+  if (/^\d{8}$/.test(raw)) return raw;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw.replaceAll('-', '');
+  return raw;
+}
+
+function isoDate(value) {
+  const compact = compactDate(value);
+  return /^\d{8}$/.test(compact) ? `${compact.slice(0, 4)}-${compact.slice(4, 6)}-${compact.slice(6)}` : String(value || '');
+}
+
+function scoreboardEvent(fixture, league) {
+  const state = fixture.status === 'live' ? 'in' : fixture.completed ? 'post' : fixture.status === 'scheduled' ? 'pre' : fixture.status;
+  return {
+    id: fixture.providerEventId,
+    date: fixture.kickoff,
+    name: `${fixture.homeTeam.name} at ${fixture.awayTeam.name}`,
+    shortName: `${fixture.homeTeam.shortName || fixture.homeTeam.name} at ${fixture.awayTeam.shortName || fixture.awayTeam.name}`,
+    competitions: [{
+      id: fixture.providerEventId,
+      competitors: [
+        { homeAway: 'home', score: fixture.score.home == null ? undefined : String(fixture.score.home), team: { id: fixture.homeTeam.id, displayName: fixture.homeTeam.name, shortDisplayName: fixture.homeTeam.shortName, logo: fixture.homeTeam.logoUrl } },
+        { homeAway: 'away', score: fixture.score.away == null ? undefined : String(fixture.score.away), team: { id: fixture.awayTeam.id, displayName: fixture.awayTeam.name, shortDisplayName: fixture.awayTeam.shortName, logo: fixture.awayTeam.logoUrl } },
+      ],
+      status: { type: { state, completed: fixture.completed, description: fixture.completed ? 'Full Time' : fixture.status === 'live' ? 'In Progress' : 'Scheduled' } },
+      venue: fixture.venue?.name ? { fullName: fixture.venue.name } : undefined,
+    }],
+    _provider: fixture.provenance?.provider,
+    _league: league,
+  };
+}
+
+async function footballFixtures(date, league) {
+  const compact = compactDate(date);
+  const chain = [];
+  if (/^\d{8}$/.test(compact)) {
+    try {
+      const sportApi = await sportApiProvider.getScheduledEvents(compact);
+      chain.push({ provider: 'sportapi', status: sportApi.status, returned: sportApi.data.length });
+      if (sportApi.data.length) return { events: sportApi.data.map((fixture) => scoreboardEvent(fixture, league)), provider: 'sportapi', dataQuality: 'available', providerChain: chain };
+    } catch (error) {
+      chain.push({ provider: 'sportapi', status: 'unavailable', returned: 0, error: error?.message || 'request failed' });
+    }
+    try {
+      const creatives = await creativesDevProvider.getMatchesByDate(isoDate(compact));
+      chain.push({ provider: 'creativesdev', status: creatives.status, returned: creatives.data.length });
+      if (creatives.data.length) return { events: creatives.data.map((fixture) => scoreboardEvent(fixture, league)), provider: 'creativesdev', dataQuality: 'available', providerChain: chain };
+    } catch (error) {
+      chain.push({ provider: 'creativesdev', status: 'unavailable', returned: 0, error: error?.message || 'request failed' });
+    }
+  }
+  return { compact, chain };
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -94,9 +151,16 @@ export default async function handler(req, res) {
       // Route to summary endpoint for match detail page
       const summaryBase = `${ESPN}/${sport}/${league}/summary`;
       url = `${summaryBase}?event=${event_id}`;
+    } else if (sport === 'soccer') {
+      const fallback = await footballFixtures(date, league);
+      if (fallback.events) return res.status(200).json({ leagues: [{ id: league, slug: league }], ...fallback });
+      const params = new URLSearchParams();
+      if (fallback.compact) params.set('dates', fallback.compact);
+      url = `${baseUrl}${params.toString() ? '?' + params : ''}`;
+      req._providerChain = fallback.chain;
     } else {
       const params = new URLSearchParams();
-      if (date) params.set('dates', date);
+      if (date) params.set('dates', compactDate(date));
       url = `${baseUrl}${params.toString() ? '?' + params : ''}`;
     }
 
@@ -104,14 +168,14 @@ export default async function handler(req, res) {
       headers: { 'User-Agent': 'EdgeX/2.0' },
     });
 
-    if (!upstream.ok) {
+        if (!upstream.ok) {
       if (upstream.status === 400 || upstream.status === 404) {
-        return res.status(200).json({ leagues: [], events: [], provider: 'ESPN', dataQuality: 'unavailable', upstreamStatus: upstream.status });
+        return res.status(200).json({ leagues: [], events: [], provider: 'ESPN', providerChain: req._providerChain || [], dataQuality: 'unavailable', upstreamStatus: upstream.status });
       }
-      return res.status(upstream.status).json({ error: `ESPN returned ${upstream.status}` });
+      return res.status(upstream.status).json({ error: `ESPN returned ${upstream.status}`, providerChain: req._providerChain || [] });
     }
-
     const data = await upstream.json();
+    if (req._providerChain) data.providerChain = [...req._providerChain, { provider: 'espn', status: 'available', returned: Array.isArray(data.events) ? data.events.length : 0 }];
     return res.status(200).json(data);
   } catch (err) {
     return res.status(500).json({ error: 'Upstream fetch failed', message: err.message });

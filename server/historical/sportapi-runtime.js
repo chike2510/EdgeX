@@ -234,6 +234,13 @@ class SportApiHistoricalProvider {
       clearTimeout(timer);
     }
   }
+  async getScheduledEvents(date) {
+    const endpoint = `/sport/football/scheduled-events/${encodeURIComponent(date)}`;
+    const result = await this.request(endpoint);
+    const rows = normalizeList(result.data);
+    const data = rows.map((row) => normalizeSportApiEvent(row, endpoint, "current-season"));
+    return { ...result, data, status: data.length ? "available" : result.status === "available" ? "empty" : result.status, diagnostics: { ...result.diagnostics, returned: data.length } };
+  }
   async getTeamHistory(teamId, options = {}) {
     const endpoint = `/team/${encodeURIComponent(teamId)}/events/last/${options.page ?? 0}`;
     const result = await this.request(endpoint);

@@ -211,3 +211,14 @@
 - [x] Remove Sportmonks from football and Squads provider paths after confirming its permanent free-plan coverage is not suitable for EdgeX’s target competitions.
 - [x] Preserve SportAPI → Creativesdev → ESPN for broad football coverage and keep DEX Screener enrichment active for Memecoin Finder.
 - [x] Re-run provider, football, Squads, and Memecoin Finder regression checks after the Sportmonks removal.
+
+- [x] Test SportAPI → Creativesdev → ESPN precedence for football livescores and non-completed match statistics without Sportmonks.
+- [x] Test completed-match authority, partial payload merging, provider errors, and explicit no-data states.
+- [x] Verify football fixture detail tabs and match-statistics layout at 540px after the fallback checks.
+
+- [x] Normalize football scoreboard dates for the ESPN-compatible route and preserve a real SportAPI → Creativesdev → ESPN fallback path.
+- [x] Add/verify non-completed match-statistics fallback behavior and completed-match authority without exposing provider names in user-facing copy.
+- [ ] Reduce repeated unavailable blocks and improve primary-vs-secondary information hierarchy on Forex mobile.
+- [ ] Improve Player Edge evidence presentation so insufficient data is clear but not visually repetitive or misleading.
+- [ ] Improve Markets mobile cards so analysis, source state, and unavailable movement are visually distinct and less crowded.
+- [x] Verify shared shell spacing, bottom navigation overlap, typography contrast, and 540px responsive behavior across the affected screens.
