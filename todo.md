@@ -228,3 +228,16 @@
 - [x] Replace detached Markets percentages with named outcomes, source context, and evidence-based reasons.
 - [x] Replace incorrect Markets “read-only analysis” wording with the actual supported interaction state and clear limitations.
 - [x] Add regression tests for outcome labels, probability integrity, missing evidence, and no-fabrication behavior.
+
+- [ ] Re-inspect the Squads player-line API and public Opta/statistics-provider references.
+- [ ] Determine whether corresponding player event statistics are available through the same permitted API flow or require a separate licensed feed.
+- [ ] Map Squads line identifiers and stat definitions into EdgeX Player Edge evidence without fabricating unsupported history.
+
+- [ ] Observe the public Squads player-history request flow and identify endpoint parameters where exposed.
+- [ ] Test safe public request variants and document response fields without bypassing authentication or rate limits.
+- [ ] Map confirmed history fields to EdgeX Player Edge evidence requirements.
+
+- [x] Add a real OHLC/time-series retrieval path for supported Forex pairs and preserve explicit unsupported-pair states.
+- [x] Compute RSI, MA 50, MA 200, momentum, confidence, and APEX levels only from sufficient provider-backed history.
+- [ ] Replace misleading Forex NO EDGE/analysis states with evidence-aware output and verify the 540px detail view.
+- [x] Add Forex indicator and missing-history regression tests before pushing the fix.

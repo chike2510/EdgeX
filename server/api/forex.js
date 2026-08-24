@@ -64,7 +64,27 @@ export default async function handler(req, res) {
       date: body.date || null
     }));
     if (Object.keys(previousRates).length) provider += '+historical-change';
-    return res.status(200).json({ pairs, provider, fetchedAt: new Date().toISOString(), date: body.date || null, comparisonDate: Object.keys(previousRates).length ? 'previous-available-reference' : null });
+    let history = null;
+    const requestedCurrency = String(query.currency || '').toUpperCase();
+    if (query.history === '1' || query.history === 'true') {
+      if (!requestedCurrency || requestedCurrency === base || requestedCurrency === 'NGN') {
+        history = { currency: requestedCurrency || null, status: 'UNAVAILABLE', reason: requestedCurrency === 'NGN' ? 'The configured reference source does not publish a comparable NGN time series.' : 'A single supported currency is required.' };
+      } else {
+        const historyEnd = currentDate;
+        const historyStartDay = new Date(`${historyEnd}T00:00:00Z`);
+        historyStartDay.setUTCDate(historyStartDay.getUTCDate() - 240);
+        const historyStart = historyStartDay.toISOString().slice(0, 10);
+        try {
+          const seriesResponse = await fetch(`https://api.frankfurter.app/${historyStart}..${historyEnd}?${new URLSearchParams({ from: base, to: requestedCurrency })}`, { headers: { Accept: 'application/json', 'User-Agent': 'EdgeX/2.0' } });
+          const seriesBody = await seriesResponse.json();
+          const points = Object.entries(seriesBody?.rates || {}).map(([date, values]) => ({ date, close: Number(values?.[requestedCurrency]) })).filter(point => Number.isFinite(point.close));
+          history = points.length >= 20 ? { currency: requestedCurrency, status: 'SUPPORTED', points, startDate: seriesBody.start_date || historyStart, endDate: seriesBody.end_date || historyEnd } : { currency: requestedCurrency, status: 'INSUFFICIENT_DATA', points, reason: 'The reference source returned fewer than 20 daily observations.' };
+        } catch (historyError) {
+          history = { currency: requestedCurrency, status: 'UNAVAILABLE', reason: 'Historical series request failed.' };
+        }
+      }
+    }
+    return res.status(200).json({ pairs, provider, fetchedAt: new Date().toISOString(), date: body.date || null, comparisonDate: Object.keys(previousRates).length ? 'previous-available-reference' : null, history });
   } catch (error) {
     console.error('[EdgeX forex proxy] provider failure', error?.message || error);
     return res.status(502).json({ error: 'Forex provider unavailable', pairs: [], dataQuality: 'unavailable' });

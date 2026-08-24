@@ -262,19 +262,45 @@ const ASSETS = {
 };
 const ALL_ASSETS=Object.values(ASSETS).flat();
 
-const prices={},chg={},assetFeedState={};
+const prices={},chg={},assetFeedState={},forexHistory={};
 let selAsset=null,assetTab='details',currentCat='all';
+async function loadForexHistory(asset){
+  if(asset.cat!=='fx') return;
+  const parts=asset.sym.split('/'); if(parts.length!==2) return;
+  const [base,currency]=parts;
+  try{
+    const response=await fetch(`/api/forex?base=${encodeURIComponent(base)}&symbols=${encodeURIComponent(currency)}&currency=${encodeURIComponent(currency)}&history=1`,{signal:AbortSignal.timeout(12000)});
+    const body=await response.json();
+    forexHistory[asset.id]=body.history||{status:'UNAVAILABLE',reason:'Historical series unavailable'};
+  }catch(error){
+    forexHistory[asset.id]={status:'UNAVAILABLE',reason:'Historical series request failed'};
+  }
+  if(selAsset?.id===asset.id){refreshAssetDetail();renderAssetTab(assetTab);}
+}
 
 // ── SIGNAL ENGINE ──────────────────────────────────────────
 function computeSignal(asset){
-  const p=prices[asset.id];
-  const c=chg[asset.id];
-  if(p == null) return { verdict:'INSUFFICIENT DATA', conf:null, rsi:null, ma50:null, ma200:null, tp1:null, tp2:null, sl:null, reason:'Provider price unavailable', fmtL:v=>'Unavailable', pctFmt:()=>'' };
-  const directionalContext = 'INSUFFICIENT DATA';
-  const reasons = c == null ? ['A comparable 24h change is not available for this pair'] : ['Candle history is not available, so RSI, moving averages, volatility, and directional confidence cannot be calculated'];
-  const fmtL=v=>{if(v===null||v===undefined)return 'Unavailable';if(asset.dec===0)return asset.pre+Math.round(v).toLocaleString();return asset.pre+v.toFixed(asset.dec);}
-  const pctFmt=v=>v===null||v===undefined?'Unavailable':((v-p)/p*100).toFixed(1)+'%';
-  return{verdict:directionalContext,conf:null,rsi:null,ma50:null,ma200:null,tp1:null,tp2:null,sl:null,reason:reasons.join(' · '),fmtL,pctFmt,dataQuality:'insufficient-candle-history',analysisReady:false};
+  const p=prices[asset.id], c=chg[asset.id], history=forexHistory[asset.id];
+  const fmtL=v=>{if(v===null||v===undefined)return 'Unavailable';if(asset.dec===0)return asset.pre+Math.round(v).toLocaleString();return asset.pre+v.toFixed(asset.dec);};
+  const pctFmt=v=>v===null||v===undefined||p==null?'Unavailable':((v-p)/p*100).toFixed(1)+'%';
+  if(p==null) return {verdict:'INSUFFICIENT DATA',conf:null,rsi:null,ma50:null,ma200:null,momentum:null,tp1:null,tp2:null,sl:null,reason:'Provider price unavailable',fmtL,pctFmt,dataQuality:'price-unavailable',analysisReady:false};
+  const points=history?.status==='SUPPORTED'&&Array.isArray(history.points)?history.points.map(point=>Number(point.close)).filter(Number.isFinite):[];
+  if(points.length<200) return {verdict:'INSUFFICIENT DATA',conf:null,rsi:null,ma50:null,ma200:null,momentum:c,volatility:null,tp1:null,tp2:null,sl:null,reason:history?.reason||'At least 200 daily observations are required for the full technical read',fmtL,pctFmt,dataQuality:history?.status||'insufficient-candle-history',analysisReady:false};
+  const last=points.at(-1), slice=(n)=>points.slice(-n), average=values=>values.reduce((sum,value)=>sum+value,0)/values.length;
+  const ma50=average(slice(50)), ma200=average(slice(200));
+  const changes=points.slice(1).map((value,index)=>(value-points[index])/points[index]).filter(Number.isFinite);
+  const last14=changes.slice(-14), gains=last14.filter(v=>v>0).reduce((s,v)=>s+v,0)/14, losses=Math.abs(last14.filter(v=>v<0).reduce((s,v)=>s+v,0))/14;
+  const rsi=losses===0?100:100-(100/(1+(gains/losses)));
+  const momentum=points.length>24?((last/points.at(-25))-1)*100:null;
+  const volatility=changes.slice(-30).length>1?Math.sqrt(changes.slice(-30).reduce((s,v)=>s+Math.pow(v-average(changes.slice(-30)),2),0)/29)*Math.sqrt(252):null;
+  const bullish=(last>ma50?1:0)+(last>ma200?1:0)+(rsi>=50?1:0)+(momentum>=0?1:0);
+  const bearish=(last<ma50?1:0)+(last<ma200?1:0)+(rsi<50?1:0)+(momentum<0?1:0);
+  const verdict=bullish>=3?'BULLISH':bearish>=3?'BEARISH':'NEUTRAL';
+  const agreement=Math.max(bullish,bearish), conf=Math.round(55+(agreement/4)*35);
+  const band=volatility&&Number.isFinite(volatility)?last*volatility/Math.sqrt(252):null;
+  const direction=verdict==='BEARISH'?-1:1;
+  const reason=`${agreement}/4 technical checks align; RSI ${rsi.toFixed(1)}, price is ${last>=ma50?'above':'below'} MA 50 and ${last>=ma200?'above':'below'} MA 200`;
+  return {verdict,conf,rsi,ma50,ma200,momentum,volatility,tp1:band?last+direction*band:null,tp2:band?last+direction*band*2:null,sl:band?last-direction*band:null,reason,fmtL,pctFmt,dataQuality:'supported-daily-history',analysisReady:true};
 }
 
 function fmtP(asset,v){
@@ -331,6 +357,7 @@ function openAsset(id){
   document.querySelectorAll('.apt').forEach((b,i)=>b.classList.toggle('on',i===0));
   refreshAssetDetail();
   renderAssetTab('details');
+  loadForexHistory(a);
 }
 
 function closeAsset(){document.getElementById('asset-page').classList.remove('open');document.body.style.overflow='';}
@@ -353,15 +380,12 @@ function refreshAssetDetail(){
     <div class="lv tp1"><div class="lv-l">Supported level 1</div><div class="lv-v t1">${sig.fmtL(sig.tp1)}</div><div class="lv-p">${sig.pctFmt(sig.tp1)}</div></div>
     <div class="lv tp2"><div class="lv-l">Supported level 2</div><div class="lv-v t2">${sig.fmtL(sig.tp2)}</div><div class="lv-p">${sig.pctFmt(sig.tp2)}</div></div>
     <div class="lv sl"><div class="lv-l">Risk level</div><div class="lv-v s">${sig.fmtL(sig.sl)}</div><div class="lv-p">${sig.pctFmt(sig.sl)}</div></div>`;
-  // Indicators
-  const rsiSig='UNAVAILABLE';
-  const maSig='UNAVAILABLE';
-  document.getElementById('ap-inds').innerHTML=`
-    <div class="ir"><span class="ir-n">RSI (14)</span><span class="ir-v">Unavailable <span class="is NEUTRAL">UNAVAILABLE</span></span></div>
-    <div class="ir"><span class="ir-n">MA 50 vs Price</span><span class="ir-v">Unavailable <span class="is NEUTRAL">UNAVAILABLE</span></span></div>
-    <div class="ir"><span class="ir-n">MA 200</span><span class="ir-v">Unavailable <span class="is NEUTRAL">UNAVAILABLE</span></span></div>
-    <div class="ir"><span class="ir-n">24h Momentum</span><span class="ir-v">${c==null?'Unavailable from provider':(c>=0?'+':'')+c.toFixed(2)+'%'} <span class="is ${c==null?'NEUTRAL':c>=0.5?'BULLISH':c<=-0.5?'BEARISH':'NEUTRAL'}">${c==null?'UNAVAILABLE':c>=0.5?'BULLISH':c<=-0.5?'BEARISH':'NEUTRAL'}</span></span></div>`;
-  document.getElementById('ap-reason').innerHTML=`<strong>Why ${sig.verdict}?</strong> ${sig.reason}.<br><span style="color:var(--muted);font-size:9.5px">No directional read is generated until comparable candle history is available. This is not a broker or order screen.</span><br><button type="button" class="analysis-action" disabled>Awaiting candle history</button><div id="ap-analysis" class="analysis-result" aria-live="polite"></div>`;
+  // Indicators are derived only from the selected pair's provider-backed daily series.
+  const supported=sig.analysisReady===true;
+  const indicator=(label,value,badge='NEUTRAL')=>`<div class="ir"><span class="ir-n">${label}</span><span class="ir-v">${value} <span class="is ${badge}">${supported?badge:'UNAVAILABLE'}</span></span></div>`;
+  const maBadge=value=>supported?(p>=value?'BULLISH':'BEARISH'):'NEUTRAL';
+  document.getElementById('ap-inds').innerHTML=supported ? `${indicator('RSI (14)',sig.rsi.toFixed(1),sig.rsi>=70?'BEARISH':sig.rsi<=30?'BULLISH':'NEUTRAL')}${indicator('MA 50 vs Price',sig.ma50.toFixed(asset.dec>2?4:2),maBadge(sig.ma50))}${indicator('MA 200',sig.ma200.toFixed(asset.dec>2?4:2),maBadge(sig.ma200))}${indicator('Momentum (24d)',`${sig.momentum>=0?'+':''}${sig.momentum.toFixed(2)}%`,sig.momentum>=0?'BULLISH':'BEARISH')}` : `${indicator('RSI (14)','Unavailable')}${indicator('MA 50 vs Price','Unavailable')}${indicator('MA 200','Unavailable')}${indicator('Momentum (24d)',c==null?'Unavailable from provider':`${c>=0?'+':''}${c.toFixed(2)}%`,'NEUTRAL')}`;
+  document.getElementById('ap-reason').innerHTML=`<strong>${supported?`Why ${sig.verdict}?`:'Why no APEX read?'}</strong> ${sig.reason}.<br><span style="color:var(--muted);font-size:9.5px">${supported?'Indicators use provider-backed daily observations; reference levels are volatility bands, not guaranteed outcomes.':'No directional read is generated until comparable daily history is available. This is not a broker or order screen.'}</span><br><button type="button" class="analysis-action" ${supported?'onclick="runForexAnalysis()"':'disabled'}>${supported?'Analyze with EdgeX':'Awaiting candle history'}</button><div id="ap-analysis" class="analysis-result" aria-live="polite"></div>`;
 }
 
 async function runForexAnalysis(){

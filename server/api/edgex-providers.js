@@ -116,6 +116,7 @@ export const ForexProvider = {
       change: safeNumber(pair.change ?? pair.changePercent),
       trend: pair.trend || null,
       sourceTimestamp: new Date().toISOString(),
+      history: pair.history || null,
       metadata: pair
     }));
   }
