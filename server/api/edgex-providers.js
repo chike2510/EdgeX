@@ -47,6 +47,34 @@ function marketPrompt(market) {
   return match?.[1] ? `Who will win ${match[1].replace(/[.]+$/, '')}?` : null;
 }
 
+function cleanText(value) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function isBinaryOutcomes(outcomes) {
+  const labels = outcomes.map(outcome => String(outcome.label || '').toLowerCase());
+  return labels.length === 2 && labels.includes('yes') && labels.includes('no');
+}
+
+function questionForSubmarket(parent, child, outcomes) {
+  const parentQuestion = marketPrompt(parent) || cleanText(parent.title) || cleanText(parent.name);
+  const subject = cleanText(child.title) || cleanText(child.subject) || cleanText(child.name);
+  if (!parentQuestion || !subject) return { question: parentQuestion, subject: null, answerType: isBinaryOutcomes(outcomes) ? 'binary_unscoped' : 'named' };
+  if (!isBinaryOutcomes(outcomes)) return { question: parentQuestion, subject, answerType: 'named' };
+
+  const questionWithoutPunctuation = parentQuestion.replace(/[?!.]+$/, '');
+  if (/^who\s+will\s+win/i.test(questionWithoutPunctuation)) {
+    return { question: `Will ${subject} win ${questionWithoutPunctuation.replace(/^who\s+will\s+win\s*/i, '')}?`, subject, answerType: 'candidate_binary' };
+  }
+  if (/^how\s+(many|much)/i.test(questionWithoutPunctuation)) {
+    return { question: `Will ${questionWithoutPunctuation.charAt(0).toLowerCase()}${questionWithoutPunctuation.slice(1)} fall within ${subject}?`, subject, answerType: 'range_binary' };
+  }
+  if (/\bvs\b/i.test(questionWithoutPunctuation) && /^(draw|tie|[A-Z]{2,5})$/i.test(subject)) {
+    return { question: `Will ${subject} be the result for ${questionWithoutPunctuation}?`, subject, answerType: 'result_binary' };
+  }
+  return { question: `Will ${subject} apply to: ${questionWithoutPunctuation}?`, subject, answerType: 'candidate_binary' };
+}
+
 function marketOutcomes(market) {
   const supplied = Array.isArray(market.outcomes) ? market.outcomes : Array.isArray(market.markets) ? market.markets.slice(0, 1).flatMap(item => [
     { id: item.outcome1Id || null, label: item.outcome1Label || null, probability: safeNumber(item.outcome1Price) },
@@ -66,22 +94,40 @@ export const MarketProvider = {
       headers: { Accept: 'application/json', 'User-Agent': 'EdgeX/2.0' },
     });
     const markets = Array.isArray(payload?.events) ? payload.events : Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
-    return markets.map(market => ({
-      id: market.id || market.eventId || null,
-      question: marketPrompt(market) || market.title || market.name || null,
-      subject: market.subject || market.candidate || ((market.title || market.name) && marketPrompt(market) ? (market.title || market.name) : null),
-      category: market.category || market.tags?.[0] || null,
-      probability: safeNumber(market.probability ?? market.outcome1Price ?? market.yesPriceForEstimate ?? market.yesPrice),
-      movement24h: safeNumber(market.movement24h ?? market.change24h),
-      volume: safeNumber(market.volume ?? market.totalVolume ?? market.totalOrders),
-      liquidity: safeNumber(market.liquidity),
-      threshold: safeNumber(market.eventThreshold ?? market.markets?.[0]?.marketThreshold),
-      outcomes: marketOutcomes(market),
-      rules: market.rules || null,
-      resolutionDate: market.resolutionDate || market.closingDate || null,
-      sourceTimestamp: new Date().toISOString(),
-      metadata: market
-    }));
+    return markets.flatMap(parent => {
+      const children = Array.isArray(parent.markets) && parent.markets.length ? parent.markets : [parent];
+      return children.map(child => {
+        const outcomes = marketOutcomes(child);
+        const parentQuestion = marketPrompt(parent);
+        const standaloneTitle = cleanText(parent.title) || cleanText(parent.name);
+        const typed = child === parent
+          ? {
+              question: parentQuestion || standaloneTitle,
+              subject: cleanText(parent.subject) || cleanText(parent.candidate) || (parentQuestion && standaloneTitle && standaloneTitle !== parentQuestion ? standaloneTitle : null),
+              answerType: isBinaryOutcomes(outcomes) ? (parentQuestion && standaloneTitle && standaloneTitle !== parentQuestion ? 'candidate_binary' : 'binary') : 'named'
+            }
+          : questionForSubmarket(parent, child, outcomes);
+        const leading = outcomes.filter(outcome => outcome.probability !== null).sort((a, b) => b.probability - a.probability)[0] || null;
+        return {
+          id: child.id || child.marketId || parent.id || parent.eventId || null,
+          parentId: parent.id || parent.eventId || null,
+          question: typed.question,
+          subject: typed.subject,
+          answerType: typed.answerType,
+          category: child.category || parent.category || parent.tags?.[0] || null,
+          probability: leading?.probability ?? null,
+          movement24h: safeNumber(child.movement24h ?? child.change24h ?? parent.movement24h ?? parent.change24h),
+          volume: safeNumber(child.volume ?? child.totalVolume ?? child.totalOrders ?? parent.volume ?? parent.totalVolume ?? parent.totalOrders),
+          liquidity: safeNumber(child.liquidity ?? parent.liquidity),
+          threshold: safeNumber(child.eventThreshold ?? child.marketThreshold ?? parent.eventThreshold),
+          outcomes,
+          rules: child.rules || parent.rules || null,
+          resolutionDate: child.resolutionDate || parent.resolutionDate || parent.closingDate || null,
+          sourceTimestamp: new Date().toISOString(),
+          metadata: { parent, child }
+        };
+      });
+    });
   }
 };
 

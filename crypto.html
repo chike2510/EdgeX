@@ -32,7 +32,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 12px
 .wsd{width:5px;height:5px;border-radius:50%}
 .wsd.live{background:var(--accent);box-shadow:0 0 6px var(--accent);animation:pulse 2s infinite}
 .wsd.conn{background:var(--gold);animation:pulse .8s infinite}.wsd.dead{background:var(--red)}
-.ws-src{margin-left:auto;font-size:8.5px;padding:2px 6px;border-radius:3px;background:rgba(0,184,212,0.08);color:var(--blue);border:1px solid rgba(0,184,212,0.18)}
+	.ws-src{margin-left:auto;font-size:8.5px;padding:2px 6px;border-radius:3px;background:rgba(0,184,212,0.08);color:var(--blue);border:1px solid rgba(0,184,212,0.18)}
+	.memecoin-entry{display:flex;align-items:center;justify-content:space-between;gap:14px;background:linear-gradient(115deg,rgba(0,245,160,.12),rgba(0,184,212,.06));border:1px solid rgba(0,245,160,.25);border-radius:11px;padding:12px 13px;margin:0 0 16px;text-decoration:none;color:var(--text);transition:transform .16s ease,border-color .16s ease}.memecoin-entry:hover{transform:translateY(-1px);border-color:var(--accent)}.memecoin-entry small{display:block;color:var(--accent);font-size:8px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}.memecoin-entry strong{display:block;font-family:var(--font-head);font-size:14px}.memecoin-entry span{display:block;color:var(--muted);font-size:9px;line-height:1.55;margin-top:3px}.memecoin-entry .entry-arrow{color:var(--accent);font:700 17px var(--font-head);flex:0 0 auto}
 
 /* COIN GRID */
 .coin-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:20px}
@@ -140,12 +141,16 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:0 12px
   <a href="home.html" class="nav-logo">EDGE<em>X</em></a>
 </nav>
 <div class="page">
-  <div class="ws-bar">
-    <div class="wsd conn" id="wsd"></div>
-    <span id="wst">Loading prices…</span>
-    <span class="ws-src" id="wss"></span>
-  </div>
-  <div class="coin-grid" id="coin-grid"></div>
+	<div class="ws-bar">
+	  <div class="wsd conn" id="wsd"></div>
+	  <span id="wst">Loading prices…</span>
+	  <span class="ws-src" id="wss"></span>
+	</div>
+	<a class="memecoin-entry" href="memecoins.html" aria-label="Open Memecoin Finder">
+	  <div><small>Solana and DEX research</small><strong>Memecoin Finder</strong><span>Explore pair liquidity, turnover, movement, observable risk context, and upcoming wallet-tracker tools.</span></div>
+	  <span class="entry-arrow" aria-hidden="true">↗</span>
+	</a>
+	<div class="coin-grid" id="coin-grid"></div>
 </div>
 
 <!-- COIN DETAIL PAGE -->

@@ -241,3 +241,19 @@
 - [x] Compute RSI, MA 50, MA 200, momentum, confidence, and APEX levels only from sufficient provider-backed history.
 - [ ] Replace misleading Forex NO EDGE/analysis states with evidence-aware output and verify the 540px detail view.
 - [x] Add Forex indicator and missing-history regression tests before pushing the fix.
+
+- [ ] Audit current Memecoin Finder routes, provider capabilities, and supported chains for wallet activity data.
+- [ ] Define wallet identity, transaction, realized/unrealized PnL, daily calendar, streak, and token-attribution contracts.
+- [ ] Add privacy, rate-limit, address-validation, and no-fabrication safeguards for public wallet tracking.
+- [ ] Implement the wallet tracker panel and deterministic transaction/PnL tests only after the data source is confirmed.
+- [ ] Define non-custodial copy-trade simulation, allocation caps, slippage/liquidity limits, deny lists, emergency stop, and transaction audit requirements.
+- [ ] Select a permitted wallet/execution provider and chain scope without exposing wallet credentials or private keys.
+- [ ] Build copy intent and simulation UI before any live transaction path, with explicit per-trade or rule-based user consent.
+- [ ] Add live execution only after wallet connection, risk controls, audit logging, and an explicit confirmation gate are complete.
+- [ ] Scope wallet activity, token accounting, and copy-trade simulation to Solana first.
+- [ ] Select permitted Solana indexer, pricing, wallet-signing, and swap-routing services before building live copy execution.
+- [ ] Keep all Solana copy-trade actions in paper mode until user wallet signing, safeguards, and explicit confirmation are complete.
+- [x] Make Memecoin Finder discoverable from the main Crypto page and mobile navigation without relying on a typed URL.
+- [x] Classify Markets questions by answer type and prevent Yes/No rendering for numeric, named-winner, range, or multi-option events.
+- [x] Fix outcome probability and leading-outcome mapping so the displayed percentage always belongs to its named option.
+- [ ] Add typed-outcome regression tests and verify Markets cards at 540px.
