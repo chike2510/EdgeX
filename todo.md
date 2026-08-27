@@ -246,13 +246,17 @@
 - [ ] Define wallet identity, transaction, realized/unrealized PnL, daily calendar, streak, and token-attribution contracts.
 - [ ] Add privacy, rate-limit, address-validation, and no-fabrication safeguards for public wallet tracking.
 - [ ] Implement the wallet tracker panel and deterministic transaction/PnL tests only after the data source is confirmed.
-- [ ] Define non-custodial copy-trade simulation, allocation caps, slippage/liquidity limits, deny lists, emergency stop, and transaction audit requirements.
-- [ ] Select a permitted wallet/execution provider and chain scope without exposing wallet credentials or private keys.
-- [ ] Build copy intent and simulation UI before any live transaction path, with explicit per-trade or rule-based user consent.
-- [ ] Add live execution only after wallet connection, risk controls, audit logging, and an explicit confirmation gate are complete.
-- [ ] Scope wallet activity, token accounting, and copy-trade simulation to Solana first.
-- [ ] Select permitted Solana indexer, pricing, wallet-signing, and swap-routing services before building live copy execution.
-- [ ] Keep all Solana copy-trade actions in paper mode until user wallet signing, safeguards, and explicit confirmation are complete.
+- [x] Removed copy-trade simulation, allocation, transaction, signing, and live-execution scope at the user’s direction.
+- [x] Removed the execution-provider selection requirement because public wallet tracking is the only approved scope.
+- [x] Removed copy intent and simulation UI scope; no order flow is present.
+- [x] Removed live execution scope; EdgeX will not construct or submit transactions.
+- [x] Scoped public wallet activity and token accounting to Solana first; copy-trade simulation is intentionally excluded.
+- [x] Selected a Solana address-history indexer contract only; wallet-signing and swap-routing providers are intentionally excluded.
+- [x] Kept all Solana functionality read-only with no signing or transaction permission path.
+- [x] Refocus Memecoin Finder on DEX Screener pairs with reported market capitalization between $10k and $500k.
+- [x] Rank small-cap discoveries using observable liquidity, pair age, volume, transaction activity, momentum, and explicit risk/data-quality flags without 10x promises.
+- [x] Add public Solana wallet tracking only; do not request keys, construct swaps, submit orders, or implement copy trading.
+- [x] Remove any copy-trade, transaction-construction, signing, or live-execution references from the Memecoin Finder scope and UI.
 - [x] Make Memecoin Finder discoverable from the main Crypto page and mobile navigation without relying on a typed URL.
 - [x] Classify Markets questions by answer type and prevent Yes/No rendering for numeric, named-winner, range, or multi-option events.
 - [x] Fix outcome probability and leading-outcome mapping so the displayed percentage always belongs to its named option.

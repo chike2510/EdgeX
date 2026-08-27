@@ -2,33 +2,40 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { normalizeMemecoin } from './api/memecoins.js';
 
-test('normalizes provider-backed market fields and returns a bounded discovery score', () => {
-  const result = normalizeMemecoin({
-    id: 'example-meme', name: 'Example Meme', symbol: 'exm', image: null,
-    price: 0.12, change24h: 4.5, marketCap: 150_000_000, volume24h: 12_000_000,
-    sourceTimestamp: '2026-08-20T10:00:00.000Z',
-    metadata: { price_change_percentage_7d_in_currency: 8.2, circulating_supply: 700, total_supply: 1000, market_cap_rank: 240 },
-  });
-  assert.equal(result.symbol, 'exm');
+const supportedPair = {
+  chainId: 'solana', dexId: 'raydium', pairAddress: 'pair-address', url: 'https://dexscreener.com/solana/pair-address',
+  baseToken: { address: 'token-address', name: 'Example Meme', symbol: 'EXM' }, priceUsd: 0.00012,
+  change24h: 4.5, marketCap: 150_000, liquidityUsd: 60_000, volume24h: 160_000,
+  buys24h: 320, sells24h: 290, pairCreatedAt: '2026-08-20T10:00:00.000Z', fetchedAt: '2026-08-20T10:05:00.000Z'
+};
+
+test('normalizes a DEX Screener small-cap pair with a bounded discovery-context score', () => {
+  const result = normalizeMemecoin(supportedPair);
+  assert.equal(result.symbol, 'EXM');
+  assert.equal(result.chainId, 'solana');
+  assert.equal(result.marketCap, 150_000);
+  assert.equal(result.liquidityUsd, 60_000);
   assert.equal(result.dataQuality, 'SUPPORTED');
-  assert.equal(result.riskLevel, 'WATCH');
   assert.ok(result.discoveryScore >= 0 && result.discoveryScore <= 100);
-  assert.equal(result.liquidityProxy, 0.08);
+  assert.equal(result.liquidityProxy, 160_000 / 60_000);
 });
 
-test('flags extreme movement, small capitalization, and missing liquidity without inventing values', () => {
-  const result = normalizeMemecoin({ id: 'thin', name: 'Thin Meme', symbol: 'THN', price: null, change24h: 45, marketCap: 2_000_000, volume24h: null, metadata: {} });
+test('flags thin-liquidity and extreme-movement small-cap pairs without inventing fields', () => {
+  const result = normalizeMemecoin({
+    ...supportedPair, priceUsd: null, change24h: 45, marketCap: 20_000, liquidityUsd: null, volume24h: null,
+    pairCreatedAt: new Date().toISOString(), buys24h: null, sells24h: null
+  });
   assert.equal(result.dataQuality, 'PARTIAL');
   assert.equal(result.riskLevel, 'HIGH');
-  assert.ok(result.riskReasons.some(reason => reason.includes('Very small')));
-  assert.ok(result.riskReasons.some(reason => reason.includes('volume unavailable')));
+  assert.ok(result.riskReasons.some(reason => /liquidity unavailable/i.test(reason)));
+  assert.ok(result.riskReasons.some(reason => /volume unavailable/i.test(reason)));
   assert.equal(result.price, null);
   assert.equal(result.liquidityProxy, null);
 });
 
-test('does not treat a positive daily move as a return forecast', () => {
-  const result = normalizeMemecoin({ id: 'pump', name: 'Pump Meme', symbol: 'PMP', price: 1, change24h: 12, marketCap: 200_000_000, volume24h: 20_000_000, metadata: {} });
-  assert.equal(result.discoveryScore >= 0, true);
+test('does not represent discovery context as a price target or return forecast', () => {
+  const result = normalizeMemecoin(supportedPair);
   assert.equal(Object.hasOwn(result, 'forecast'), false);
   assert.equal(Object.hasOwn(result, 'target'), false);
+  assert.equal(Object.hasOwn(result, 'expectedMultiple'), false);
 });

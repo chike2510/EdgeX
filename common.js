@@ -282,7 +282,7 @@ function buildResults() { return `<div style="padding:16px;background:var(--bg3)
     </div>`).join('')}`;
 }
 
-function buildFAQ() { return `<div style="padding:16px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius)"><strong>Research-only platform</strong><p style="margin-top:8px;color:var(--text-muted);line-height:1.6">EdgeX presents provider-backed context and model explanations. It does not offer betting, brokerage, wallets, deposits, withdrawals, or transaction execution.</p></div>`;
+function buildFAQ() { return `<div style="padding:16px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius)"><strong>Research-only platform</strong><p style="margin-top:8px;color:var(--text-muted);line-height:1.6">EdgeX presents provider-backed context and model explanations. It can research public wallet activity but does not offer wallet custody, deposits, withdrawals, brokerage, transaction signing, copy trading, or transaction execution.</p></div>`;
   const faqs = [
     { q:'What APIs power EdgeX?', a:'Football and basketball data come from SportsAPIPro. Odds come from The Odds API (8+ bookmakers). Crypto uses CoinGecko. Forex uses Alpha Vantage. Events use Polymarket.' },
     { q:'How is the APEX confidence score calculated?', a:'APEX strips bookmaker vig using margin removal, averages fair probabilities across all books (multi-book consensus), then applies H2H weighting and form adjustment. The result is a 50–94% confidence score.' },
