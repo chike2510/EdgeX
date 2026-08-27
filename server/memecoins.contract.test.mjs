@@ -17,6 +17,10 @@ test('normalizes a DEX Screener small-cap pair with a bounded discovery-context 
   assert.equal(result.liquidityUsd, 60_000);
   assert.equal(result.dataQuality, 'SUPPORTED');
   assert.ok(result.discoveryScore >= 0 && result.discoveryScore <= 100);
+  assert.ok(result.activityScore >= 0 && result.activityScore <= 100);
+  assert.equal(result.activityState, 'CONSTRUCTIVE');
+  assert.equal(result.transactions24h, 610);
+  assert.ok(result.activityReasons.some(reason => /buys and sells/i.test(reason)));
   assert.equal(result.liquidityProxy, 160_000 / 60_000);
 });
 
@@ -29,6 +33,8 @@ test('flags thin-liquidity and extreme-movement small-cap pairs without inventin
   assert.equal(result.riskLevel, 'HIGH');
   assert.ok(result.riskReasons.some(reason => /liquidity unavailable/i.test(reason)));
   assert.ok(result.riskReasons.some(reason => /volume unavailable/i.test(reason)));
+  assert.equal(result.activityState, 'CAUTION');
+  assert.ok(result.activityCautions.some(reason => /limited DEX liquidity/i.test(reason)));
   assert.equal(result.price, null);
   assert.equal(result.liquidityProxy, null);
 });

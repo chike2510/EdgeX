@@ -257,6 +257,10 @@
 - [x] Rank small-cap discoveries using observable liquidity, pair age, volume, transaction activity, momentum, and explicit risk/data-quality flags without 10x promises.
 - [x] Add public Solana wallet tracking only; do not request keys, construct swaps, submit orders, or implement copy trading.
 - [x] Remove any copy-trade, transaction-construction, signing, or live-execution references from the Memecoin Finder scope and UI.
+- [x] Add transparent activity-based potential-context scoring for small-cap DEX pairs using reported buys, sells, liquidity, turnover, pair age, and momentum.
+- [x] Add user-controlled quality filters that exclude missing activity, thin liquidity, extreme one-sided flow, and short-lived movement spikes.
+- [x] Explain each scanner rank with its actual supporting and risk observations, without promising future market-cap multiples or returns.
+- [x] Add deterministic scoring, risk-filter, and no-forecast regression tests for the potential-context scanner.
 - [x] Make Memecoin Finder discoverable from the main Crypto page and mobile navigation without relying on a typed URL.
 - [x] Classify Markets questions by answer type and prevent Yes/No rendering for numeric, named-winner, range, or multi-option events.
 - [x] Fix outcome probability and leading-outcome mapping so the displayed percentage always belongs to its named option.
