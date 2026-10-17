@@ -1,11 +1,10 @@
 // Public foreign-exchange proxy backed by Frankfurter/ECB reference rates.
 // Rates are provider values; change is left unavailable when no comparison snapshot exists.
+import { recordProviderHealth } from './edgex-data.js';
+
 const FRANKFURTER = 'https://api.frankfurter.app/latest';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -16,11 +15,16 @@ export default async function handler(req, res) {
     : ['EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'NGN', 'NZD', 'SEK', 'NOK', 'DKK', 'PLN', 'CZK', 'HUF', 'RON', 'TRY', 'ZAR', 'HKD', 'SGD', 'KRW', 'MXN', 'BRL', 'INR'];
   const base = String(query.base || 'USD').toUpperCase();
   const params = new URLSearchParams({ from: base, to: symbols.join(',') });
+  const signal = AbortSignal.timeout(8_000);
+  const startedAt = Date.now();
 
   try {
-    const upstream = await fetch(`${FRANKFURTER}?${params}`, { headers: { Accept: 'application/json', 'User-Agent': 'EdgeX/2.0' } });
+    const upstream = await fetch(`${FRANKFURTER}?${params}`, { headers: { Accept: 'application/json', 'User-Agent': 'EdgeX/2.0' }, signal });
     const body = await upstream.json();
-    if (!upstream.ok) return res.status(upstream.status).json({ error: 'Forex provider unavailable', detail: body?.message || `Frankfurter returned ${upstream.status}` });
+    if (!upstream.ok) {
+      recordProviderHealth('frankfurter-ecb', { status: 'unavailable', latencyMs: Date.now() - startedAt });
+      return res.status(502).json({ error: 'Forex provider unavailable', dataQuality: 'unavailable' });
+    }
     const rates = { ...(body?.rates || {}) };
     let provider = 'frankfurter-ecb';
     let previousRates = {};
@@ -28,17 +32,16 @@ export default async function handler(req, res) {
     const historicalParams = new URLSearchParams({ from: base, to: comparisonSymbols.join(',') });
     const currentDate = body?.date || new Date().toISOString().slice(0, 10);
     const currentDay = new Date(`${currentDate}T00:00:00Z`);
-    for (let offset = 1; offset <= 7 && !Object.keys(previousRates).length; offset += 1) {
-      const previousDay = new Date(currentDay);
-      previousDay.setUTCDate(previousDay.getUTCDate() - offset);
-      const historicalDate = previousDay.toISOString().slice(0, 10);
-      try {
-        const historical = await fetch(`https://api.frankfurter.app/${historicalDate}?${historicalParams}`, { headers: { Accept: 'application/json', 'User-Agent': 'EdgeX/2.0' } });
-        const historicalBody = await historical.json();
-        if (historical.ok && historicalBody?.rates) previousRates = historicalBody.rates;
-      } catch (historicalError) {
-        console.warn('[EdgeX forex] historical comparison unavailable', historicalError?.message || historicalError);
-      }
+    const previousDay = new Date(currentDay);
+    const weekday = previousDay.getUTCDay();
+    previousDay.setUTCDate(previousDay.getUTCDate() - (weekday === 1 ? 3 : weekday === 0 ? 2 : 1));
+    const historicalDate = previousDay.toISOString().slice(0, 10);
+    try {
+      const historical = await fetch(`https://api.frankfurter.app/${historicalDate}?${historicalParams}`, { headers: { Accept: 'application/json', 'User-Agent': 'EdgeX/2.0' }, signal });
+      const historicalBody = await historical.json();
+      if (historical.ok && historicalBody?.rates) previousRates = historicalBody.rates;
+    } catch (historicalError) {
+      console.warn('[EdgeX forex] historical comparison unavailable', historicalError?.message || historicalError);
     }
     const percentChange = (currency, current) => {
       const previous = Number(previousRates[currency]);
@@ -46,7 +49,7 @@ export default async function handler(req, res) {
     };
     if (symbols.includes('NGN') && rates.NGN == null) {
       try {
-        const fallback = await fetch('https://open.er-api.com/v6/latest/USD', { headers: { Accept: 'application/json', 'User-Agent': 'EdgeX/2.0' } });
+        const fallback = await fetch('https://open.er-api.com/v6/latest/USD', { headers: { Accept: 'application/json', 'User-Agent': 'EdgeX/2.0' }, signal });
         const fallbackBody = await fallback.json();
         if (fallback.ok && Number.isFinite(Number(fallbackBody?.rates?.NGN))) {
           rates.NGN = Number(fallbackBody.rates.NGN);
@@ -75,7 +78,7 @@ export default async function handler(req, res) {
         historyStartDay.setUTCDate(historyStartDay.getUTCDate() - 240);
         const historyStart = historyStartDay.toISOString().slice(0, 10);
         try {
-          const seriesResponse = await fetch(`https://api.frankfurter.app/${historyStart}..${historyEnd}?${new URLSearchParams({ from: base, to: requestedCurrency })}`, { headers: { Accept: 'application/json', 'User-Agent': 'EdgeX/2.0' } });
+          const seriesResponse = await fetch(`https://api.frankfurter.app/${historyStart}..${historyEnd}?${new URLSearchParams({ from: base, to: requestedCurrency })}`, { headers: { Accept: 'application/json', 'User-Agent': 'EdgeX/2.0' }, signal });
           const seriesBody = await seriesResponse.json();
           const points = Object.entries(seriesBody?.rates || {}).map(([date, values]) => ({ date, close: Number(values?.[requestedCurrency]) })).filter(point => Number.isFinite(point.close));
           history = points.length >= 20 ? { currency: requestedCurrency, status: 'SUPPORTED', points, startDate: seriesBody.start_date || historyStart, endDate: seriesBody.end_date || historyEnd } : { currency: requestedCurrency, status: 'INSUFFICIENT_DATA', points, reason: 'The reference source returned fewer than 20 daily observations.' };
@@ -84,8 +87,10 @@ export default async function handler(req, res) {
         }
       }
     }
+    recordProviderHealth(provider, { status: pairs.length ? (Object.keys(previousRates).length ? 'available' : 'partial') : 'partial', latencyMs: Date.now() - startedAt });
     return res.status(200).json({ pairs, provider, fetchedAt: new Date().toISOString(), date: body.date || null, comparisonDate: Object.keys(previousRates).length ? 'previous-available-reference' : null, history });
   } catch (error) {
+    recordProviderHealth('frankfurter-ecb', { status: 'unavailable', latencyMs: Date.now() - startedAt });
     console.error('[EdgeX forex proxy] provider failure', error?.message || error);
     return res.status(502).json({ error: 'Forex provider unavailable', pairs: [], dataQuality: 'unavailable' });
   }

@@ -1,10 +1,10 @@
 // api/form.js — EdgeX Team Form Fetcher v4
 // Fix: ESPN soccer returns scores via $ref links OR in linescores/displayValue
 // Solution: extract score from competition displayValue or linescores
-import { sportApiProvider } from '../historical/sportapi-runtime.js';
+import { sportApiProvider } from '../../.generated/server/historical/sportapi.js';
 
 function normalizeSportApiForm(fixtures, teamId, league, requestedLimit) {
-  const completed = (Array.isArray(fixtures) ? fixtures : []).filter(fixture => fixture?.completed && fixture?.score?.verified);
+  const completed = (Array.isArray(fixtures) ? fixtures : []).filter(fixture => fixture?.completed && fixture?.score?.verified && fixture.score.home !== null && fixture.score.home !== undefined && fixture.score.away !== null && fixture.score.away !== undefined);
   const form = completed.map(fixture => {
     const home = fixture.homeTeam || {};
     const away = fixture.awayTeam || {};
@@ -38,17 +38,15 @@ function normalizeSportApiForm(fixtures, teamId, league, requestedLimit) {
     teamStats: null,
     teamId,
     league,
-    _debug: { source: 'sportapi', completed: completed.length, formGames: form.length, requestedLimit },
   };
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');
   if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { league, teamId, debug } = req.query;
+  const { league, teamId } = req.query;
   const requestedLimit = Math.max(10, Math.min(15, Number.parseInt(req.query.limit || '15', 10) || 15));
   if (!league || !teamId) return res.status(400).json({ error: 'league and teamId required' });
 
@@ -80,34 +78,10 @@ export default async function handler(req, res) {
     }
     clearTimeout(tid);
 
-    if (!r?.ok) return res.status(200).json({ provider: 'espn', providerLabel: 'ESPN', form: [], stats: null, teamId, league, _debug: { source: 'espn', espnStatus: r?.status ?? 502 } });
+    if (!r?.ok) return res.status(200).json({ provider: 'espn', providerLabel: 'ESPN', form: [], stats: null, teamId, league });
 
     const data = await r.json();
     const events = data.events || [];
-
-    if (debug === '1') {
-      // Show raw competitor structure so we can see where scores live
-      const ev = events.find(e => e.competitions?.[0]?.status?.type?.completed);
-      const comp = ev?.competitions?.[0];
-      return res.status(200).json({
-        totalEvents: events.length,
-        completedSample: ev ? {
-          name: ev.name,
-          date: ev.date,
-          statusType: comp?.status?.type,
-          // Show full competitor objects to find score location
-          competitors: comp?.competitors?.map(c => ({
-            teamId: c.team?.id,
-            teamName: c.team?.displayName,
-            score: c.score,
-            scoreKeys: c.score ? Object.keys(c.score) : 'not object',
-            displayValue: c.displayValue,
-            winner: c.winner,
-            linescores: c.linescores?.slice(0,2),
-          }))
-        } : null,
-      });
-    }
 
     // Extract score — ESPN soccer uses multiple possible locations:
     // 1. competitor.score as plain number/string
@@ -147,11 +121,8 @@ export default async function handler(req, res) {
 
       // Try summing linescores
       if (competitor.linescores?.length) {
-        const total = competitor.linescores.reduce((s, ls) => {
-          const v = parseFloat(ls.value ?? ls.displayValue ?? 0);
-          return s + (isNaN(v) ? 0 : v);
-        }, 0);
-        if (total >= 0) return total;
+        const values = competitor.linescores.map(ls => parseFloat(ls.value ?? ls.displayValue ?? ''));
+        if (values.length && values.every(value => Number.isFinite(value) && value >= 0)) return values.reduce((sum, value) => sum + value, 0);
       }
 
       return null;
@@ -173,18 +144,10 @@ export default async function handler(req, res) {
       let teamScore = extractScore(team);
       let oppScore  = extractScore(opp);
 
-      let result;
-      if (teamScore === null || oppScore === null) {
-        if (team.winner === true) result = 'W';
-        else if (opp.winner === true) result = 'L';
-        else result = 'D';
-        teamScore = teamScore ?? 0;
-        oppScore = oppScore ?? 0;
-      } else {
-        teamScore = Math.floor(teamScore);
-        oppScore  = Math.floor(oppScore);
-        result = teamScore > oppScore ? 'W' : teamScore < oppScore ? 'L' : 'D';
-      }
+      if (teamScore === null || oppScore === null || teamScore < 0 || oppScore < 0) return null;
+      teamScore = Math.floor(teamScore);
+      oppScore  = Math.floor(oppScore);
+      const result = teamScore > oppScore ? 'W' : teamScore < oppScore ? 'L' : 'D';
 
       return {
         date: ev.date,
@@ -216,7 +179,10 @@ export default async function handler(req, res) {
         const findStat = (arr, name) => {
           for (const item of arr) {
             const s = (item.stats||[]).find(s => s.name === name || s.abbreviation === name);
-            if (s) return parseFloat(s.value ?? s.displayValue ?? 0);
+            if (s) {
+              const value = parseFloat(s.value ?? s.displayValue ?? '');
+              return Number.isFinite(value) ? value : null;
+            }
           }
           return null;
         };
@@ -225,12 +191,13 @@ export default async function handler(req, res) {
         const cornersAgainst = findStat(stats, 'cornersAgainst');
         const shotsFor = findStat(stats, 'shotsFor') ?? findStat(stats, 'shots');
         const shotsAgainst = findStat(stats, 'shotsAgainst');
-        const gp = findStat(stats, 'gamesPlayed') ?? findStat(stats, 'GP') ?? 1;
+        const gp = findStat(stats, 'gamesPlayed') ?? findStat(stats, 'GP');
+        const perGame = total => total != null && gp != null && gp > 0 ? +(total / gp).toFixed(1) : null;
         teamStats = {
-          cornersForPG: cornersFor != null ? +(cornersFor/gp).toFixed(1) : null,
-          cornersAgainstPG: cornersAgainst != null ? +(cornersAgainst/gp).toFixed(1) : null,
-          shotsForPG: shotsFor != null ? +(shotsFor/gp).toFixed(1) : null,
-          shotsAgainstPG: shotsAgainst != null ? +(shotsAgainst/gp).toFixed(1) : null,
+          cornersForPG: perGame(cornersFor),
+          cornersAgainstPG: perGame(cornersAgainst),
+          shotsForPG: perGame(shotsFor),
+          shotsAgainstPG: perGame(shotsAgainst),
         };
       }
     } catch(e) {
@@ -244,11 +211,11 @@ export default async function handler(req, res) {
       stats,
       teamStats,
       teamId, league,
-      _debug: { source: 'espn', totalEvents: events.length, completed: completed.length, formGames: form.length, requestedLimit }
     });
 
   } catch (err) {
-    return res.status(200).json({ provider: 'espn', providerLabel: 'ESPN', error: err.message, form: [], stats: null });
+    console.error('[EdgeX form] provider failure', err?.name || 'Error');
+    return res.status(503).json({ provider: 'espn', providerLabel: 'ESPN', error: 'Sports form unavailable', dataQuality: 'unavailable', form: [], stats: null });
   }
 }
 
@@ -268,7 +235,7 @@ function computeFormStats(form) {
   const form5 = form.slice(-5).map(g => g.result);
   const homeGames = form.filter(g => g.isHome);
   const awayGames = form.filter(g => !g.isHome);
-  const homeWR = homeGames.length > 0 ? (homeGames.filter(g=>g.result==='W').length/homeGames.length).toFixed(2) : '0.00';
-  const awayWR = awayGames.length > 0 ? (awayGames.filter(g=>g.result==='W').length/awayGames.length).toFixed(2) : '0.00';
+  const homeWR = homeGames.length > 0 ? (homeGames.filter(g=>g.result==='W').length/homeGames.length).toFixed(2) : null;
+  const awayWR = awayGames.length > 0 ? (awayGames.filter(g=>g.result==='W').length/awayGames.length).toFixed(2) : null;
   return { played, wins, draws, losses, gf, ga, gfpg, gapg, cs, pts, ppg, form5, homeWR, awayWR };
 }

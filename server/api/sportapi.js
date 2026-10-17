@@ -1,10 +1,8 @@
-import { sportApiProvider } from '../historical/sportapi-runtime.js';
+import { sportApiProvider } from '../../.generated/server/historical/sportapi.js';
 
 const MAX_ARCHIVE_PAGE = 8;
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Cache-Control', 's-maxage=900, stale-while-revalidate=3600');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });

@@ -25,3 +25,12 @@ test('rate limits requests per route and client address for each time window', (
   assert.equal(allowRateLimit(req, 'guard-test', 2, 1000, start + 2), false);
   assert.equal(allowRateLimit(req, 'guard-test', 2, 1000, start + 1000), true);
 });
+
+test('rate limits can key on a verified identity across IP addresses', () => {
+  const firstIp = { headers: { 'x-forwarded-for': '203.0.113.21' } };
+  const secondIp = { headers: { 'x-forwarded-for': '203.0.113.22' } };
+  const start = 3_000_000;
+  assert.equal(allowRateLimit(firstIp, 'identity-test', 1, 1000, start, 'verified-user-21'), true);
+  assert.equal(allowRateLimit(secondIp, 'identity-test', 1, 1000, start + 1, 'verified-user-21'), false);
+  assert.equal(allowRateLimit(secondIp, 'identity-test', 1, 1000, start + 1, 'verified-user-22'), true);
+});

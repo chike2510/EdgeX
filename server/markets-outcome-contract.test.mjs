@@ -18,7 +18,7 @@ test('combined candidate markets retain candidate-specific binary questions and 
       outcome2Label: 'No', outcome2Price: 0.58
     }]
   }] }), { status: 200 });
-  const [market] = await MarketProvider.getMarkets(request());
+  const [market] = await MarketProvider.getMarkets(request(), { testCase: 'candidate-binary' });
   assert.equal(market.question, 'Will Candidate A win the 2027 Presidential Election?');
   assert.equal(market.subject, 'Candidate A');
   assert.equal(market.answerType, 'candidate_binary');
@@ -31,7 +31,7 @@ test('combined range markets retain the range label instead of rendering an unsc
     id: 'streams', title: 'How many first-day streams for New Artist?', category: 'Entertainment',
     markets: [{ id: 'streams-range', title: '10M–15M', outcome1Label: 'Yes', outcome1Price: 0.62, outcome2Label: 'No', outcome2Price: 0.38 }]
   }] }), { status: 200 });
-  const [market] = await MarketProvider.getMarkets(request());
+  const [market] = await MarketProvider.getMarkets(request(), { testCase: 'range-binary' });
   assert.equal(market.answerType, 'range_binary');
   assert.match(market.question, /fall within 10M–15M/i);
   assert.equal(market.subject, '10M–15M');
@@ -43,7 +43,7 @@ test('standalone binary markets remain binary and preserve the actual leading ou
     id: 'fixture', question: 'Will Team A face Team B this season?', category: 'Sports',
     outcome1Label: 'Yes', outcome1Price: 0.46, outcome2Label: 'No', outcome2Price: 0.54
   }] }), { status: 200 });
-  const [market] = await MarketProvider.getMarkets(request());
+  const [market] = await MarketProvider.getMarkets(request(), { testCase: 'standalone-binary' });
   assert.equal(market.answerType, 'binary');
   assert.equal(market.question, 'Will Team A face Team B this season?');
   assert.equal(market.probability, 0.54);

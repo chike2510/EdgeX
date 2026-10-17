@@ -23,7 +23,7 @@
   .hm-hero-label { font-size: var(--ex-fs-xs); color: var(--ex-text-muted); }
 
   /* Quick actions */
-  .hm-qa-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--ex-sp-2); }
+  .hm-qa-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ex-sp-2); }
   .hm-qa { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: var(--ex-sp-2); padding: var(--ex-sp-2) 2px; text-decoration: none; }
   .hm-qa-icon { width: 44px; height: 44px; border-radius: 14px; background: var(--ex-card); border: 1px solid var(--ex-border); display: flex; align-items: center; justify-content: center; font-size: 18px; }
   .hm-qa-label { font-size: var(--ex-fs-xs); color: var(--ex-text-secondary); }
@@ -52,41 +52,37 @@
     <div class="ex-header-actions">
       <button class="hm-icon-btn" aria-label="Search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
       <button class="hm-icon-btn" aria-label="Notifications" style="position:relative"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="ex-badge-dot"></span></button>
-      <div class="hm-avatar" id="hm-avatar-initial">A</div>
+      <a class="hm-avatar" href="profile.html" aria-label="Profile"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c.7-3.7 3.2-5.5 7.5-5.5s6.8 1.8 7.5 5.5"/></svg></a>
     </div>
   </header>
 
   <main class="ex-fade-in">
     <div class="hm-section">
-      <div style="font-size:var(--ex-fs-xl);font-weight:700;">Good evening, <span id="hm-username">Auracle</span></div>
-      <p class="ex-caption">Here's what's happening across your markets.</p>
+      <div style="font-size:var(--ex-fs-xl);font-weight:700;">EdgeX <span>Overview</span></div>
+      <p class="ex-caption">Review current match and market context when provider evidence is available.</p>
     </div>
 
     <!-- TODAY'S EDGE -->
     <div class="hm-section">
       <div class="ex-card hm-hero">
         <div class="ex-card-header">
-          <span class="ex-caption" style="text-transform:uppercase;letter-spacing:.05em">Today's Edge</span>
-          <span class="ex-tier ex-tier--high">AI Confidence: High</span>
+          <span class="ex-caption" style="text-transform:uppercase;letter-spacing:.05em">Provider snapshot</span>
+          <span class="ex-tier">Source-aware view</span>
         </div>
-        <div class="hm-hero-grid">
-          <div><div class="hm-hero-num ex-mono-num" id="hm-live-count">—</div><div class="hm-hero-label">Live matches</div></div>
-          <div><div class="hm-hero-num ex-mono-num">—</div><div class="hm-hero-label">Current market rows</div></div>
-          <div><div class="hm-hero-num ex-mono-num" style="color:var(--ex-green)">—</div><div class="hm-hero-label">Confidence shown with evidence</div></div>
+        <div class="hm-hero-grid" style="grid-template-columns:minmax(0,1fr)">
+          <div><div class="hm-hero-num ex-mono-num" id="hm-live-count">—</div><div class="hm-hero-label">Live matches returned by the current provider feed</div></div>
         </div>
+        <p class="ex-caption" style="margin-top:var(--ex-sp-3)">Unavailable provider values and incomplete evidence are not replaced with estimates.</p>
       </div>
     </div>
 
     <!-- QUICK ACTIONS -->
     <div class="hm-section">
       <div class="hm-qa-row">
-        <a class="hm-qa" href="football.html"><div class="hm-qa-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 6l4 3-1.5 5h-5L8 9z"/></svg></div><div class="hm-qa-label">Football</div></a>
-        <a class="hm-qa" href="basketball.html"><div class="hm-qa-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15.5 0 18M12 3c-2.5 2.5-2.5 15.5 0 18"/></svg></div><div class="hm-qa-label">Basketball</div></a>
-        <a class="hm-qa" href="markets.html"><div class="hm-qa-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><div class="hm-qa-label">Markets</div></a>
-        <a class="hm-qa" href="squads.html"><div class="hm-qa-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div><div class="hm-qa-label">Player Edge</div></a>
-        <a class="hm-qa" href="crypto.html"><div class="hm-qa-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 6v12M9 8h4.5a2 2 0 1 1 0 4H9m0 0h5a2 2 0 1 1 0 4H9"/></svg></div><div class="hm-qa-label">Crypto</div></a>
-        <a class="hm-qa" href="forex.html"><div class="hm-qa-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg></div><div class="hm-qa-label">Forex</div></a>
-        <a class="hm-qa" href="weather.html"><div class="hm-qa-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.4 2A4 4 0 0 0 6 19z"/></svg></div><div class="hm-qa-label">Weather</div></a>
+        <a class="hm-qa" href="football.html"><div class="hm-qa-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 6l4 3-1.5 5h-5L8 9z"/></svg></div><div class="hm-qa-label">Sports</div></a>
+        <a class="hm-qa" href="events.html"><div class="hm-qa-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><div class="hm-qa-label">Markets</div></a>
+        <a class="hm-qa" href="saved-analysis.html"><div class="hm-qa-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12a2 2 0 0 1 2 2v15l-8-4-8 4V6a2 2 0 0 1 2-2Z"/></svg></div><div class="hm-qa-label">Saved</div></a>
+      </div>
       </div>
     </div>
 
@@ -99,40 +95,31 @@
       </div>
     </div>
 
-    <!-- AI PICKS -->
+    <!-- RESEARCH AVAILABILITY -->
     <div class="hm-section">
-      <div class="hm-section-head"><h2 class="ex-h3">Top AI Picks</h2><a class="hm-see-all" href="markets.html">See all →</a></div>
-      <div class="hm-scroll-row" id="hm-picks-row"></div>
+      <div class="hm-section-head"><h2 class="ex-h3">Research availability</h2><a class="hm-see-all" href="events.html">Open Markets →</a></div>
+      <div class="hm-scroll-row" id="hm-evidence-status"></div>
     </div>
 
     <!-- MARKET OVERVIEW -->
     <div class="hm-section">
-      <div class="hm-section-head"><h2 class="ex-h3">Market Overview</h2><a class="hm-see-all" href="crypto.html">See all →</a></div>
+      <div class="hm-section-head"><h2 class="ex-h3">Market Overview</h2><a class="hm-see-all" href="events.html">See all →</a></div>
       <div class="ex-card" id="hm-market-list" aria-live="polite">
         <div class="ex-state"><div class="ex-state-title">Loading market context</div><p class="ex-caption">Requesting current provider values.</p></div>
       </div>
-      <p class="ex-caption" style="margin-top:var(--ex-sp-2)">Live crypto and forex context appears when current provider data is available.</p>
+      <p class="ex-caption" style="margin-top:var(--ex-sp-2)">Crypto and forex values are displayed only when current provider data is available.</p>
     </div>
 
     <div class="hm-promo ex-card">
-      <div class="ex-h2">Smarter predictions.<br>Better decisions.</div>
-      <p class="ex-body">Join thousands using EdgeX for AI-powered insights and live market intelligence.</p>
-      <button class="ex-btn ex-btn--primary" onclick="location.href='markets.html'">Explore Predictions →</button>
+      <div class="ex-h2">Research, with its limits.</div>
+      <p class="ex-body">Browse Sports and Markets context. No performance claims or generated picks are shown without supporting evidence.</p>
+      <button class="ex-btn ex-btn--primary" onclick="location.href='events.html'">Open Markets →</button>
     </div>
   </main>
 
-  <nav class="ex-bottom-nav">
-    <a class="ex-nav-item ex-nav-item--active" href="home.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7"/><path d="M9 22V12h6v10"/></svg><span>Home</span></a>
-    <a class="ex-nav-item" href="football.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 6l4 3-1.5 5h-5L8 9z"/></svg><span>Sports</span></a>
-    <a class="ex-nav-item" href="markets.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Markets</span></a>
-    <a class="ex-nav-item" href="crypto.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 6v12M9 8h4.5a2 2 0 1 1 0 4H9m0 0h5a2 2 0 1 1 0 4H9"/></svg><span>Crypto</span></a>
-    <a class="ex-nav-item" href="forex.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg><span>Forex</span></a>
-    <a class="ex-nav-item" href="profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg><span>Profile</span></a>
-  </nav>
-
 <script>
   // Do not render invented picks. The Home view only shows validated provider data.
-  document.getElementById('hm-picks-row').innerHTML = `<div class="ex-card hm-pick-card"><div class="ex-state"><div class="ex-state-title">Research snapshots appear here</div><p class="ex-caption">A validated signal will be shown when the required provider evidence is available.</p></div></div>`;
+  document.getElementById('hm-evidence-status').innerHTML = `<div class="ex-card hm-pick-card"><div class="ex-state"><div class="ex-state-title">Research snapshots appear here</div><p class="ex-caption">Provider-backed evidence and source status will appear when the required data is available.</p></div></div>`;
 
   // Live Now — real data via api/sports.js (ESPN proxy)
   async function loadLive() {
@@ -156,11 +143,11 @@
         return `
           <div class="hm-fixture">
             <div class="hm-fixture-teams">
-              <span>${home?.team?.shortDisplayName || 'Home'}</span>
-              <span>${away?.team?.shortDisplayName || 'Away'}</span>
+              <span>${window.EdgeXV2.escape(home?.team?.shortDisplayName || 'Home')}</span>
+              <span>${window.EdgeXV2.escape(away?.team?.shortDisplayName || 'Away')}</span>
             </div>
-            <div class="hm-fixture-score ex-mono-num">${home?.score ?? '-'}  ${away?.score ?? '-'}</div>
-            <div class="hm-fixture-prob"><span class="ex-caption">${clock}'</span></div>
+            <div class="hm-fixture-score ex-mono-num">${window.EdgeXV2.escape(home?.score ?? '-')}  ${window.EdgeXV2.escape(away?.score ?? '-')}</div>
+            <div class="hm-fixture-prob"><span class="ex-caption">${window.EdgeXV2.escape(clock)}'</span></div>
           </div>`;
       }).join('');
     } catch (e) {
@@ -194,7 +181,7 @@
         const change = Number.isFinite(Number(row.change)) ? Number(row.change) : null;
         const cls = change == null ? '' : change >= 0 ? 'ex-trend-chip--up' : 'ex-trend-chip--down';
         const suffix = change == null ? 'Provider value' : `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
-        return `<div class="hm-list-row"><span>${row.label}</span><span class="ex-trend-chip ${cls} ex-mono-num">${row.value} ${suffix}</span></div>`;
+        return `<div class="hm-list-row"><span>${window.EdgeXV2.escape(row.label)}</span><span class="ex-trend-chip ${cls} ex-mono-num">${window.EdgeXV2.escape(row.value)} ${window.EdgeXV2.escape(suffix)}</span></div>`;
       }).join('');
     } catch (error) {
       root.innerHTML = `<div class="ex-state"><div class="ex-state-title">Market context unavailable</div><p class="ex-caption">Current provider values could not be loaded. Visit Crypto or Forex to try again.</p></div>`;

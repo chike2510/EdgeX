@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { normalizeSportApiLineups } from './historical/sportapi-runtime.js';
+import { normalizeSportApiLineups } from '../.generated/server/historical/sportapi.js';
 
 const normalized = normalizeSportApiLineups({
   teams: [

@@ -23,7 +23,7 @@ function clientAddress(req) {
 
 // Best-effort process-local throttling. Deployments with sustained public traffic
 // should also enforce a shared limit at the platform edge or in a shared store.
-export function allowRateLimit(req, route, limit, windowMs, now = Date.now()) {
+export function allowRateLimit(req, route, limit, windowMs, now = Date.now(), identity = null) {
   if (requestBuckets.size >= 5000) {
     for (const [key, bucket] of requestBuckets) {
       if (bucket.resetAt <= now) requestBuckets.delete(key);
@@ -31,7 +31,8 @@ export function allowRateLimit(req, route, limit, windowMs, now = Date.now()) {
     if (requestBuckets.size >= 5000) return false;
   }
 
-  const key = `${route}:${clientAddress(req)}`;
+  const actor = typeof identity === 'string' && identity.trim() ? `user:${identity.trim()}` : `ip:${clientAddress(req)}`;
+  const key = `${route}:${actor}`;
   let bucket = requestBuckets.get(key);
   if (!bucket || bucket.resetAt <= now) bucket = { count: 0, resetAt: now + windowMs };
   if (bucket.count >= limit) return false;

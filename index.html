@@ -109,7 +109,7 @@
 
   .lp-grid-6 { display: grid; grid-template-columns: repeat(2,1fr); gap: var(--ex-sp-4); }
   @media (min-width: 640px)  { .lp-grid-6 { grid-template-columns: repeat(3,1fr); } }
-  @media (min-width: 1024px) { .lp-grid-6 { grid-template-columns: repeat(6,1fr); } }
+  @media (min-width: 1024px) { .lp-grid-6 { grid-template-columns: repeat(4,1fr); } }
   .lp-market-card { text-align: center; padding: var(--ex-sp-4); }
   .lp-market-icon { width: 44px; height: 44px; border-radius: 12px; margin: 0 auto var(--ex-sp-3); display: flex; align-items: center; justify-content: center; }
   .lp-market-card h4 { font-size: var(--ex-fs-sm); font-weight: 700; margin: 0 0 2px; }
@@ -151,17 +151,14 @@
   <nav class="lp-nav">
     <a class="lp-logo edgex-logo-lockup" href="home.html" aria-label="EdgeX home"><svg class="edgex-logo-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 5 8 7 8-7M4 19l8-7 8 7"/><circle cx="12" cy="12" r="2.7"/></svg><span class="edgex-logo-word">EDGE<span>X</span></span></a>
     <div class="lp-links">
-      <a href="home.html" class="active">Home</a>
+      <a href="home.html">Overview</a>
       <a href="football.html">Sports</a>
-      <a href="markets.html">Markets</a>
-      <a href="crypto.html">Crypto</a>
-      <a href="forex.html">Forex</a>
-      <a href="basketball.html">Basketball</a>
-      <a href="#">More ▾</a>
+      <a href="events.html">Markets</a>
+      <a href="saved-analysis.html">Saved</a>
     </div>
     <div class="lp-nav-actions">
-      <button class="ex-btn ex-btn--secondary">Log in</button>
-      <button class="ex-btn ex-btn--primary" onclick="location.href='home.html'">Get Started</button>
+      <button class="ex-btn ex-btn--secondary" onclick="location.href='saved-analysis.html'">Saved</button>
+      <button class="ex-btn ex-btn--primary" onclick="location.href='home.html'">Open Overview</button>
     </div>
   </nav>
 
@@ -173,28 +170,28 @@
 
   <div class="lp-hero-wrap ex-fade-in">
     <div>
-      <span class="lp-eyebrow">+ AI-Powered Predictions &amp; Live Updates</span>
+      <span class="lp-eyebrow">Evidence-led sports and market research</span>
       <h1 class="lp-headline"><span>Smarter</span> Insights.<br><span>Better</span> Decisions.</h1>
-      <p class="lp-sub ex-body">EdgeX delivers AI-driven analysis, real-time updates and market intelligence across sports, crypto, forex and more.</p>
+      <p class="lp-sub ex-body">EdgeX brings football, prediction markets, crypto, and forex context into one research workspace. Provider data and its limitations are shown when available.</p>
 
       <div class="lp-feat-row">
         <div class="lp-feat">
           <div class="lp-feat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg></div>
-          <div><div class="lp-feat-title">AI Predictions</div><div class="lp-feat-sub">Clear model context when supporting data is available</div></div>
+          <div><div class="lp-feat-title">Evidence context</div><div class="lp-feat-sub">Observed values are separated from model commentary</div></div>
         </div>
         <div class="lp-feat">
           <div class="lp-feat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
-          <div><div class="lp-feat-title">Real-time Updates</div><div class="lp-feat-sub">Live scores, market context &amp; research updates</div></div>
+          <div><div class="lp-feat-title">Provider updates</div><div class="lp-feat-sub">Current values appear when a source responds</div></div>
         </div>
         <div class="lp-feat">
           <div class="lp-feat-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg></div>
-          <div><div class="lp-feat-title">All Markets</div><div class="lp-feat-sub">Sports, Crypto, Forex &amp; more in one place</div></div>
+          <div><div class="lp-feat-title">Markets</div><div class="lp-feat-sub">Prediction markets, crypto, and forex context</div></div>
         </div>
       </div>
 
       <div class="lp-cta-row">
-        <button class="ex-btn ex-btn--primary" onclick="location.href='home.html'">Explore Predictions →</button>
-        <button class="ex-btn ex-btn--secondary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg> See How It Works</button>
+        <button class="ex-btn ex-btn--primary" onclick="location.href='home.html'">Explore Research →</button>
+        <button class="ex-btn ex-btn--secondary" onclick="location.href='events.html'">Open Markets</button>
       </div>
     </div>
 
@@ -202,40 +199,39 @@
 
   <div class="lp-stats-band">
     <div class="lp-stats">
-      <div class="lp-stat"><div class="lp-stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/></svg></div><div><div class="lp-stat-num">Live</div><div class="lp-stat-label">Provider data</div></div></div>
-      <div class="lp-stat"><div class="lp-stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg></div><div><div class="lp-stat-num">Live</div><div class="lp-stat-label">Event coverage</div></div></div>
-      <div class="lp-stat"><div class="lp-stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M2 21c0-3.5 3-6 7-6s7 2.5 7 6"/><circle cx="17" cy="8" r="3"/><path d="M15 15c3 .3 5 2.5 5 6"/></svg></div><div><div class="lp-stat-num">Multi-domain</div><div class="lp-stat-label">Research views</div></div></div>
-      <div class="lp-stat"><div class="lp-stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15.5 0 18M12 3c-2.5 2.5-2.5 15.5 0 18"/></svg></div><div><div class="lp-stat-num">Several</div><div class="lp-stat-label">Intelligence domains</div></div></div>
+      <div class="lp-stat"><div class="lp-stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/></svg></div><div><div class="lp-stat-num">Source-aware</div><div class="lp-stat-label">Provider context</div></div></div>
+      <div class="lp-stat"><div class="lp-stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg></div><div><div class="lp-stat-num">As available</div><div class="lp-stat-label">Current values</div></div></div>
+      <div class="lp-stat"><div class="lp-stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M2 21c0-3.5 3-6 7-6s7 2.5 7 6"/><circle cx="17" cy="8" r="3"/><path d="M15 15c3 .3 5 2.5 5 6"/></svg></div><div><div class="lp-stat-num">Sports + Markets</div><div class="lp-stat-label">Core sections</div></div></div>
+      <div class="lp-stat"><div class="lp-stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15.5 0 18M12 3c-2.5 2.5-2.5 15.5 0 18"/></svg></div><div><div class="lp-stat-num">No backfill</div><div class="lp-stat-label">Missing data stays missing</div></div></div>
     </div>
   </div>
 
   <section class="lp-section">
     <h2 class="lp-section-title">Markets We Cover</h2>
     <div class="lp-grid-6">
-      <div class="ex-card lp-market-card"><div class="lp-market-icon" style="background:rgba(255,255,255,0.06)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 6l4 3-1.5 5h-5L8 9z"/></svg></div><h4>Football</h4><p>Live scores &amp; AI picks</p></div>
-      <div class="ex-card lp-market-card"><div class="lp-market-icon" style="background:rgba(255,146,43,0.12);color:#ff922b"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15.5 0 18M12 3c-2.5 2.5-2.5 15.5 0 18"/></svg></div><h4>Basketball</h4><p>NBA, EuroLeague &amp; more</p></div>
-      <div class="ex-card lp-market-card"><div class="lp-market-icon" style="background:rgba(245,185,66,0.12);color:var(--ex-warning)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9 6v12M9 8h4.5a2 2 0 1 1 0 4H9m0 0h5a2 2 0 1 1 0 4H9"/></svg></div><h4>Crypto</h4><p>Coins, trends &amp; signals</p></div>
-      <div class="ex-card lp-market-card"><div class="lp-market-icon" style="background:rgba(48,242,139,0.1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg></div><h4>Forex</h4><p>FX pairs &amp; analysis</p></div>
-      <div class="ex-card lp-market-card"><div class="lp-market-icon" style="background:rgba(74,168,255,0.12);color:var(--ex-blue)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg></div><h4>Prediction Markets</h4><p>AI market insights</p></div>
-      <div class="ex-card lp-market-card"><div class="lp-market-icon" style="background:rgba(124,108,255,0.12);color:var(--ex-purple)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><h4>More</h4><p>Commodities &amp; indices</p></div>
+      <a class="ex-card lp-market-card" href="football.html"><div class="lp-market-icon" style="background:rgba(255,255,255,0.06)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 6l4 3-1.5 5h-5L8 9z"/></svg></div><h4>Sports</h4><p>Football fixtures and context</p></a>
+      <a class="ex-card lp-market-card" href="events.html"><div class="lp-market-icon" style="background:rgba(74,168,255,0.12);color:var(--ex-blue)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg></div><h4>Prediction Markets</h4><p>Provider-reported outcomes and context</p></a>
+      <a class="ex-card lp-market-card" href="crypto.html"><div class="lp-market-icon" style="background:rgba(245,185,66,0.12);color:var(--ex-warning)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9 6v12M9 8h4.5a2 2 0 1 1 0 4H9m0 0h5a2 2 0 1 1 0 4H9"/></svg></div><h4>Crypto</h4><p>Provider-backed market context</p></a>
+      <a class="ex-card lp-market-card" href="forex.html"><div class="lp-market-icon" style="background:rgba(48,242,139,0.1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg></div><h4>Forex</h4><p>Provider-backed FX values</p></a>
+
     </div>
   </section>
 
   <section class="lp-section">
     <div class="lp-two-col">
       <div class="ex-card">
-        <h3 class="ex-h3">AI Predictions You Can Trust</h3>
-        <p class="ex-caption">EdgeX organizes current provider data into clear research views. When evidence is incomplete, the interface says so instead of presenting invented certainty.</p>
+        <h3 class="ex-h3">Evidence before inference</h3>
+        <p class="ex-caption">EdgeX separates observed provider values from analysis. If coverage is missing or uncertain, the page should say so rather than fill gaps with certainty.</p>
         <ul class="lp-check-list">
-          <li>Machine learning models trained on millions of data points</li>
-          <li>Real-time market &amp; sentiment analysis</li>
-          <li>Historical performance &amp; context aware</li>
-          <li>Clear confidence scores &amp; insights</li>
+          <li>Show which provider values are available</li>
+          <li>Keep observed data separate from commentary</li>
+          <li>State when inputs or history are incomplete</li>
+          <li>Describe uncertainty without invented precision</li>
         </ul>
-        <button class="ex-btn ex-btn--secondary">Learn More About Our AI →</button>
+        <button class="ex-btn ex-btn--secondary" onclick="location.href='home.html'">Browse the overview →</button>
       </div>
       <div class="ex-card">
-        <div class="ex-card-header"><h3 class="ex-h3">Latest research context</h3><span class="ex-caption" style="color:var(--ex-green)">See All ›</span></div>
+        <div class="ex-card-header"><h3 class="ex-h3">Research availability</h3><a class="ex-caption" style="color:var(--ex-green)" href="events.html">Open Markets ›</a></div>
         <div id="lp-predictions"></div>
       </div>
     </div>
@@ -245,21 +241,21 @@
     <div class="lp-cta-band">
       <div class="lp-cta-glow"></div>
       <div style="position:relative;z-index:1">
-        <h2 class="ex-h2">Ready to gain the edge?</h2>
-        <p class="ex-body">Join thousands of users making smarter decisions every day.</p>
+        <h2 class="ex-h2">Start with the evidence.</h2>
+        <p class="ex-body">Browse provider-backed Sports and Markets context, with gaps left visible when data is unavailable.</p>
       </div>
-      <button class="ex-btn ex-btn--primary" style="position:relative;z-index:1" onclick="location.href='home.html'">Get Started For Free →</button>
+      <button class="ex-btn ex-btn--primary" style="position:relative;z-index:1" onclick="location.href='home.html'">Open Overview →</button>
     </div>
   </section>
 
   <div class="lp-trust-row">
-    <div class="lp-trust-item"><div class="lp-trust-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><div><div class="lp-trust-title">Fast &amp; Reliable</div><div class="lp-trust-sub">Real-time updates, always</div></div></div>
-    <div class="lp-trust-item"><div class="lp-trust-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg></div><div><div class="lp-trust-title">Secure &amp; Private</div><div class="lp-trust-sub">Your data is 100% protected</div></div></div>
-    <div class="lp-trust-item"><div class="lp-trust-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><div><div class="lp-trust-title">Always Improving</div><div class="lp-trust-sub">AI models that get smarter</div></div></div>
-    <div class="lp-trust-item"><div class="lp-trust-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M2 21c0-3.5 3-6 7-6s7 2.5 7 6"/><circle cx="17" cy="8" r="3"/><path d="M15 15c3 .3 5 2.5 5 6"/></svg></div><div><div class="lp-trust-title">Community Driven</div><div class="lp-trust-sub">Join a growing community</div></div></div>
+    <div class="lp-trust-item"><div class="lp-trust-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><div><div class="lp-trust-title">Provider-sourced</div><div class="lp-trust-sub">Availability is shown per feed</div></div></div>
+    <div class="lp-trust-item"><div class="lp-trust-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg></div><div><div class="lp-trust-title">No execution</div><div class="lp-trust-sub">EdgeX does not place trades or bets</div></div></div>
+    <div class="lp-trust-item"><div class="lp-trust-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><div><div class="lp-trust-title">No backfilled values</div><div class="lp-trust-sub">Missing provider data stays unavailable</div></div></div>
+    <div class="lp-trust-item"><div class="lp-trust-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M2 21c0-3.5 3-6 7-6s7 2.5 7 6"/><circle cx="17" cy="8" r="3"/><path d="M15 15c3 .3 5 2.5 5 6"/></svg></div><div><div class="lp-trust-title">Research workspace</div><div class="lp-trust-sub">Sports and Markets in one place</div></div></div>
   </div>
 
-  <footer class="lp-footer">© 2026 EdgeX. AI intelligence platform. Not a sportsbook, exchange, or broker.</footer>
+  <footer class="lp-footer">© 2026 EdgeX. Research and provider context only. Not a sportsbook, exchange, or broker.</footer>
 
 <script>
   document.getElementById('lp-predictions').innerHTML = `<div class="edgex-v2-state"><strong>Validated research will appear here</strong><p>EdgeX shows a domain insight only when current provider evidence is available and its limitations are clear.</p></div>`;
@@ -289,10 +285,12 @@
   }
   const menuBtn = document.getElementById('lp-menu-toggle');
   const mobileMenu = document.getElementById('lp-mobile-menu');
-  menuBtn.addEventListener('click', () => {
-    const isOpen = mobileMenu.classList.toggle('open');
-    menuBtn.setAttribute('aria-expanded', isOpen);
-  });
+  if (menuBtn && mobileMenu) {
+    menuBtn.addEventListener('click', () => {
+      const isOpen = mobileMenu.classList.toggle('open');
+      menuBtn.setAttribute('aria-expanded', String(isOpen));
+    });
+  }
 
   loadTicker();
 </script>

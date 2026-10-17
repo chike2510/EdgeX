@@ -3,8 +3,6 @@
 // No auth required for public read endpoints
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -39,11 +37,13 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
         'User-Agent': 'EdgeX/2.0',
       },
+      signal: AbortSignal.timeout(8_000),
     });
 
     const data = await upstream.json();
     return res.status(upstream.status).json(data);
   } catch (err) {
-    return res.status(500).json({ error: 'Upstream fetch failed', message: err.message });
+    console.error('[EdgeX Bayse proxy] provider failure', err?.message || err);
+    return res.status(502).json({ error: 'Markets provider unavailable', dataQuality: 'unavailable' });
   }
 }

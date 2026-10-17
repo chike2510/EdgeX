@@ -1,11 +1,14 @@
-import { sportApiProvider } from '../historical/sportapi-runtime.js';
+import { sportApiProvider } from '../../.generated/server/historical/sportapi.js';
+import { cached } from './edgex-data.js';
+import { allowRateLimit, isSameOriginRequest } from './proxy-guards.js';
 
-const MAX_ARCHIVE = 30;
-const MAX_PAGES = 3;
+const MAX_ARCHIVE = 12;
+const MAX_PAGES = 2;
 const CACHE_SECONDS = 300;
+const ALLOWED_METRICS = new Set(['saves', 'shots', 'shotsOnTarget', 'goals', 'assists', 'tackles', 'fouls', 'passes']);
 
-function text(value) {
-  return typeof value === 'string' && value.trim() ? value.trim() : null;
+function text(value, maxLength = 120) {
+  return typeof value === 'string' && value.trim() && value.length <= maxLength ? value.trim() : null;
 }
 
 function numeric(value) {
@@ -42,12 +45,10 @@ function evidenceFor({ currentLineup, appearances, minutesKnown, metricCount }) 
 
 async function collectHistory({ teamId, playerId, playerName, eventId, metric }) {
   const fixtures = [];
-  const providerResults = [];
   for (let page = 0; page < MAX_PAGES && fixtures.length < MAX_ARCHIVE; page += 1) {
     const result = await sportApiProvider.getTeamHistory(teamId, { page });
-    providerResults.push({ status: result.status, endpoint: result.endpoint, returned: result.data.length });
     if (!result.data.length) break;
-    fixtures.push(...result.data.filter((fixture) => fixture.completed));
+    fixtures.push(...result.data.filter((fixture) => fixture.completed && fixture.score?.verified));
   }
 
   const unique = [...new Map(fixtures.map((fixture) => [fixture.providerEventId, fixture])).values()].slice(0, MAX_ARCHIVE);
@@ -56,7 +57,6 @@ async function collectHistory({ teamId, playerId, playerName, eventId, metric })
 
   for (const fixture of unique) {
     const lineupResult = await sportApiProvider.getLineups(fixture.providerEventId);
-    providerResults.push({ status: lineupResult.status, endpoint: lineupResult.endpoint, returned: lineupResult.data.home.length + lineupResult.data.away.length });
     const allPlayers = [...lineupResult.data.home, ...lineupResult.data.away];
     const player = allPlayers.find((candidate) => playerMatches(candidate, { playerId, playerName }));
     if (!player) continue;
@@ -79,7 +79,6 @@ async function collectHistory({ teamId, playerId, playerName, eventId, metric })
 
     if (value === null && metric === 'shots') {
       const shotmap = await sportApiProvider.getShotmap(fixture.providerEventId, teamId);
-      providerResults.push({ status: shotmap.status, endpoint: shotmap.endpoint, returned: shotmap.data.shots.length });
       value = shotmap.data.shots.filter((shot) => (playerId && String(shot.playerId) === String(playerId)) || (playerName && normalized(shot.playerName) === normalized(playerName))).length;
     }
 
@@ -127,31 +126,35 @@ async function collectHistory({ teamId, playerId, playerName, eventId, metric })
       currentLineup,
       windowLimit: 15,
     },
-    diagnostics: { providerResults },
   };
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Cache-Control', `s-maxage=${CACHE_SECONDS}, stale-while-revalidate=600`);
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.headers?.origin && !isSameOriginRequest(req)) return res.status(403).json({ error: 'Same-origin requests only' });
+  if (!allowRateLimit(req, 'player-history', 10, 60_000)) {
+    res.setHeader('Retry-After', '60');
+    return res.status(429).json({ error: 'Request limit reached. Please try again shortly.' });
+  }
 
   const query = req.query || {};
-  const teamId = text(query.teamId);
-  const playerId = text(query.playerId);
-  const playerName = text(query.playerName);
-  const eventId = text(query.eventId);
-  const metric = text(query.metric) || 'saves';
+  const teamId = text(query.teamId, 80);
+  const playerId = text(query.playerId, 80);
+  const playerName = text(query.playerName, 120);
+  const eventId = text(query.eventId, 80);
+  const metric = text(query.metric, 40) || 'saves';
   if (!teamId || (!playerId && !playerName)) return res.status(400).json({ error: 'teamId and playerId or playerName are required' });
+  if (!ALLOWED_METRICS.has(metric)) return res.status(400).json({ error: 'Unsupported player metric.' });
 
   try {
-    const data = await collectHistory({ teamId, playerId, playerName, eventId, metric });
-    return res.status(200).json({ data, dataQuality: data.evidenceState === 'SUPPORTED' ? 'supported' : 'partial', fetchedAt: new Date().toISOString() });
+    const cacheKey = `player-history:${teamId}:${playerId || normalized(playerName)}:${eventId || 'no-event'}:${metric}`;
+    const data = await cached(cacheKey, CACHE_SECONDS * 1000, () => collectHistory({ teamId, playerId, playerName, eventId, metric }));
+    const dataQuality = data.evidenceState === 'SUPPORTED' ? 'supported' : data.evidence.sampleSize === 0 ? 'unavailable' : 'partial';
+    return res.status(200).json({ data, dataQuality, fetchedAt: new Date().toISOString() });
   } catch (error) {
-    console.error('[EdgeX player-history] provider failure', { message: error?.message || String(error) });
-    return res.status(503).json({ error: 'Player history unavailable', detail: error?.message || String(error), dataQuality: 'unavailable', data: null });
+    console.error('[EdgeX player-history] provider failure', error?.name || 'Error');
+    return res.status(503).json({ error: 'Player history unavailable', dataQuality: 'unavailable', data: null });
   }
 }

@@ -3,17 +3,13 @@
   const isPublic = path === 'index.html' || path === 'landing.html' || path === '';
   const route = path.replace('.html', '') || 'home';
   const routes = [
-    { href: 'home.html', label: 'Home', icon: 'home' },
+    { href: 'home.html', label: 'Overview', icon: 'home' },
     { href: 'football.html', label: 'Sports', icon: 'ball' },
-    { href: 'basketball.html', label: 'Basketball', icon: 'basketball' },
-    { href: 'squads.html', label: 'Player Edge', icon: 'target' },
     { href: 'events.html', label: 'Markets', icon: 'diamond' },
-    { href: 'crypto.html', label: 'Crypto', icon: 'coin' },
-    { href: 'forex.html', label: 'Forex', icon: 'trend' },
-    { href: 'weather.html', label: 'Weather', icon: 'cloud' },
-    { href: 'profile.html', label: 'Profile', icon: 'user' },
+    { href: 'saved-analysis.html', label: 'Saved', icon: 'user' },
   ];
-  const titleMap = { home: 'Overview', football: 'Football', basketball: 'Basketball', squads: 'Player Edge', events: 'Markets', crypto: 'Crypto', forex: 'Forex', weather: 'Weather', profile: 'Profile' };
+  const profileRoute = { href: 'profile.html', label: 'Profile', icon: 'user' };
+  const titleMap = { home: 'Overview', football: 'Sports', events: 'Markets', markets: 'Markets', crypto: 'Markets · Crypto', forex: 'Markets · Forex', 'saved-analysis': 'Saved', profile: 'Profile', search: 'Search', detail: 'Research detail' };
   const logoMark = '<svg class="edgex-logo-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 5 8 7 8-7M4 19l8-7 8 7"/><circle cx="12" cy="12" r="2.7"/></svg>';
   const brand = () => `<span class="edgex-logo-lockup">${logoMark}<span class="edgex-logo-word">EDGE<span>X</span></span></span>`;
   const icons = {
@@ -45,7 +41,10 @@
 
   function icon(name, extra = '') { return `<span class="edgex-shell-icon ${extra}" aria-hidden="true">${icons[name] || ''}</span>`; }
   function link(item) {
-    const active = item.href.replace('.html', '') === route || (route === 'events' && item.href === 'markets.html');
+    const target = item.href.replace('.html', '');
+    const marketRoutes = ['events', 'markets', 'crypto', 'forex'];
+    const savedRoutes = ['saved-analysis', 'favorites', 'history'];
+    const active = target === route || (target === 'events' && marketRoutes.includes(route)) || (target === 'saved-analysis' && savedRoutes.includes(route));
     return `<a class="edgex-shell-link${active ? ' is-active' : ''}" href="${item.href}" ${active ? 'aria-current="page"' : ''}>${icon(item.icon)}<span>${item.label}</span></a>`;
   }
 
@@ -66,12 +65,11 @@
       <div class="edgex-shell-scrim" id="edgex-shell-scrim"></div>
       <aside class="edgex-shell-drawer" id="edgex-shell-drawer" aria-label="Main navigation">
         <div class="edgex-shell-drawer-head"><a class="edgex-shell-brand" href="home.html">${brand()}</a><button id="edgex-shell-close" type="button" aria-label="Close navigation">${icons.close}</button></div>
-        <p class="edgex-shell-section-label">Workspace</p><nav>${routes.slice(0, 4).map(link).join('')}</nav>
-        <p class="edgex-shell-section-label">Intelligence</p><nav>${routes.slice(4, 8).map(link).join('')}</nav>
-        <p class="edgex-shell-section-label">Account</p><nav>${link(routes[8])}</nav>
+        <p class="edgex-shell-section-label">EdgeX</p><nav>${routes.map(link).join('')}</nav>
+        <p class="edgex-shell-section-label">Account</p><nav>${link(profileRoute)}</nav>
         <div class="edgex-shell-drawer-foot"><span class="edgex-shell-status-dot"></span><span>Live provider context</span></div>
       </aside>
-      <nav class="edgex-shell-bottom" aria-label="Primary navigation">${routes.slice(0, 1).concat(routes.slice(4, 7), routes.slice(8)).map(link).join('')}</nav>`;
+      <nav class="edgex-shell-bottom" aria-label="Primary navigation">${routes.map(link).join('')}</nav>`;
     document.body.prepend(shell);
     const drawer = document.getElementById('edgex-shell-drawer');
     const scrim = document.getElementById('edgex-shell-scrim');

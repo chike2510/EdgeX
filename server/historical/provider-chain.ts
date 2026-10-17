@@ -50,6 +50,5 @@ export function evidenceFromChain<T extends ProviderChainRecord>(archive: T[], a
     selectedCount: analysisWindow.length,
     providers,
     tier: analysisWindow.length >= 5 ? "historical-supported" : "early-season-limited",
-    confidenceCeiling: analysisWindow.length >= 10 ? 0.82 : analysisWindow.length >= 5 ? 0.72 : 0.58,
   } as const;
 }
