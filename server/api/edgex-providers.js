@@ -1,16 +1,53 @@
-import { cached, normalizeFixture, safeNumber } from './edgex-data.js';
+import { cached, normalizeFixture, recordProviderHealth, safeNumber } from './edgex-data.js';
 
 const TTL = { live: 10_000, fixtures: 60_000, market: 30_000, crypto: 30_000, forex: 30_000, weather: 30_000, props: 8_000 };
 
+function providerName(url) {
+  const parsed = new URL(url);
+  if (parsed.hostname.includes('bayse')) return 'bayse';
+  if (parsed.pathname.startsWith('/api/')) return `api:${parsed.pathname.split('/')[2] || 'unknown'}`;
+  return parsed.hostname;
+}
+
+function requestCachePolicy(url) {
+  const parsed = new URL(url);
+  if (parsed.pathname.endsWith('/api/sports')) return parsed.searchParams.get('live') === 'true' ? TTL.live : TTL.fixtures;
+  if (parsed.hostname.includes('bayse')) return TTL.market;
+  if (parsed.pathname.endsWith('/api/crypto')) return TTL.crypto;
+  if (parsed.pathname.endsWith('/api/forex')) return TTL.forex;
+  return TTL.weather;
+}
+
+function safeCacheKey(url) {
+  const parsed = new URL(url);
+  if ([...parsed.searchParams.keys()].some(name => /^(api.?key|key|token|secret|authorization|signature)$/i.test(name))) return null;
+  const entries = [...parsed.searchParams.entries()].sort(([a, av], [b, bv]) => a.localeCompare(b) || av.localeCompare(bv));
+  const query = new URLSearchParams(entries).toString();
+  return `provider:${parsed.origin}${parsed.pathname}${query ? `?${query}` : ''}`;
+}
+
 async function requestJson(url, options = {}) {
   const startedAt = Date.now();
-  const response = await fetch(url, options);
-  const raw = await response.text();
-  let body;
-  try { body = raw ? JSON.parse(raw) : null; } catch { throw new Error('Provider returned invalid JSON'); }
-  if (!response.ok) throw new Error(`Provider request failed (${response.status})`);
-  console.info('[EdgeX provider]', { url: url.split('?')[0], status: response.status, latencyMs: Date.now() - startedAt });
-  return body;
+  const provider = providerName(url);
+  const load = async () => {
+    const signal = options.signal || AbortSignal.timeout(8_000);
+    const response = await fetch(url, { ...options, signal });
+    const raw = await response.text();
+    let body;
+    try { body = raw ? JSON.parse(raw) : null; } catch { throw new Error('Provider returned invalid JSON'); }
+    if (!response.ok) throw new Error(`Provider request failed (${response.status})`);
+    recordProviderHealth(provider, { status: 'available', latencyMs: Date.now() - startedAt });
+    console.info('[EdgeX provider]', { provider, status: response.status, latencyMs: Date.now() - startedAt });
+    return body;
+  };
+  try {
+    const key = safeCacheKey(url);
+    return key ? await cached(key, requestCachePolicy(url), load) : await load();
+  } catch (error) {
+    recordProviderHealth(provider, { status: 'unavailable', latencyMs: Date.now() - startedAt });
+    console.warn('[EdgeX provider]', { provider, status: 'unavailable', latencyMs: Date.now() - startedAt });
+    throw error;
+  }
 }
 
 function baseUrl(req) {

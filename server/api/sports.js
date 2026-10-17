@@ -1,8 +1,9 @@
 // api/sports.js — EdgeX v2.0 Sports Proxy
 // Proxies ESPN API calls to avoid CORS issues on client
 // Free, no API key needed — ESPN public endpoints
-import { sportApiProvider } from '../historical/sportapi-runtime.js';
-import { creativesDevProvider } from '../historical/creativesdev-runtime.js';
+import { sportApiProvider } from '../../.generated/server/historical/sportapi.js';
+import { creativesDevProvider } from '../../.generated/server/historical/creativesdev.js';
+import { recordProviderHealth } from './edgex-data.js';
 
 function compactDate(value) {
   const raw = String(value || '').trim();
@@ -41,30 +42,35 @@ async function footballFixtures(date, league) {
   const compact = compactDate(date);
   const chain = [];
   if (/^\d{8}$/.test(compact)) {
+    const sportApiStartedAt = Date.now();
     try {
       const sportApi = await sportApiProvider.getScheduledEvents(compact);
+      recordProviderHealth('sportapi', { status: sportApi.data.length ? 'available' : 'partial', latencyMs: Date.now() - sportApiStartedAt });
       chain.push({ provider: 'sportapi', status: sportApi.status, returned: sportApi.data.length });
       if (sportApi.data.length) return { events: sportApi.data.map((fixture) => scoreboardEvent(fixture, league)), provider: 'sportapi', dataQuality: 'available', providerChain: chain };
     } catch (error) {
-      chain.push({ provider: 'sportapi', status: 'unavailable', returned: 0, error: error?.message || 'request failed' });
+      recordProviderHealth('sportapi', { status: 'unavailable', latencyMs: Date.now() - sportApiStartedAt });
+      chain.push({ provider: 'sportapi', status: 'unavailable', returned: 0, error: 'Provider unavailable' });
     }
+    const creativesStartedAt = Date.now();
     try {
       const creatives = await creativesDevProvider.getMatchesByDate(isoDate(compact));
+      recordProviderHealth('creativesdev', { status: creatives.data.length ? 'available' : 'partial', latencyMs: Date.now() - creativesStartedAt });
       chain.push({ provider: 'creativesdev', status: creatives.status, returned: creatives.data.length });
       if (creatives.data.length) return { events: creatives.data.map((fixture) => scoreboardEvent(fixture, league)), provider: 'creativesdev', dataQuality: 'available', providerChain: chain };
     } catch (error) {
-      chain.push({ provider: 'creativesdev', status: 'unavailable', returned: 0, error: error?.message || 'request failed' });
+      recordProviderHealth('creativesdev', { status: 'unavailable', latencyMs: Date.now() - creativesStartedAt });
+      chain.push({ provider: 'creativesdev', status: 'unavailable', returned: 0, error: 'Provider unavailable' });
     }
   }
   return { compact, chain };
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const { sport, league, date, event_id } = req.query;
 
@@ -164,20 +170,27 @@ export default async function handler(req, res) {
       url = `${baseUrl}${params.toString() ? '?' + params : ''}`;
     }
 
+    const startedAt = Date.now();
     const upstream = await fetch(url, {
       headers: { 'User-Agent': 'EdgeX/2.0' },
+      signal: AbortSignal.timeout(8_000),
     });
 
-        if (!upstream.ok) {
+    if (!upstream.ok) {
       if (upstream.status === 400 || upstream.status === 404) {
+        recordProviderHealth('espn', { status: 'partial', latencyMs: Date.now() - startedAt });
         return res.status(200).json({ leagues: [], events: [], provider: 'ESPN', providerChain: req._providerChain || [], dataQuality: 'unavailable', upstreamStatus: upstream.status });
       }
-      return res.status(upstream.status).json({ error: `ESPN returned ${upstream.status}`, providerChain: req._providerChain || [] });
+      recordProviderHealth('espn', { status: 'unavailable', latencyMs: Date.now() - startedAt });
+      return res.status(502).json({ error: 'Sports provider unavailable', providerChain: req._providerChain || [] });
     }
     const data = await upstream.json();
+    recordProviderHealth('espn', { status: Array.isArray(data.events) && data.events.length ? 'available' : 'partial', latencyMs: Date.now() - startedAt });
     if (req._providerChain) data.providerChain = [...req._providerChain, { provider: 'espn', status: 'available', returned: Array.isArray(data.events) ? data.events.length : 0 }];
     return res.status(200).json(data);
   } catch (err) {
-    return res.status(500).json({ error: 'Upstream fetch failed', message: err.message });
+    recordProviderHealth('espn', { status: 'unavailable' });
+    console.error('[EdgeX sports] provider failure', err?.message || err);
+    return res.status(502).json({ error: 'Sports provider unavailable', providerChain: req._providerChain || [] });
   }
 }

@@ -203,7 +203,7 @@ function scoreOf(raw: any): SportApiFixture["score"] {
     away: away ?? null,
     halftimeHome,
     halftimeAway,
-    verified: home !== undefined && away !== undefined,
+    verified: home !== undefined && home !== null && away !== undefined && away !== null,
   };
 }
 

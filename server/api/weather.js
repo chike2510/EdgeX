@@ -3,8 +3,6 @@
 // Returns probability distributions for temp/rain/wind to compare vs Bayse market odds
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');
   if (req.method === 'OPTIONS') return res.status(200).end();
 

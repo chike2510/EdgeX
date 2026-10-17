@@ -1,4 +1,3 @@
-import ai from '../server/api/ai.js';
 import bayse from '../server/api/bayse.js';
 import edgeAnalysis from '../server/api/edge-analysis.js';
 import edgeCrypto from '../server/api/edge-crypto.js';
@@ -7,20 +6,13 @@ import edgeForex from '../server/api/edge-forex.js';
 import forex from '../server/api/forex.js';
 import edgeMarkets from '../server/api/edge-markets.js';
 import edgeSports from '../server/api/edge-sports.js';
-import edgeWeather from '../server/api/edge-weather.js';
 import form from '../server/api/form.js';
-import playerEdge from '../server/api/player-edge.js';
+import health from '../server/api/health.js';
 import playerHistory from '../server/api/player-history.js';
-import memecoins from '../server/api/memecoins.js';
-import dexscreener from '../server/api/dexscreener.js';
-import walletTracker from '../server/api/wallet-tracker.js';
-import search from '../server/api/search.js';
 import sofascore from '../server/api/sofascore.js';
 import sports from '../server/api/sports.js';
-import weather from '../server/api/weather.js';
 
 const handlers = {
-  ai,
   bayse,
   'edge-analysis': edgeAnalysis,
   'edge-crypto': edgeCrypto,
@@ -29,17 +21,11 @@ const handlers = {
   forex,
   'edge-markets': edgeMarkets,
   'edge-sports': edgeSports,
-  'edge-weather': edgeWeather,
   form,
-  'player-edge': playerEdge,
+  health,
   'player-history': playerHistory,
-  memecoins,
-  dexscreener,
-  'wallet-tracker': walletTracker,
-  search,
   sofascore,
   sports,
-  weather,
 };
 
 const lazyHandlers = {
