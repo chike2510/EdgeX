@@ -1,4 +1,6 @@
 import { buildAIContext } from './edgex-data.js';
+import { generateAI } from './ai.js';
+import { allowRateLimit, isSameOriginRequest } from './proxy-guards.js';
 
 const schema = {
   verdict: 'string',
@@ -56,12 +58,14 @@ function parseStructuredText(text) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Cache-Control', 'no-store');
+  if (!isSameOriginRequest(req)) return res.status(403).json({ error: 'Same-origin requests only' });
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (!allowRateLimit(req, 'edge-analysis', 20, 60_000)) {
+    res.setHeader('Retry-After', '60');
+    return res.status(429).json({ error: 'Request limit reached. Please try again shortly.' });
+  }
   let body;
   try { body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {}; } catch { return res.status(400).json({ error: 'Invalid JSON body' }); }
   if (!body.domain || !body.subject || !body.data) return res.status(400).json({ error: 'domain, subject, and normalized data are required' });
@@ -69,9 +73,8 @@ export default async function handler(req, res) {
   if (!Object.keys(context.data).length) return res.status(200).json(emptyAnalysis('No normalized provider data supplied.'));
   const prompt = instruction(context);
   try {
-    const protocol = req.headers?.['x-forwarded-proto'] || 'https'; const aiUrl = process.env.AI_API_URL || `${protocol}://${req.headers?.host || 'localhost'}/api/ai`; const upstream = await fetch(aiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, system: 'Return JSON only. Never fabricate data.', max_tokens: 900 }) });
-    const result = await upstream.json();
-    if (!upstream.ok || !result.text) return res.status(200).json({ ...emptyAnalysis('The AI provider did not return a response.'), provider: 'data-only' });
+    const result = await generateAI(prompt, 900);
+    if (!result?.text) return res.status(200).json({ ...emptyAnalysis('The AI provider did not return a response.'), provider: 'data-only' });
     const parsed = parseStructuredText(result.text);
     if (!parsed) return res.status(200).json({ ...emptyAnalysis('The AI provider returned an invalid structured response.'), provider: result.provider || 'data-only' });
     return res.status(200).json({ ...normalizeAnalysis(parsed), provider: result.provider || 'configured-ai' });

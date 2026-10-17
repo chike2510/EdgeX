@@ -491,12 +491,8 @@ window.topPicks = function(apex) {
 
 
 // ── FORM HELPER ──────────────────────────────────────────────
-window.genForm = function(team) {
-  const r = team?.records?.[0]?.summary||'';
-  if(!r) return [];
-  const [w,d,l] = r.split('-').map(Number);
-  return [...Array(Math.min(w||0,3)).fill('W'), ...Array(Math.min(d||0,2)).fill('D'), ...Array(Math.min(l||0,2)).fill('L')].sort(()=>Math.random()-.5).slice(0,5);
-};
+// Season totals do not reveal match order; real recent form comes from /api/form.
+window.genForm = function() { return []; };
 
 // ── CONFIDENCE RING SVG ──────────────────────────────────────
 window.confRing = function(conf) {
